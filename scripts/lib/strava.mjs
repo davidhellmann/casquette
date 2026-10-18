@@ -141,6 +141,12 @@ export function createStravaClient({ fetch = globalThis.fetch, clock = systemClo
   };
 }
 
+/** Strava zones ({min,max:-1}) → {min,max:null}; `null` without zones. */
+export function normZones(z) {
+  if (!Array.isArray(z) || !z.length) return null;
+  return z.map((x) => ({ min: x.min ?? 0, max: x.max == null || x.max < 0 ? null : x.max }));
+}
+
 /* ---------------- Slim down Strava objects for the activity cache ---------------- */
 const pick = (o, keys) => { const r = {}; if (!o) return r; for (const k of keys) if (o[k] !== undefined) r[k] = o[k]; return r; };
 const localISO = (s) => (s ? String(s).replace(/Z$/, '') : s);

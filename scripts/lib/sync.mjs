@@ -1,9 +1,9 @@
 import path from 'node:path';
 import { log, ROOT, readJSON, writeJSON } from './env.mjs';
-import { computeMetrics, downsampleStreams, normZones } from './metrics.mjs';
+import { computeMetrics, downsampleStreams } from './metrics.mjs';
 import { cogganZones, DEFAULT_HR_ZONES, isRide } from '../../src/training/index.js';
 import { writeGear } from './gear-file.mjs';
-import { slimSummary, slimDetail } from './strava.mjs';
+import { normZones, slimSummary, slimDetail } from './strava.mjs';
 import { createRideStorage, loadRideStorageContext } from './ride-storage.mjs';
 const STREAM_KEYS = 'time,distance,latlng,altitude,velocity_smooth,heartrate,cadence,watts,temp,moving,grade_smooth';
 const FRAME = { 1: 'MTB', 2: 'Cross', 3: 'Road', 4: 'Time trial', 5: 'Gravel' };

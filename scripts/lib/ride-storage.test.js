@@ -257,7 +257,7 @@ it.each(['hr-only', 'hr-unknown', 'short', 'interrupted', 'measured', 'zero'])('
   const n = kind === 'short' ? 30 : 3601, time = Array.from({ length: n }, (_, i) => i);
   const raw = { time: { data: time }, heartrate: { data: time.map(() => 150) } };
   if (!kind.startsWith('hr-')) raw.watts = { data: time.map(i => kind === 'zero' ? 0 : kind === 'interrupted' && i % 30 === 29 ? null : 200) };
-  r.metrics = { ...computeMetrics(r.summary, raw, athlete.zones), computed_at: '2020-01-01' };
+  r.metrics = { ...computeMetrics(r.summary, raw), computed_at: '2020-01-01' };
   const genuine = kind === 'measured' || kind === 'zero';
   const expectedNP = fallback => genuine ? kind === 'zero' ? 0 : 200 : fallback;
   const { np, variability_index, efficiency_factor, metric_sources, ...independent } = r.metrics;

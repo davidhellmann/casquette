@@ -1,6 +1,5 @@
 /** Training metrics computed from Strava streams (per-second data) and the activity summary. */
-import { zoneIdx } from '../../src/training/index.js';
-import { hrDistribution, powerDistribution } from '../../src/ride/distribution.js';
+import { eachInterval, hrDistribution, isMeasured as measured, powerDistribution } from '../../src/ride/distribution.js';
 
 /** Storage boundary: old cache records must not reintroduce frozen athlete-dependent values. */
 export function storedMetrics(metrics) {
@@ -24,17 +23,10 @@ export function currentMetrics(activity, metrics) {
   return { ...independent, ...updated, metric_sources: { ...otherSources, ...updated.metric_sources } };
 }
 
-export const CURVE_DURATIONS = [1, 5, 10, 15, 20, 30, 60, 120, 180, 300, 480, 600, 900, 1200, 1800, 2700, 3600, 5400, 7200, 10800];
+const CURVE_DURATIONS = [1, 5, 10, 15, 20, 30, 60, 120, 180, 300, 480, 600, 900, 1200, 1800, 2700, 3600, 5400, 7200, 10800];
 
 const round = (v, d = 0) => (v == null || !Number.isFinite(v) ? null : Math.round(v * 10 ** d) / 10 ** d);
 
-/** Strava zones ({min,max:-1}) → {min,max:null}. */
-export function normZones(z) {
-  if (!Array.isArray(z) || !z.length) return null;
-  return z.map((x) => ({ min: x.min ?? 0, max: x.max == null || x.max < 0 ? null : x.max }));
-}
-
-const measured = v => Number.isFinite(v) && v >= 0;
 const summaryPower = a => a.device_watts && measured(a.weighted_average_watts) ? a.weighted_average_watts : null;
 
 function powerScalars(a, np, source) {
@@ -54,24 +46,20 @@ function powerScalars(a, np, source) {
   return m;
 }
 
-/** Right sample at 1 Hz; null separates missing samples and gaps > 10 s. */
+/** 1 Hz series under the stream sampling rule (eachInterval): each interval repeats its value per
+ * second; null marks missing samples and separates gaps. The first sample counts as one second. */
 export function to1Hz(time, values) {
   const out = [];
-  if (!time || !values) return out;
-  for (let i = 0; i < time.length; i++) {
-    const v = measured(values[i]) ? values[i] : null;
-    if (!Number.isFinite(time[i])) { out.push(null); continue; }
-    if (i === 0) { out.push(v); continue; }
-    const dt = time[i] - time[i - 1];
-    if (!Number.isFinite(dt) || dt < 0 || dt > 10) { out.push(null, v); continue; }
-    if (dt === 0) continue;
-    for (let k = 0; k < dt; k++) out.push(v);
-  }
+  if (!time || !values || !time.length) return out;
+  out.push(Number.isFinite(time[0]) && measured(values[0]) ? values[0] : null);
+  eachInterval(time, values,
+    (v, dt) => { for (let k = 0; k < dt; k++) out.push(v); },
+    (v, i) => { if (Number.isFinite(time[i])) out.push(null, v); else out.push(null); });
   return out;
 }
 
 /** Mean maximal power per duration (power curve). */
-export function powerCurve(w1, durations = CURVE_DURATIONS) {
+function powerCurve(w1, durations = CURVE_DURATIONS) {
   const n = w1.length;
   const pre = new Float64Array(n + 1), missing = new Uint32Array(n + 1);
   for (let i = 0; i < n; i++) {
@@ -108,24 +96,8 @@ export function normalizedPower(w1) {
   return cnt ? Math.round((sum4 / cnt) ** 0.25) : null;
 }
 
-/** Seconds per zone. */
-export function timeInZones(time, values, zones) {
-  if (!time || !values || !zones || !zones.length) return null;
-  const out = Array(zones.length).fill(0);
-  let any = false;
-  for (let i = 1; i < time.length; i++) {
-    const dt = time[i] - time[i - 1];
-    if (dt <= 0 || dt > 10) continue;
-    const v = values[i];
-    if (v == null) continue;
-    out[zoneIdx(v, zones)] += dt;
-    any = true;
-  }
-  return any ? out : null;
-}
-
 /** Aerobic decoupling (Pa:HR) – EF of 1st vs. 2nd half, in %. Only for rides ≥ 40 min. */
-export function decoupling(time, watts, hr) {
+function decoupling(time, watts, hr) {
   if (!time || !watts || !hr || !time.length) return null;
   const T = time[time.length - 1];
   if (T < 2400) return null;
