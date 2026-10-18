@@ -101,8 +101,51 @@ describe('Strava client', () => {
   });
 
   it('without a stored token asks to run strava:auth', async () => {
-    const { client } = setup([], { token: null });
+    const { client, requests, slept } = setup([], { token: null });
     await expect(client.get('/a')).rejects.toThrow('npm run strava:auth');
+    expect(requests).toEqual([]);
+    expect(slept).toEqual([]);
+  });
+
+  describe('token refresh', () => {
+    const expiring = { access_token: 'old', refresh_token: 'r1', expires_at: NOW / 1000 + 60 };
+    const fresh = { access_token: 'new', refresh_token: 'r2', expires_at: NOW / 1000 + 7200 };
+
+    it('retries network errors and 5xx of the refresh with the same growing pauses', async () => {
+      const { client, requests, slept, token } = setup(
+        [new TypeError('socket hang up'), json({}, { status: 503 }), json(fresh), json({ ok: true })], { token: expiring },
+      );
+      expect(await client.get('/a')).toEqual({ ok: true });
+      expect(slept).toEqual([5000, 8000]);
+      expect(requests.map((r) => r.url)).toEqual([
+        'https://www.strava.com/oauth/token', 'https://www.strava.com/oauth/token', 'https://www.strava.com/oauth/token',
+        'https://www.strava.com/api/v3/a',
+      ]);
+      expect(requests.slice(0, 3).map((r) => new URLSearchParams(r.body).get('refresh_token'))).toEqual(['r1', 'r1', 'r1']);
+      expect(requests[3].auth).toBe('Bearer new');
+      expect(token()).toMatchObject({ access_token: 'new', refresh_token: 'r2' });
+    });
+
+    it('retries a network error of the refresh after a 401, too', async () => {
+      const { client, requests, slept } = setup([json({}, { status: 401 }), new TypeError('ECONNRESET'), json(fresh), json({ ok: true })]);
+      expect(await client.get('/a')).toEqual({ ok: true });
+      expect(slept).toEqual([5000]);
+      expect(requests.map((r) => r.auth)).toEqual(['Bearer old', null, null, 'Bearer new']);
+    });
+
+    it('fails at once with Strava\'s message when the refresh is rejected (4xx)', async () => {
+      const { client, requests, slept } = setup([new Response('invalid refresh token', { status: 400 })], { token: expiring });
+      await expect(client.get('/a')).rejects.toThrow('Strava token error 400: invalid refresh token');
+      expect(requests).toHaveLength(1);
+      expect(slept).toEqual([]);
+    });
+
+    it('gives up after 8 failed refresh attempts without retrying the whole request', async () => {
+      const { client, requests, slept } = setup(Array.from({ length: 8 }, () => new TypeError('offline')), { token: expiring });
+      await expect(client.get('/a')).rejects.toThrow('Too many failed attempts: token refresh');
+      expect(requests).toHaveLength(8);
+      expect(slept).toEqual([1, 2, 3, 4, 5, 6, 7, 8].map((n) => 5000 * n));
+    });
   });
 
   it('retries 5xx and network errors with growing pauses, then gives up after 8 attempts', async () => {

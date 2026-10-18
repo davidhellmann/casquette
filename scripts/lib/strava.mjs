@@ -11,6 +11,8 @@ import { cogganZones, DEFAULT_HR_ZONES } from '../../src/training/index.js';
 const API = 'https://www.strava.com/api/v3';
 const OAUTH = 'https://www.strava.com/oauth/token';
 const ATTEMPTS = 8;
+/** Returned by one attempt that should be retried (after its pause). */
+const RETRY = Symbol('retry');
 
 /** Thrown when the daily limit is reached and waiting is not wanted. */
 export class DailyLimitError extends Error {}
@@ -59,8 +61,8 @@ function msToDailyReset(now) {
  * The Strava client for one run.
  * - `get(path, params?, { wait? })`: GET against the API; `null` on 404 (e.g. a manual activity
  *   without streams). Refreshes the token (also on 401), pauses for the 15-minute window, retries
- *   network errors and 5xx, and at the daily limit throws a DailyLimitError, or with `wait` sleeps
- *   until the reset.
+ *   network errors and 5xx (of the token refresh, too), and at the daily limit throws a
+ *   DailyLimitError, or with `wait` sleeps until the reset.
  * - `usage()`: requests made in this run and the window counters Strava reported.
  * - `isDailyLimit(error)`: whether an error from `get` means "daily limit reached, resume tomorrow".
  */
@@ -68,11 +70,45 @@ export function createStravaClient({ fetch = globalThis.fetch, clock = systemClo
   const usage = { short: 0, daily: 0, shortLimit: 100, dailyLimit: 1000, calls: 0 };
   let token = null;
 
+  /** Runs `attempt(n)` until it returns something other than RETRY – at most ATTEMPTS times. */
+  async function retrying(label, attempt) {
+    for (let n = 0; n < ATTEMPTS; n++) {
+      const result = await attempt(n);
+      if (result !== RETRY) return result;
+    }
+    throw new Error(`Too many failed attempts: ${label}`);
+  }
+
+  /** One fetch attempt: a network error pauses (growing with the attempt) and yields RETRY instead of throwing. */
+  async function fetchOnce(url, init, n) {
+    try {
+      return await fetch(url, init);
+    } catch (e) {
+      log(`Network error (${e.message}) – retrying …`);
+      await clock.sleep(5000 * (n + 1));
+      return RETRY;
+    }
+  }
+
+  /** After a 5xx: pause (growing with the attempt) and yield RETRY. */
+  async function serverError(n) {
+    await clock.sleep(4000 * (n + 1));
+    return RETRY;
+  }
+
+  // The token refresh retries transient failures (network errors, 5xx) like every request;
+  // a rejected refresh (4xx) reaches exchangeToken, which fails with Strava's message.
+  const refreshFetch = (url, init) => retrying('token refresh', async (n) => {
+    const r = await fetchOnce(url, init, n);
+    if (r === RETRY) return RETRY;
+    return r.status >= 500 ? serverError(n) : r;
+  });
+
   async function accessToken(force = false) {
     token = token || tokens.read();
     if (!token) throw new Error('No Strava token found – please run `npm run strava:auth` first.');
     if (force || token.expires_at * 1000 < clock.now() + 120_000) {
-      token = await exchangeToken({ grant_type: 'refresh_token', refresh_token: token.refresh_token }, { fetch, tokens, env });
+      token = await exchangeToken({ grant_type: 'refresh_token', refresh_token: token.refresh_token }, { fetch: refreshFetch, tokens, env });
     }
     return token.access_token;
   }
@@ -103,33 +139,26 @@ export function createStravaClient({ fetch = globalThis.fetch, clock = systemClo
   async function get(p, params = {}, { wait = false } = {}) {
     const url = new URL(API + p);
     for (const [k, v] of Object.entries(params)) if (v != null) url.searchParams.set(k, String(v));
-    for (let attempt = 0; attempt < ATTEMPTS; attempt++) {
+    return retrying(p, async (n) => {
       if (usage.daily >= usage.dailyLimit - 1) await waitDaily(wait);
       if (usage.short >= usage.shortLimit - 1) await waitShortWindow('15-minute limit reached');
-      // Outside the retry: a missing token or failed refresh is not a network hiccup.
+      // Outside this request's retry: a missing token or rejected refresh is not a network hiccup.
       const auth = `Bearer ${await accessToken()}`;
-      let r;
-      try {
-        r = await fetch(url, { headers: { Authorization: auth } });
-      } catch (e) {
-        log(`Network error (${e.message}) – retrying …`);
-        await clock.sleep(5000 * (attempt + 1));
-        continue;
-      }
+      const r = await fetchOnce(url, { headers: { Authorization: auth } }, n);
+      if (r === RETRY) return RETRY;
       usage.calls++;
       readRateHeaders(r.headers);
       if (r.status === 429) {
-        if (usage.daily >= usage.dailyLimit - 1) { await waitDaily(wait); continue; }
-        await waitShortWindow('Rate limit (429)');
-        continue;
+        if (usage.daily >= usage.dailyLimit - 1) await waitDaily(wait);
+        else await waitShortWindow('Rate limit (429)');
+        return RETRY;
       }
-      if (r.status === 401) { await accessToken(true); continue; }
+      if (r.status === 401) { await accessToken(true); return RETRY; }
       if (r.status === 404) return null;
-      if (r.status >= 500) { await clock.sleep(4000 * (attempt + 1)); continue; }
+      if (r.status >= 500) return serverError(n);
       if (!r.ok) throw new Error(`Strava ${r.status} on ${p}: ${(await r.text()).slice(0, 300)}`);
       return r.json();
-    }
-    throw new Error(`Too many failed attempts: ${p}`);
+    });
   }
 
   return {
