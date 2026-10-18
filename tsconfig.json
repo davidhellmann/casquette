@@ -1,12 +1,18 @@
 {
-  "extends": "astro/tsconfigs/base",
+  "extends": "astro/tsconfigs/strict",
   "include": [".astro/types.d.ts", "**/*"],
-  "exclude": ["dist", "dist-e2e", "public/streams"],
+  "exclude": ["dist", "dist-*", "public/streams", "website", "test-results", "playwright-report", ".scratch", "logs"],
   "compilerOptions": {
+    // Node runs scripts/ directly (type stripping, docs/adr/0004): only syntax it can erase, explicit .ts imports
+    "erasableSyntaxOnly": true,
+    "allowImportingTsExtensions": true,
+    "noUncheckedSideEffectImports": true,
+    // Until every module is TypeScript (docs/adr/0004): remaining .js/.mjs is imported, not checked
     "allowJs": true,
     "checkJs": false,
     "jsx": "react-jsx",
     "jsxImportSource": "react",
+    "types": ["node"],
     "paths": { "@/*": ["./src/*"] }
   }
 }
