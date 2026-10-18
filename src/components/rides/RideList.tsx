@@ -1,15 +1,15 @@
 import * as React from 'react';
 import { DataTable } from '@/components/app/DataTable';
 import type { GroupBy } from '@/components/app/table-groups';
-import { routes } from '@/lib/routes.js';
-import { t } from '@/i18n/index.js';
+import { routes } from '@/lib/routes.ts';
+import { t } from '@/i18n/index.ts';
 import { rideColumns, rideGrouping, rideTiles, type RideColumnId, type RideRow } from './ride-columns';
-import { rideListSummary, rideSearchText } from './ride-list.js';
+import { rideListSummary, rideSearchText } from './ride-list.ts';
 
 export interface RideListProps {
   /** Accessible name of the table. */
   label: string;
-  /** Rows from rideRows() (ride-list.js). */
+  /** Rows from rideRows() (ride-list.ts). */
   rides: RideRow[];
   /** Columns to show, in their fixed order; all by default. */
   columns?: RideColumnId[];

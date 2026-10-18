@@ -1,4 +1,4 @@
-import { isoWeek } from '@/training/index.js';
+import { isoWeek } from '@/training/index.ts';
 
 /** How a table with a time axis groups its rows. */
 export type GroupBy = 'none' | 'week' | 'month';

@@ -1,4 +1,4 @@
-import { BASE } from '../../lib/routes.js';
+import { BASE } from '../../lib/routes.ts';
 import { Bike, CalendarDays, Gauge, Map, Mountain, Route, Zap, type LucideIcon } from 'lucide-react';
 
 /** Sidebar navigation: one entry per section, grouped. `key` doubles as the i18n key `nav.<key>`. */

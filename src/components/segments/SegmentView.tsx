@@ -5,16 +5,16 @@ import { DataTable, dataTableColumns, numeric, numSort, type DataTableColumn } f
 import { EmptyState } from '@/components/app/EmptyState';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { fmtClock, fmtIso, nf } from '@/scripts/format.js';
-import { t } from '@/i18n/index.js';
+import { fmtClock, fmtIso, nf } from '@/scripts/format.ts';
+import { t } from '@/i18n/index.ts';
 import { AttemptsChart, ElevationChart, WattsChart, type Attempt } from './SegmentCharts';
 import { SegmentMap } from './SegmentMap';
 import { KpiCard } from '@/components/app/KpiCard';
 import { DeltaToBest, PrRank, isoDate } from './parts';
-import { prHistory, segmentTrack } from './segment-data.js';
+import { prHistory, segmentTrack } from './segment-data.ts';
 import { useIslandReady } from '@/lib/island-ready';
-import { chartStreams } from '@/lib/chart-streams.js';
-import { routes } from '@/lib/routes.js';
+import { chartStreams } from '@/lib/chart-streams.ts';
+import { routes } from '@/lib/routes.ts';
 
 /** An attempt with everything the table shows. */
 export interface SegmentAttempt extends Attempt { cad: number | null; kg: number; bike: string | null }

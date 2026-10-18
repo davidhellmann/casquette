@@ -2,12 +2,12 @@
 import '../styles/app.css';
 import { Font } from 'astro:assets';
 import { AppShell } from '../components/app/AppShell';
-import { LANG, pageTitle, t } from '../i18n/index.js';
-import { fmtDayMonth, nf } from '../scripts/format.js';
-import { getDataset } from '../lib/data.js';
-import { BASE, routes } from '../lib/routes.js';
-import { legalLinks } from '../lib/legal-links.js';
-import { yearTotals } from '../training/index.js';
+import { LANG, pageTitle, t } from '../i18n/index.ts';
+import { fmtDayMonth, nf } from '../scripts/format.ts';
+import { getDataset } from '../lib/data.ts';
+import { BASE, routes } from '../lib/routes.ts';
+import { legalLinks } from '../lib/legal-links.ts';
+import { yearTotals } from '../training/index.ts';
 import type { NavSubmenus } from '../components/app/nav';
 
 /** Setup steps for the first sync (shown while the demo data is active). */
@@ -24,7 +24,7 @@ interface Props {
 }
 const { title = '', active = 'dashboard', period = false, yearSwitch } = Astro.props;
 const base = BASE;
-// og:image needs an absolute URL – with `site` in astro.config.mjs, otherwise relative
+// og:image needs an absolute URL – with `site` in astro.config.ts, otherwise relative
 const ogImage = Astro.site ? new URL(`${base}og.png`, Astro.site).href : `${base}og.png`;
 
 // Breadcrumbs: the section, plus the page title on detail pages (/rides/<id>, /years/<year> …)

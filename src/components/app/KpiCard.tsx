@@ -2,7 +2,7 @@ import * as React from 'react';
 import { Area, AreaChart, YAxis } from 'recharts';
 import { Card } from '@/components/ui/card';
 import { SERIES, type SeriesKey } from '@/components/charts/series';
-import { nf } from '@/scripts/format.js';
+import { nf } from '@/scripts/format.ts';
 
 export interface KpiCardProps {
   label: string;

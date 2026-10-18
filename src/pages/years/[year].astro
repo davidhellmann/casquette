@@ -1,8 +1,8 @@
 ---
 import Base from '../../layouts/Base.astro';
 import { YearView } from '../../components/years/YearView';
-import { getDataset } from '../../lib/data.js';
-import { yearList } from '../../lib/years.js';
+import { getDataset } from '../../lib/data.ts';
+import { yearList } from '../../lib/years.ts';
 import { yearPayload } from '../../lib/year-payload.ts';
 
 export async function getStaticPaths() {

@@ -1,4 +1,4 @@
-import { readDemoDataset, rideYears } from '../scripts/site/lib/demo-dataset.mjs';
+import { readDemoDataset, rideYears } from '../scripts/site/lib/demo-dataset.ts';
 
 // The demo dataset as the build sees it (dates moved by the demo clock up to today), known when the
 // tests are collected – so a check per page can be its own test (one test looping over every page

@@ -118,7 +118,7 @@ p, li, dd, figcaption, blockquote { text-wrap: pretty; }
 
 /* ---------- Logo: the approved "cap on the c" (DESIGN.md → Brand) ----------
  * Same spec as the app's AppLogo: Damion as-is + pink full stop, the cap at the static em offsets
- * of capPlacement() in src/lib/brand.js (src/brand.test.js checks these numbers and the markup).
+ * of capPlacement() in src/lib/brand.ts (src/brand.test.ts checks these numbers and the markup).
  * Size it with font-size (≥ 24 px). */
 .logo {
   display: inline-block; padding-left: 0.3288em;

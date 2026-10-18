@@ -10,8 +10,8 @@ import { PowerCurveChart } from '@/components/performance/PowerCurveChart';
 import type { RideColumnId, RideRow } from '@/components/rides/ride-columns';
 import { RideList } from '@/components/rides/RideList';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { nf } from '@/scripts/format.js';
-import { t } from '@/i18n/index.js';
+import { nf } from '@/scripts/format.ts';
+import { t } from '@/i18n/index.ts';
 import { IntensityChart } from './IntensityChart';
 import { MonthsChart } from './MonthsChart';
 import { TimeInZones } from '@/components/charts/ZoneBars';
@@ -73,7 +73,7 @@ export interface YearPayload {
   curves: Curves;
   curveWkg: Curves;
   bikes: YearBike[];
-  /** Newest first (rideRows in src/components/rides/ride-list.js). */
+  /** Newest first (rideRows in src/components/rides/ride-list.ts). */
   rides: RideRow[];
 }
 

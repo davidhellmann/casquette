@@ -1,8 +1,8 @@
 import { Bike, CalendarDays, Clock, Flame, Gauge, Mountain, Route, Trophy, Zap, type LucideIcon } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/app/EmptyState';
-import { nf } from '@/scripts/format.js';
-import { t } from '@/i18n/index.js';
+import { nf } from '@/scripts/format.ts';
+import { t } from '@/i18n/index.ts';
 
 export interface GlanceItem { label: string; value: string; sub?: string }
 export interface YearBike { href: string; name: string; km: number; n: number }

@@ -2,7 +2,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { AppShell } from './AppShell';
-import { legalLinks } from '../../lib/legal-links.js';
+import { legalLinks } from '../../lib/legal-links.ts';
 
 // Refs #55: with PUBLIC_LEGAL_URL (the hosted demo) the sidebar footer links to the website's legal
 // pages; without it (self-hosted copies) nothing is shown. The e2e build has no PUBLIC_LEGAL_URL:

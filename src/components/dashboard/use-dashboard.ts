@@ -1,13 +1,13 @@
 import * as React from 'react';
-import { PERIOD_EVENT, readPeriod } from '@/lib/period-store.js';
-import { decodeDashboard } from '@/lib/dashboard-payload.js';
-import { dashboardPeriod } from '@/dashboard-period/index.js';
+import { PERIOD_EVENT, readPeriod } from '@/lib/period-store.ts';
+import { decodeDashboard } from '@/lib/dashboard-payload.ts';
+import { dashboardPeriod } from '@/dashboard-period/index.ts';
 
 type Source = ReturnType<typeof decodeDashboard>;
 type Period = { days: number; basis: 'power' | 'hr' };
 
 let cached: Source | null = null;
-/** The build payload in #dash-data (src/lib/dashboard-payload.js), decoded once per page. */
+/** The build payload in #dash-data (src/lib/dashboard-payload.ts), decoded once per page. */
 function readSource(): Source {
   if (!cached) cached = decodeDashboard(document.getElementById('dash-data')?.textContent || '{}');
   return cached;

@@ -6,11 +6,11 @@ import { EmptyState } from '@/components/app/EmptyState';
 import { ChartContainer, ChartTooltip, type ChartConfig } from '@/components/ui/chart';
 import { SERIES, niceTicks, zoneColor } from '@/components/charts/series';
 import { SeriesLegend, TooltipBox } from '@/components/charts/chart-parts';
-import { nf } from '@/scripts/format.js';
-import { t } from '@/i18n/index.js';
-import { curveValue, efficiency, periodCurve } from './progress-data.js';
+import { nf } from '@/scripts/format.ts';
+import { t } from '@/i18n/index.ts';
+import { curveValue, efficiency, periodCurve } from './progress-data.ts';
 import { type Basis } from './parts';
-import { routes } from '@/lib/routes.js';
+import { routes } from '@/lib/routes.ts';
 
 const cd = (key: string) => t('dash.card.' + key);
 

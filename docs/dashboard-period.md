@@ -3,9 +3,9 @@
 Terms follow `GLOSSARY.md`. Code identifiers below are quoted as they currently exist; the
 planned English names are listed in `docs/adr/0001-english-domain-language.md`.
 
-`src/dashboard-period/index.js::dashboardPeriod(rides, { days, basis, now, gear?, athleteState? })`
+`src/dashboard-period/index.ts::dashboardPeriod(rides, { days, basis, now, gear?, athleteState? })`
 is the pure entry point for the dashboard cards. `rides` are **final, flat rides**
-from the ride module or `decodeDashboard` (`src/lib/dashboard-payload.js`), including `d`, `stats`, `h`, `load`,
+from the ride module or `decodeDashboard` (`src/lib/dashboard-payload.ts`), including `d`, `stats`, `h`, `load`,
 `clsP`/`clsH`, historical W/kg and TIZ with metadata. `days`: 7/14/30/90/365/0 (`PERIODS`);
 `basis`: `power`/`hr`; `now`: a valid, explicit Date. Invalid options are
 rejected. Optional `gear` provides the garage, not training metrics. Optional `athleteState`
@@ -80,7 +80,7 @@ Goals still delegate to `evalGoal`, now with the same explicit clock.
   E-bikes change neither the denominator nor the start of history; the all-time ride log
   also keeps older e-bike rides. Finite periods show them in the normal window.
 - Calendar distances and positions in the year use date components instead of
-  elapsed 24-hour blocks (`src/training/calendar-day.js`, the one calendar-day module).
+  elapsed 24-hour blocks (`src/training/calendar-day.ts`, the one calendar-day module).
   So DST no longer shifts cumulative kilometres or YTD bounds. Tests cover both clock
   changes and the leap day.
 - Years compare **by date**, not by day number: the year to date is compared with the
@@ -108,7 +108,7 @@ Goals still delegate to `evalGoal`, now with the same explicit clock.
 
 ## Regression and evidence
 
-`src/dashboard-period/fixtures.js` generates synthetic final rides with two
+`src/dashboard-period/fixtures.ts` generates synthetic final rides with two
 FTP/weight states, legacy TIZ, 0/null and an e-bike. `legacy-results.json` contains
 the original results isolated before migration from `a0d6b7e:src/scripts/dashboard.js`
 for all 5 × 2 options (KPIs, halves, zones, curves, fitness).

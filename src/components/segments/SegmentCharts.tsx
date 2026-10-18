@@ -3,9 +3,9 @@ import { ChartContainer, ChartTooltip, type ChartConfig } from '@/components/ui/
 import { EmptyState } from '@/components/app/EmptyState';
 import { SERIES, niceTicks } from '@/components/charts/series';
 import { SeriesLegend, TooltipBox, type TooltipLine } from '@/components/charts/chart-parts';
-import { fmtClock, fmtDate, fmtIso, nf, fmtMonthYearShort } from '@/scripts/format.js';
-import { t } from '@/i18n/index.js';
-import { attemptRows, timeTicks, wattsPoints } from './segment-data.js';
+import { fmtClock, fmtDate, fmtIso, nf, fmtMonthYearShort } from '@/scripts/format.ts';
+import { t } from '@/i18n/index.ts';
+import { attemptRows, timeTicks, wattsPoints } from './segment-data.ts';
 
 /** One attempt, in date order (see SegmentPayload). */
 export interface Attempt { ride: string; name: string; date: string; t: number; w: number | null; hr: number | null; pr: number | null }

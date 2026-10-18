@@ -2,8 +2,8 @@ import { Bar, CartesianGrid, ComposedChart, Line, XAxis, YAxis } from 'recharts'
 import { ChartContainer, ChartTooltip, type ChartConfig } from '@/components/ui/chart';
 import { SERIES, barRadius, niceTicks } from '@/components/charts/series';
 import { SeriesLegend, TooltipBox } from '@/components/charts/chart-parts';
-import { nf } from '@/scripts/format.js';
-import { t } from '@/i18n/index.js';
+import { nf } from '@/scripts/format.ts';
+import { t } from '@/i18n/index.ts';
 import type { YearMonth } from './YearView';
 
 /** Kilometres per month (rounded bars), the year before (dashed) and hours (right axis) – lines smooth. */

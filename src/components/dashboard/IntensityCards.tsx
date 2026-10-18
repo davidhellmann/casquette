@@ -6,12 +6,12 @@ import { ChartContainer, ChartTooltip, type ChartConfig } from '@/components/ui/
 import { ShareStrip, ZoneBars, ZoneLabel } from '@/components/charts/ZoneBars';
 import { SERIES, barRadius, niceTicks, zoneColor } from '@/components/charts/series';
 import { SeriesLegend, TooltipBox } from '@/components/charts/chart-parts';
-import { nf } from '@/scripts/format.js';
-import { t } from '@/i18n/index.js';
-import { powerHr, rhythm, timeInZones, zoneShare, zoneWeeks } from './intensity-data.js';
+import { nf } from '@/scripts/format.ts';
+import { t } from '@/i18n/index.ts';
+import { powerHr, rhythm, timeInZones, zoneShare, zoneWeeks } from './intensity-data.ts';
 import { Figure } from '@/components/app/KeyFigures';
 import { BasisToggle, type Basis } from './parts';
-import { routes } from '@/lib/routes.js';
+import { routes } from '@/lib/routes.ts';
 
 const cd = (key: string, x?: Record<string, unknown>) => t('dash.card.' + key, x);
 

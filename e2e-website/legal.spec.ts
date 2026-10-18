@@ -3,8 +3,8 @@ import os from 'node:os';
 import path from 'node:path';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { buildSite } from '../scripts/site/lib/site-build.mjs';
-import { serveStatic } from '../scripts/site/lib/static-server.mjs';
+import { buildSite } from '../scripts/site/lib/site-build.ts';
+import { serveStatic } from '../scripts/site/lib/static-server.ts';
 
 // Refs #55: the legal pages as the deploy publishes them – `npm run site:build` with placeholder
 // values into temp folders (with and without Cabin), each served on a free port of its own. The raw

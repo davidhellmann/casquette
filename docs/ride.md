@@ -3,9 +3,9 @@
 Terms follow `GLOSSARY.md`. Code identifiers below are quoted as they currently exist; the
 planned English names are listed in `docs/adr/0001-english-domain-language.md`.
 
-`src/ride/index.js` is the pure entry point of the ride module: `processRide(frontmatter, athleteState)`.
+`src/ride/index.ts` is the pure entry point of the ride module: `processRide(frontmatter, athleteState)`.
 The caller passes `athleteTimeline(...).at(frontmatter.start_date_local)` from #4.
-The build dataset (`src/lib/build-dataset.js`, see "Build dataset and page payloads" below) loads
+The build dataset (`src/lib/build-dataset.ts`, see "Build dataset and page payloads" below) loads
 this state centrally and delegates, once per ride; all build pages use the same ride.
 Astro/FS/streams/clock are not dependencies of the ride module. Besides the metrics the ride
 carries what its ride page shows from the frontmatter: `elev_low`/`elev_high`, `rpe`
@@ -46,7 +46,7 @@ bounds in % of FTP starting at 0, rounded to watts like Coggan. An invalid or un
 the build with the field named. "Today" is the state at build time.
 W/kg of a ride or of a power best uses the weight on the date of origin, not a flat yearly or
 current weight; if the originating ride is missing, W/kg stays unknown. The build loads the athlete
-and the FTP/weight history once, centrally, in the build dataset (`src/lib/build-dataset.js`).
+and the FTP/weight history once, centrally, in the build dataset (`src/lib/build-dataset.ts`).
 
 ## Deliberate consolidation
 
@@ -68,7 +68,7 @@ showing contradictory stored values. VI, decoupling and curves remain sync value
 
 Zones classify **avg power**, not NP. Both results carry only codes: `zone` and `source`
 (`power`, `hr`, `effort`, `none`); `tizBasis` likewise carries its `source` and no label. The ride
-module has no localised text: `src/components/ride/ride-presentation.js` turns these codes into
+module has no localised text: `src/components/ride/ride-presentation.ts` turns these codes into
 display text (`rideClassification`, `tizBasisLabel`) for the ride page, the dashboard and the ride
 lists. A ride without a name is called `DEFAULT_RIDE_NAME` ("Ride", as in the sync). Effort estimate:
 positive Relative Effort / positive hours; <35 → Z1, <70 → Z2, <110 → Z3, else Z4.
@@ -127,7 +127,7 @@ flags legacy/missing boundaries; never label them with current/historical bounda
 `exact: false` means unknown historical validity, not an approximation we computed.
 No estimation from charts, no deletion of TIZ.
 **TIZ totals** over several rides (dashboard period, year review and its months, zone_time
-goals) come from one rule, `tizTotal(rides, basis)` in `src/ride/tiz-total.js` (exported by the
+goals) come from one rule, `tizTotal(rides, basis)` in `src/ride/tiz-total.ts` (exported by the
 ride module): seconds per zone (7 power / 5 HR), the rides counted, their `tizBasis`, the rides
 per source (`distribution`, `legacy`, `sync`), the legacy count (legacy or unknown boundaries),
 `mixed` when the rides don't share one known set of boundaries, the shared `zones` otherwise,
@@ -141,7 +141,7 @@ all FTP-dependent frontmatter values, cannot be met for legacy rides without a r
 A re-fetch is NOT part of the offline rebuild. The explicit command
 `npm run sync -- --backfill-power` fetches time/watt streams for legacy rides without
 a distribution; `--backfill-hr` does the same with time/heart rate streams for rides with stored HR
-TIZ, and both flags together fetch one request per ride (`scripts/sync/lib/backfill.mjs`). Ride storage
+TIZ, and both flags together fetch one request per ride (`scripts/sync/lib/backfill.ts`). Ride storage
 (`saveDistributions`) replaces only the old TIZ and its basis of each kind
 with the distribution in cache and Markdown, using its existing
 undo journal. Other metrics, location data, ride body and chart streams are kept.
@@ -149,7 +149,7 @@ Successful rides are skipped on resume; without usable measurements
 legacy data is kept. The regular API adapter handles rate limits and retries;
 `--wait` also waits for the daily limit, `--limit=N` caps the number of fetches.
 
-**Offline rebuild:** `npm run sync:rebuild` (`scripts/sync/strava-rebuild.mjs`) imports only ride
+**Offline rebuild:** `npm run sync:rebuild` (`scripts/sync/strava-rebuild.ts`) imports only ride
 storage, ride file and metrics modules, neither auth/geo nor the env loader.
 `npm run sync -- --rebuild` is an alias that runs the same script before env loading and
 online imports. Summary cache metrics are no longer
@@ -178,14 +178,14 @@ overwrites the newer Strava and place fields: review the result
 
 ## Ride storage (Refs #9)
 
-`scripts/sync/lib/ride-storage.mjs::createRideStorage({ root, gear })` binds the
+`scripts/sync/lib/ride-storage.ts::createRideStorage({ root, gear })` binds the
 gear names once and offers `read(id)`, `list()` (ride records with a summary, newest first),
 `save(rec, { streams, streamsAt }?)` and `saveDistributions(id, distributions)`.
 Only these write the ride cache/Markdown/chart streams. The ride file itself – path
 `<year>/<ride date>_<id>.md`, frontmatter, ride body rule, the targeted metrics patch and the
-one frontmatter parser – lives in `scripts/shared/ride-file.mjs`, shared by ride storage, the demo
-generator and the demo readers; `gear-file.mjs` is the separate gear writer.
-The gear names come from athlete storage (`scripts/sync/lib/athlete-storage.mjs`, below):
+one frontmatter parser – lives in `scripts/shared/ride-file.ts`, shared by ride storage, the demo
+generator and the demo readers; `gear-file.ts` is the separate gear writer.
+The gear names come from athlete storage (`scripts/sync/lib/athlete-storage.ts`, below):
 `gear().byId` merges athlete gear and gear cache (cache wins); online,
 available names from `/athlete` and the gear query are added to the same live map. The list is
 collected until then so that `--no-detail --no-streams` also gets complete bike
@@ -220,25 +220,25 @@ the cursor only advances after successful ride saves.
 
 ## Athlete storage
 
-`scripts/sync/lib/athlete-storage.mjs::createAthleteStorage({ root, clock })` owns the athlete-side
+`scripts/sync/lib/athlete-storage.ts::createAthleteStorage({ root, clock })` owns the athlete-side
 files next to ride storage: `src/data/athlete.json` (`writeAthlete`, shape `athleteFile`),
 `src/data/fitness-history.json` (`recordFitness`: appends FTP/weight only when they differ from
 the latest entry, dated with today's local calendar day; shape `historyEntry`),
 `.strava-cache/gear.json` (`gear()`: known gear, 7-day TTL for gear details) and
 `.strava-cache/state.json` (`listCursor()`: newest/oldest listed activity, history paging, list
-complete). The shapes `athleteFile` and `historyEntry` live in `scripts/shared/athlete-file.mjs`,
+complete). The shapes `athleteFile` and `historyEntry` live in `scripts/shared/athlete-file.ts`,
 reused by the demo generator. `runSync`
-(`scripts/sync/lib/sync.mjs`) is a sequence of steps – athlete, activity list, gear, athlete file and
+(`scripts/sync/lib/sync.ts`) is a sequence of steps – athlete, activity list, gear, athlete file and
 history, details and streams, places – with the Strava client, geocoder and clock injected.
 
 Tests use only synthetic caches under `logs/` or the OS temp folder, the shared Strava fake
-(`scripts/sync/lib/strava-fake.mjs`), a local geo fake and the actual `runSync` flow. They compare normal output and rebuild,
+(`scripts/sync/lib/strava-fake.ts`), a local geo fake and the actual `runSync` flow. They compare normal output and rebuild,
 check the context sources, description/body/date change and injected errors at
 stream, Markdown, cache and rename boundaries, including resume.
 
 ## Dashboard and goals (Refs #6)
 
-`src/lib/dashboard-payload.js` is the one seam between the build and the dashboard / ride log
+`src/lib/dashboard-payload.ts` is the one seam between the build and the dashboard / ride log
 islands (`#dash-data`): `encodeDashboard` on the build side, `decodeDashboard` on the island side,
 each the other's inverse, so the round trip is lossless by construction (tested only through these
 two functions). The build pages pass the build dataset's rides (every ride: the islands admit rides by the
@@ -246,7 +246,7 @@ browser's clock), athlete, today's athlete state and goals;
 `use-dashboard.ts` reads the element and runs the dashboard period.
 Encoding selects only the required ride fields,
 without renaming or computation. No segments/polylines, geo only with place names.
-`clsP`/`clsH` contain `zone` and `source`; `src/components/ride/ride-presentation.js` formats display
+`clsP`/`clsH` contain `zone` and `source`; `src/components/ride/ride-presentation.ts` formats display
 text from them. Identical classifications are transferred only once; the exact
 default classification `{zone: null, source: 'none'}` is omitted and restored.
 `tizBasis` is transferred only for the basis with an existing histogram; unknown boundaries
@@ -275,12 +275,12 @@ the dashboard period module passes the final `load` directly to the same `fitnes
 
 ## Build dataset and page payloads
 
-`src/lib/build-dataset.js::createBuildDataset(source, { now })` is the one place the build reads its
+`src/lib/build-dataset.ts::createBuildDataset(source, { now })` is the one place the build reads its
 data from (GLOSSARY "Build dataset"). `source` is a data source adapter: `fileSource()` in
-`src/lib/data.js` reads the synced or the demo data (`selectDataSource`, `astro:content`, the JSON
+`src/lib/data.ts` reads the synced or the demo data (`selectDataSource`, `astro:content`, the JSON
 files in the data folder, chart streams); `memorySource({...})` serves tests with the same shapes,
 validated by the content schemas. `now` is the build clock, read once by `getDataset()` in
-`src/lib/data.js` (cached for all pages); no other build module reads the clock.
+`src/lib/data.ts` (cached for all pages); no other build module reads the clock.
 
 The dataset owns the demo date shift, the athlete timeline (`athleteAt(date)`, `athleteToday`,
 `history`), every ride through the ride module (`rides`, newest first), gear with its totals, goals,
@@ -299,7 +299,7 @@ island's payload type (TypeScript, `src/lib/*-payload.ts`): `ride-payload.ts` (`
 `SegmentPayload`), `performance-payload.ts` (`PerformancePayload`), `year-payload.ts` (`YearsPayload`,
 `YearPayload`) and `map-payload.ts` (`MapViewProps` plus the `#map-data` JSON). The dashboard and the
 ride log encode the dataset with `encodeDashboard`. The `.astro` pages only call the builder and
-render; internal links come from `src/lib/routes.js`. Payload tests run over the in-memory dataset
-(`src/lib/dataset-fixture.js`). TypeScript is not a dependency and the build does not type-check;
+render; internal links come from `src/lib/routes.ts`. Payload tests run over the in-memory dataset
+(`src/lib/dataset-fixture.ts`). TypeScript is not a dependency and the build does not type-check;
 to check the payload modules against the island types, install it without saving
 (`npm i --no-save typescript`) and run `npx tsc --noEmit -p .`.

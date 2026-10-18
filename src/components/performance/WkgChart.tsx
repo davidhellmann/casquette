@@ -2,10 +2,10 @@ import { Area, CartesianGrid, ComposedChart, Line, XAxis, YAxis } from 'recharts
 import { ChartContainer, ChartTooltip, type ChartConfig } from '@/components/ui/chart';
 import { EmptyState } from '@/components/app/EmptyState';
 import { SERIES, niceTicks } from '@/components/charts/series';
-import { monthLabel, monthTick, nf } from '@/scripts/format.js';
-import { t } from '@/i18n/index.js';
+import { monthLabel, monthTick, nf } from '@/scripts/format.ts';
+import { t } from '@/i18n/index.ts';
 import { SeriesLegend, TooltipBox } from '@/components/charts/chart-parts';
-import { hasValues, wkgChartData } from './performance-data.js';
+import { hasValues, wkgChartData } from './performance-data.ts';
 import type { PerformanceMonth } from './PerformanceView';
 
 type Row = ReturnType<typeof wkgChartData>[number];

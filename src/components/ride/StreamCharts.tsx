@@ -3,11 +3,11 @@ import { Area, CartesianGrid, ComposedChart, Line, XAxis, YAxis, usePlotArea } f
 import { ChartContainer, ChartTooltip, type ChartConfig } from '@/components/ui/chart';
 import { EmptyState } from '@/components/app/EmptyState';
 import { SERIES, niceTicks, zoneColor, type SeriesKey } from '@/components/charts/series';
-import { zoneIdx } from '@/training/index.js';
-import { fmtClock, fmtHm, nf } from '@/scripts/format.js';
-import { t } from '@/i18n/index.js';
-import { STREAM_SERIES, streamRows } from '@/lib/chart-streams.js';
-import { zoneBands } from './ride-data.js';
+import { zoneIdx } from '@/training/index.ts';
+import { fmtClock, fmtHm, nf } from '@/scripts/format.ts';
+import { t } from '@/i18n/index.ts';
+import { STREAM_SERIES, streamRows } from '@/lib/chart-streams.ts';
+import { zoneBands } from './ride-data.ts';
 
 type Key = 'watts' | 'hr' | 'cad' | 'kmh' | 'alt';
 type Row = { i: number; t: number; km: number | null } & Partial<Record<Key, number | null>>;

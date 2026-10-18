@@ -3,8 +3,8 @@
  * fitness, power curves and the power profile per year, today's FTP and body weight. Build time.
  */
 import type { PerformancePayload } from '../components/performance/PerformanceView';
-import type { BuildDataset } from './build-dataset.js';
-import { addDays, bestCurve, calendarDay, fitnessSeries, rideDate } from '../training/index.js';
+import type { BuildDataset } from './build-dataset.ts';
+import { addDays, bestCurve, calendarDay, fitnessSeries, rideDate } from '../training/index.ts';
 
 /** Ride → input for the fitness series (ride date, as on the dashboard). */
 const fitnessInput = (r) => ({ day: rideDate(r), tss: r.load });

@@ -1,5 +1,5 @@
 import * as React from "react"
-import { t } from "@/i18n/index.js"
+import { t } from "@/i18n/index.ts"
 import { cn } from "cn"
 import { ChevronRight, MoreHorizontal } from "lucide-react"
 import { Slot } from "radix-ui"

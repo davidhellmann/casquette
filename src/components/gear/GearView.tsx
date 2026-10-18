@@ -6,8 +6,8 @@ import { KpiCard } from '@/components/app/KpiCard';
 import { Figure } from '@/components/app/KeyFigures';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { fmtIso, nf } from '@/scripts/format.js';
-import { t } from '@/i18n/index.js';
+import { fmtIso, nf } from '@/scripts/format.ts';
+import { t } from '@/i18n/index.ts';
 import { BikesPerYearChart, YearBars } from './GearCharts';
 import { useIslandReady } from '@/lib/island-ready';
 

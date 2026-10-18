@@ -4,10 +4,10 @@
  */
 import type { SegmentsPayload } from '../components/segments/SegmentsView';
 import type { SegmentPayload } from '../components/segments/SegmentView';
-import type { BuildDataset } from './build-dataset.js';
-import { segmentUrl } from './strava-links.js';
-import { rideDate } from '../training/index.js';
-import { t } from '../i18n/index.js';
+import type { BuildDataset } from './build-dataset.ts';
+import { segmentUrl } from './strava-links.ts';
+import { rideDate } from '../training/index.ts';
+import { t } from '../i18n/index.ts';
 
 /** Segments with their own page: ridden at least twice. */
 const hasPage = (g) => g.n >= 2;

@@ -1,6 +1,6 @@
 import { cn } from 'cn';
-import { fmtIso, nf } from '@/scripts/format.js';
-import { t } from '@/i18n/index.js';
+import { fmtIso, nf } from '@/scripts/format.ts';
+import { t } from '@/i18n/index.ts';
 
 /** PR rank at the time of the ride (1–3); rank 1 highlighted. */
 export function PrRank({ rank }: { rank: number | null | undefined }) {

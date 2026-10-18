@@ -1,7 +1,7 @@
 import { ChartCard } from '@/components/app/ChartCard';
 import { CalendarLegend, CalendarStats, TrainingCalendar } from '@/components/charts/TrainingCalendar';
-import { t } from '@/i18n/index.js';
-import { calendarDays, calendarMonths, calendarStats } from './calendar-data.js';
+import { t } from '@/i18n/index.ts';
+import { calendarDays, calendarMonths, calendarStats } from './calendar-data.ts';
 
 /** Training calendar of the last 52 weeks (colour = training load) – independent of the period. */
 export function CalendarCard({ D }: { D: any }) {

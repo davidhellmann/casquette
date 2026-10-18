@@ -4,11 +4,11 @@ import { ChartCard } from '@/components/app/ChartCard';
 import { EmptyState } from '@/components/app/EmptyState';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { nf } from '@/scripts/format.js';
-import { t } from '@/i18n/index.js';
+import { nf } from '@/scripts/format.ts';
+import { t } from '@/i18n/index.ts';
 import { YearsChart } from './YearsChart';
 import { useIslandReady } from '@/lib/island-ready';
-import { routes } from '@/lib/routes.js';
+import { routes } from '@/lib/routes.ts';
 
 /** One year on /years (src/lib/year-payload.ts). */
 export interface YearSummary {

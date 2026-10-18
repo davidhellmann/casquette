@@ -1,5 +1,5 @@
 import { expect, test } from './fixtures';
-import { pageTitle, t } from '../src/i18n/index.js';
+import { pageTitle, t } from '../src/i18n/index.ts';
 import { DETAIL_PAGES, firstLink } from './pages';
 
 // Every page's document title, its one <h1> and the sidebar come from the i18n strings (#26

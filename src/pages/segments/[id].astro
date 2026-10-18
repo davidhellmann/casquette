@@ -1,7 +1,7 @@
 ---
 import Base from '../../layouts/Base.astro';
 import { SegmentView } from '../../components/segments/SegmentView';
-import { getDataset } from '../../lib/data.js';
+import { getDataset } from '../../lib/data.ts';
 import { segmentPageIds, segmentPayload } from '../../lib/segment-payload.ts';
 
 export async function getStaticPaths() {

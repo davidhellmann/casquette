@@ -2,7 +2,7 @@
 import Base from '../../layouts/Base.astro';
 import { render } from 'astro:content';
 import { GearDetailView } from '../../components/gear/GearDetailView';
-import { getDataset } from '../../lib/data.js';
+import { getDataset } from '../../lib/data.ts';
 import { gearPayload } from '../../lib/gear-payload.ts';
 
 export async function getStaticPaths() {

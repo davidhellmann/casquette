@@ -29,8 +29,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 // Clickable rows: pointer, and a thin pink edge on the first cell while hovered or keyboard-focused (an inset line, not a shadow).
 const ROW_LINK = 'cursor-pointer [&>td:first-child]:transition-shadow [&:hover>td:first-child]:shadow-[inset_3px_0_0_var(--brand)] [&:focus-within>td:first-child]:shadow-[inset_3px_0_0_var(--brand)]';
-import { fmtMonthYear } from '@/scripts/format.js';
-import { t } from '@/i18n/index.js';
+import { fmtMonthYear } from '@/scripts/format.ts';
+import { t } from '@/i18n/index.ts';
 import { SegmentedToggle } from './SegmentedToggle';
 import { groupRows, type GroupBy, type RowGroup } from './table-groups';
 import { useStored } from './use-stored';

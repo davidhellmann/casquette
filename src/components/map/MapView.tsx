@@ -6,9 +6,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CardLabel } from '@/components/app/CardLabel';
-import { nf } from '@/scripts/format.js';
-import { t } from '@/i18n/index.js';
-import { ALL, NO_GEO, filterRoutes, geoFromUrl, geoMatch, geoToUrl, placesBrowser, prepareRoutes } from './map-data.js';
+import { nf } from '@/scripts/format.ts';
+import { t } from '@/i18n/index.ts';
+import { ALL, NO_GEO, filterRoutes, geoFromUrl, geoMatch, geoToUrl, placesBrowser, prepareRoutes } from './map-data.ts';
 import { PlacesPanel, type Geo, type PlacesTab } from './PlacesPanel';
 import { NO_BIKE_COLOR } from '@/components/charts/categories';
 import { RouteMap, type ColourMode, type Route } from './RouteMap';

@@ -1,5 +1,5 @@
 import * as React from "react"
-import { t } from "@/i18n/index.js"
+import { t } from "@/i18n/index.ts"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "cn"
 import { PanelLeftIcon } from "lucide-react"

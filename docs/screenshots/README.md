@@ -29,10 +29,10 @@ npm run screenshots                # overwrites docs/screenshots/*.webp
 - With your own rides synced, build the demo explicitly and serve it in the foreground (`astro preview` detaches when not run in a terminal):
   ```sh
   DATA_SOURCE=demo npx astro build --outDir dist-e2e
-  PORT=4399 node e2e/serve.mjs       # terminal 1
+  PORT=4399 node e2e/serve.ts       # terminal 1
   npm run screenshots -- --url http://localhost:4399
   ```
 
-The script (`scripts/site/screenshots.mjs`) refuses to run unless the page shows the demo indicator (`[data-demo-note]`), so real data can never end up in a screenshot. Before capturing it waits for fonts, hydrated React islands, the drawn charts and OpenStreetMap tiles, then waits a moment for late layout (responsive charts re-measuring, Leaflet's tile fade-in – the charts themselves don't animate), so it needs network access. Browser, privacy guard and readiness are shared with the UI fragments (`scripts/site/lib/capture.mjs`). Views and framing live in `scripts/site/lib/screenshots.mjs`: close-ups scroll to a `data-testid` hook (`ride-streams`, `dash-intensity`). The ride and the year are picked from the demo dataset as the preview shows it – its dates moved forward to today (`scripts/site/lib/demo-dataset.mjs`).
+The script (`scripts/site/screenshots.ts`) refuses to run unless the page shows the demo indicator (`[data-demo-note]`), so real data can never end up in a screenshot. Before capturing it waits for fonts, hydrated React islands, the drawn charts and OpenStreetMap tiles, then waits a moment for late layout (responsive charts re-measuring, Leaflet's tile fade-in – the charts themselves don't animate), so it needs network access. Browser, privacy guard and readiness are shared with the UI fragments (`scripts/site/lib/capture.ts`). Views and framing live in `scripts/site/lib/screenshots.ts`: close-ups scroll to a `data-testid` hook (`ride-streams`, `dash-intensity`). The ride and the year are picked from the demo dataset as the preview shows it – its dates moved forward to today (`scripts/site/lib/demo-dataset.ts`).
 
 The website shows real UI instead of these screenshots: static fragments of the demo build (`npm run fragments`), see [`website/ui/README.md`](../../website/ui/README.md).

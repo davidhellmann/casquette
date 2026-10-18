@@ -3,7 +3,7 @@ import { THEME_EVENT } from '@/lib/theme.ts';
 
 /**
  * Shared Leaflet setup of the map islands (route map, ride map, segment map): loads Leaflet
- * (`src/scripts/map.js`) on the client, creates the map with OSM tiles and attribution, keeps its
+ * (`src/scripts/map.ts`) on the client, creates the map with OSM tiles and attribution, keeps its
  * size in sync with the container and re-renders on theme changes.
  */
 
@@ -27,7 +27,7 @@ export function useLeaflet<T extends object = {}>(el: React.RefObject<HTMLDivEle
 
   React.useEffect(() => {
     let map: any, ro: ResizeObserver | undefined, gone = false;
-    import('@/scripts/map.js').then(({ L, addTiles }) => {
+    import('@/scripts/map.ts').then(({ L, addTiles }) => {
       if (gone || !el.current) return;
       map = L.map(el.current, { zoomControl: true, attributionControl: true, preferCanvas: canvas, scrollWheelZoom: !scrollZoomOnClick });
       addTiles(map);

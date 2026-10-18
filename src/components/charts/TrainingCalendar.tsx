@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { cn } from 'cn';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { t } from '@/i18n/index.js';
+import { t } from '@/i18n/index.ts';
 
 /** One ride of a day with several rides – an entry of the cell's menu. */
 export interface CalendarRide {

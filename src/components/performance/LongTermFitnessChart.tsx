@@ -2,10 +2,10 @@ import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { ChartContainer, ChartTooltip, type ChartConfig } from '@/components/ui/chart';
 import { EmptyState } from '@/components/app/EmptyState';
 import { SERIES, niceTicks } from '@/components/charts/series';
-import { fmtIso, nf, fmtMonthYearShort } from '@/scripts/format.js';
-import { t } from '@/i18n/index.js';
+import { fmtIso, nf, fmtMonthYearShort } from '@/scripts/format.ts';
+import { t } from '@/i18n/index.ts';
 import { TooltipBox } from '@/components/charts/chart-parts';
-import { longTermFitnessData } from './performance-data.js';
+import { longTermFitnessData } from './performance-data.ts';
 
 type Row = ReturnType<typeof longTermFitnessData>[number];
 

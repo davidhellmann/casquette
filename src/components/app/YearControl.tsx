@@ -1,8 +1,8 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { t } from '@/i18n/index.js';
-import { routes } from '@/lib/routes.js';
+import { t } from '@/i18n/index.ts';
+import { routes } from '@/lib/routes.ts';
 
 /** The year review's place among all years (page header of /years/<year>). */
 export interface YearSwitch {

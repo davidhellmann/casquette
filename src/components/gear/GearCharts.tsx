@@ -4,8 +4,8 @@ import { EmptyState } from '@/components/app/EmptyState';
 import { SERIES, barRadius, niceTicks } from '@/components/charts/series';
 import { SeriesLegend, TooltipBox } from '@/components/charts/chart-parts';
 import { terrainColor } from '@/components/charts/categories';
-import { curveLabel, monthLabel, monthTick, nf } from '@/scripts/format.js';
-import { t } from '@/i18n/index.js';
+import { curveLabel, monthLabel, monthTick, nf } from '@/scripts/format.ts';
+import { t } from '@/i18n/index.ts';
 
 const DISTANCE = SERIES.distance.color;
 

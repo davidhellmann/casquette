@@ -2,9 +2,9 @@ import * as React from 'react';
 import { Heart, Zap } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SegmentedToggle } from './SegmentedToggle';
-import { PERIODS } from '@/dashboard-period/index.js';
-import { PERIOD_EVENT, readPeriod, writePeriod } from '@/lib/period-store.js';
-import { t } from '@/i18n/index.js';
+import { PERIODS } from '@/dashboard-period/index.ts';
+import { PERIOD_EVENT, readPeriod, writePeriod } from '@/lib/period-store.ts';
+import { t } from '@/i18n/index.ts';
 
 type Period = { days: number; basis: 'power' | 'hr' };
 

@@ -1,5 +1,5 @@
 import { cn } from 'cn';
-import { DECOUPLING_SCALE } from './ride-presentation.js';
+import { DECOUPLING_SCALE } from './ride-presentation.ts';
 
 /** Tick labels under a decoupling bar: 0 %, the stable and drift limits, the end of the scale. Decorative. */
 export function DecouplingScale({ className }: { className?: string }) {

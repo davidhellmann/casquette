@@ -4,14 +4,14 @@
  */
 import type { GearPayload } from '../components/gear/GearView';
 import type { GearDetailPayload, GearRecord } from '../components/gear/GearDetailView';
-import type { BuildDataset } from './build-dataset.js';
-import { routes } from './routes.js';
-import { gearUrl } from './strava-links.js';
-import { rideRows } from '../components/rides/ride-list.js';
-import { avgOutdoorSpeed, kmPerBikeAndYear, kmPerMonth, kmPerTerrain, kmPerYear } from '../components/gear/gear-data.js';
+import type { BuildDataset } from './build-dataset.ts';
+import { routes } from './routes.ts';
+import { gearUrl } from './strava-links.ts';
+import { rideRows } from '../components/rides/ride-list.ts';
+import { avgOutdoorSpeed, kmPerBikeAndYear, kmPerMonth, kmPerTerrain, kmPerYear } from '../components/gear/gear-data.ts';
 import { bikeColors } from '../components/charts/categories';
-import { bestCurve, calendarDate, calendarDay, records } from '../training/index.js';
-import { t } from '../i18n/index.js';
+import { bestCurve, calendarDate, calendarDay, records } from '../training/index.ts';
+import { t } from '../i18n/index.ts';
 
 const YEAR_MS = 365 * 86400000;
 /** The purchase day as written: a string keeps its written day, a YAML date (UTC midnight) its UTC day; null if invalid. */

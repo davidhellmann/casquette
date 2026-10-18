@@ -1,6 +1,6 @@
 import { ArrowDownRight, ArrowUpRight, Minus } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { nf } from '@/scripts/format.js';
+import { nf } from '@/scripts/format.ts';
 import { cn } from 'cn';
 
 /**

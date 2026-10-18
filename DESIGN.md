@@ -59,7 +59,7 @@ shadcn charts on Recharts (`ChartContainer` + `ChartConfig`, `src/components/ui/
   - `stepAfter` – FTP, weight, best so far.
 - **Bars:** `barRadius(count)` – rounded tops when they stand alone, square when dense (≥ 60).
 - **Lines:** no dots at rest (`dot={false}`), one `activeDot` on hover. Primary line 2–2.25 px with a soft gradient fill when it stands alone; references and comparisons 1.25–1.5 px.
-- **Zone-coloured lines** (power and heart-rate streams): one path, stroked and filled with a vertical gradient in plot coordinates that has a hard stop at every zone boundary of the value axis (`zoneBands()` in `ride/ride-data.js`, `ZoneGradient` in `ride/StreamCharts.tsx`) – every value in its zone colour, no split paths, no extra cost per point.
+- **Zone-coloured lines** (power and heart-rate streams): one path, stroked and filled with a vertical gradient in plot coordinates that has a hard stop at every zone boundary of the value axis (`zoneBands()` in `ride/ride-data.ts`, `ZoneGradient` in `ride/StreamCharts.tsx`) – every value in its zone colour, no split paths, no extra cost per point.
 - **Scatter:** one dot per ride/attempt, small, `--card` stroke, visible at rest.
 - **Axes:** `niceTicks(min, max)`, `CartesianGrid vertical={false} stroke="var(--grid)"`, small muted tick text.
 - **Legend and tooltip:** `SeriesLegend` above the chart (`aria-hidden`), `TooltipBox` as tooltip body (`src/components/charts/chart-parts.tsx`).
@@ -70,7 +70,7 @@ shadcn charts on Recharts (`ChartContainer` + `ChartConfig`, `src/components/ui/
 
 One look for every `DataTable` (`app/DataTable.tsx`); ride lists add two options on top. Reference: `rides/ride-columns.tsx`.
 
-- **Ride lists** (ride log, recent rides, a year's and a bike's rides) are one composite, `RideList` (`rides/RideList.tsx`): it owns the table setup (columns, row id and link, search by name and place, tiles, grouping, summary). Rows come from `rideRows(rides, { basis })` (`rides/ride-list.js`) – the same fields everywhere (places, zone and its source, fueling); build pages pass them as island props (dates stay Dates).
+- **Ride lists** (ride log, recent rides, a year's and a bike's rides) are one composite, `RideList` (`rides/RideList.tsx`): it owns the table setup (columns, row id and link, search by name and place, tiles, grouping, summary). Rows come from `rideRows(rides, { basis })` (`rides/ride-list.ts`) – the same fields everywhere (places, zone and its source, fueling); build pages pass them as island props (dates stay Dates).
 
 - **Base style:** header labels small uppercase mono, muted; rows separated by a thin hairline (`border-border/70`) – no zebra, no card per row; comfortable height (`py-2.5`). Sortable headers. Numbers right-aligned, tabular.
 - **Hover:** a linked row takes the panel fill (`bg-background` on the card), the pointer cursor and a thin pink edge on its left (3 px inset line on the first cell, `--brand`; also on keyboard focus) – calm, no movement.
@@ -112,10 +112,10 @@ Look here first. If something fits 80 %, extend it rather than writing a second 
 | Time in zones, zone bars | `TimeInZones` (stored seconds), `ZoneBars` (rows), `ZoneLabel`, `Bar`, `ShareStrip` | `charts/ZoneBars.tsx` |
 | Training calendar | `TrainingCalendar` + `CalendarStats` + `CalendarLegend` (a day with several rides opens a `DropdownMenu` to choose one) | `charts/TrainingCalendar.tsx` |
 | Gauge, share ring | `FormGauge`, `PolarizationRing` | `charts/` |
-| Table | `DataTable` + `dataTableColumns<Row>()`, `numeric()`, `numSort`; ride lists: `RideList` + `rideRows()` (built on `rideColumns()`, `rideGrouping()`, `rideTiles()`, `WithUnit` – see Tables) | `app/DataTable.tsx`, `app/table-groups.ts`, `rides/RideList.tsx`, `rides/ride-list.js`, `rides/ride-columns.tsx` |
-| A ride's classification, TIZ basis, decoupling as text and tones | `rideClassification()`, `tizBasisLabel()`, `rideTimeInZones()`, `rideDecoupling()` + `DecouplingScale` (one scale, 0 – 1.5 × the drift limit), `zoneBg()`, `toneBg()`, `ZoneBadge` | `ride/ride-presentation.js`, `ride/DecouplingScale.tsx`, `rides/ride-columns.tsx` |
-| A ride's streams | `useChartStreams(id)` (loads once per page), `streamRows()` (downsampled, optionally smoothed rows), `rollingMean()` | `app/use-chart-streams.ts`, `src/lib/chart-streams.js` |
-| Internal links | `routes.ride(id)`, `.gear()`, `.year()`, `.segment()`, `.map({ country, place })`, `.rides()`, `.streams()` – never build paths by hand | `src/lib/routes.js` |
+| Table | `DataTable` + `dataTableColumns<Row>()`, `numeric()`, `numSort`; ride lists: `RideList` + `rideRows()` (built on `rideColumns()`, `rideGrouping()`, `rideTiles()`, `WithUnit` – see Tables) | `app/DataTable.tsx`, `app/table-groups.ts`, `rides/RideList.tsx`, `rides/ride-list.ts`, `rides/ride-columns.tsx` |
+| A ride's classification, TIZ basis, decoupling as text and tones | `rideClassification()`, `tizBasisLabel()`, `rideTimeInZones()`, `rideDecoupling()` + `DecouplingScale` (one scale, 0 – 1.5 × the drift limit), `zoneBg()`, `toneBg()`, `ZoneBadge` | `ride/ride-presentation.ts`, `ride/DecouplingScale.tsx`, `rides/ride-columns.tsx` |
+| A ride's streams | `useChartStreams(id)` (loads once per page), `streamRows()` (downsampled, optionally smoothed rows), `rollingMean()` | `app/use-chart-streams.ts`, `src/lib/chart-streams.ts` |
+| Internal links | `routes.ride(id)`, `.gear()`, `.year()`, `.segment()`, `.map({ country, place })`, `.rides()`, `.streams()` – never build paths by hand | `src/lib/routes.ts` |
 | Map | `useLeaflet` hook; `withColors()` to resolve tokens for Leaflet's canvas | `map/use-leaflet.ts` |
 | Primitives | shadcn: Badge, Breadcrumb, Button, Collapsible, DropdownMenu, Input, Select, Separator, Sheet, Sidebar, Skeleton, Table, Tabs, ToggleGroup, Tooltip, Chart (owned – edit freely; add more with `npx shadcn@latest add <name>`) | `src/components/ui/` |
 
@@ -125,7 +125,7 @@ Look here first. If something fits 80 %, extend it rather than writing a second 
 
 1. `src/pages/<name>.astro`: load build-time data, render `<Base title={…} active="…">` with one React view island (`client:load`). Small data as props; large data as one `<script type="application/json">` read on the client.
 2. View in `src/components/<name>/`: `<h1>` (visible or `sr-only`) → KPI row `grid grid-cols-2 gap-3 xl:grid-cols-4` → main chart → card grid `grid gap-3 lg:grid-cols-12` → tables. Computations live in a pure `*-data.js` next to the view or in the domain modules; components only present.
-3. Add the sidebar entry in `app/nav.ts`, strings in `src/i18n/en.js`, an e2e spec in `e2e/`.
+3. Add the sidebar entry in `app/nav.ts`, strings in `src/i18n/en.ts`, an e2e spec in `e2e/`.
 
 **New card** – `ChartCard` (or `Card` + `CardLabel`) inside the view's `gap-3` grid. Figures via `Row`/`Figure`, no data via `EmptyState`.
 
@@ -135,8 +135,8 @@ Look here first. If something fits 80 %, extend it rather than writing a second 
 
 ## Language & numbers
 
-- No hard-coded UI strings, aria labels or tooltips: keys in `src/i18n/en.js`, read via `t()` / `LOCALE` from `src/i18n/index.js`.
-- Numbers via `nf(value, dec)` (locale separators, `–` for missing); durations `fmtDur` / `fmtClock` / `fmtHm`; dates via the named helpers in `src/scripts/format.js`. Never `toFixed` or `toLocaleDateString` options in a component – add a helper.
+- No hard-coded UI strings, aria labels or tooltips: keys in `src/i18n/en.ts`, read via `t()` / `LOCALE` from `src/i18n/index.ts`.
+- Numbers via `nf(value, dec)` (locale separators, `–` for missing); durations `fmtDur` / `fmtClock` / `fmtHm`; dates via the named helpers in `src/scripts/format.ts`. Never `toFixed` or `toLocaleDateString` options in a component – add a helper.
 - Units small and muted next to the value (`km`, `m`, `W`, `bpm`, `TSS`, `W/kg`).
 
 ## Accessibility
@@ -151,18 +151,18 @@ Look here first. If something fits 80 %, extend it rather than writing a second 
 ## Dark mode
 
 - Class-based: `.dark` on `<html>`, set before first paint by the inline script in `Base.astro` (`localStorage rc_theme`: `light` | `dark` | `auto`, none = light – the app reads best in light; the website keeps its own `rc_site_theme`, dark by default); `src/lib/theme.ts` switches it and announces `app:theme`.
-- Every token has a dark value (`src/styles/tokens.test.js` fails otherwise); tokens that alias another token (`--category-1: var(--brand)`) follow it. Data colours are lighter on navy.
+- Every token has a dark value (`src/styles/tokens.test.ts` fails otherwise); tokens that alias another token (`--category-1: var(--brand)`) follow it. Data colours are lighter on navy.
 - Charts use `var(--token)` and re-colour without a rebuild. No `getComputedStyle` colour reads – except `withColors()` for Leaflet's canvas.
 
 ## Brand
 
-- **Name:** Casquette (the classic cotton cycling cap) – always with a capital C, never abbreviated. It comes from `t('app.name')`; page titles from `pageTitle()` (`src/i18n/index.js`) → "Rides · Casquette". The npm package is `casquette`.
+- **Name:** Casquette (the classic cotton cycling cap) – always with a capital C, never abbreviated. It comes from `t('app.name')`; page titles from `pageTitle()` (`src/i18n/index.ts`) → "Rides · Casquette". The npm package is `casquette`.
 - **The logo – "cap on the c":** the word "casquette" set in Damion (SIL OFL) exactly as the font draws it – real text, no outlines, no redrawing – followed by a full stop in `--brand`, with the cap resting tilted (−19°) on the "c". This is the owner-approved logo; it is used everywhere the name is shown as a logo (sidebar header, README header, OG image). Damion is self-hosted through the Astro Fonts API (`--font-damion`, utility `font-logo`) and used for nothing else.
-- **Mark – the cap:** the original cap sketch "f": a cotton cycling cap in three-quarter view, peak down, one line with round caps and joins, no fills (viewBox `-2 -2 48 36`, stroke 2.4, stripe × 1.3). Outline in ink (`currentColor`: ink on grey, light ink on navy), the one stripe on the crown in `--brand`. In the logo the cap is 0.936 em wide; its position follows the approved formula, `capPlacement()` in `src/lib/brand.js` (static em offsets from Damion's metrics, so it scales with the font size and never shifts after load). The cap stands alone in the collapsed sidebar and as the favicon/app icon (heavier stroke at 16/32 px).
+- **Mark – the cap:** the original cap sketch "f": a cotton cycling cap in three-quarter view, peak down, one line with round caps and joins, no fills (viewBox `-2 -2 48 36`, stroke 2.4, stripe × 1.3). Outline in ink (`currentColor`: ink on grey, light ink on navy), the one stripe on the crown in `--brand`. In the logo the cap is 0.936 em wide; its position follows the approved formula, `capPlacement()` in `src/lib/brand.ts` (static em offsets from Damion's metrics, so it scales with the font size and never shifts after load). The cap stands alone in the collapsed sidebar and as the favicon/app icon (heavier stroke at 16/32 px).
 - **Clear space and size:** keep at least the cap's stripe-to-peak distance (≈ ½ the cap height) free around the logo; cap ≥ 16 px wide, logo font size ≥ 24 px.
 - **Tiles:** app icon and favicon put the cap on a solid tile – ink in light contexts, navy in dark ones (the favicon switches with `prefers-color-scheme`), outline light, stripe `#ff5c9c`. The apple-touch icon is full-bleed (iOS rounds it).
 - ✅ Ink/light-ink outline, pink stripe and full stop only. ❌ No recolouring the outline pink, no second stripe, no outlines/shadows/gradients, no stretching, no other font for the word and no redrawn letters or cap, no moving the cap off the formula, no logo on busy backgrounds.
-- **One source:** cap paths, word and placement live in `src/lib/brand.js`; `AppLogo` / `AppMark` (`src/components/app/AppMark.tsx`) render them in the UI (the sidebar's home link, accessible name "Casquette – home"). `npm run brand` regenerates every static asset from it: `public/favicon.svg`, `brand/casquette-icon-{light,dark}.svg` (cap alone) and – rendered with the local Chromium from HTML that loads Damion (`@fontsource/damion`) – `public/apple-touch-icon.png`, `public/og.png` and `brand/casquette-logo-{light,dark}.png` (README header; PNG because GitHub doesn't load web fonts in SVG). `src/brand.test.js` fails when an asset is out of date (`brand/png-sources.json` fingerprints the PNG sources). Earlier directions (Cells, Curve, Monogram, the cap sketch, the unrefined Damion setting) are kept with previews in `brand/explorations/`. The promo website (`website/`, no build) carries copies: the palette as tokens in `website/site.css`, the logo as markup + static em offsets (checked against `brand.js` by `src/brand.test.js`), Damion in `website/fonts/`, and its favicon, apple-touch icon and OG image, which `npm run brand` writes/copies there too.
+- **One source:** cap paths, word and placement live in `src/lib/brand.ts`; `AppLogo` / `AppMark` (`src/components/app/AppMark.tsx`) render them in the UI (the sidebar's home link, accessible name "Casquette – home"). `npm run brand` regenerates every static asset from it: `public/favicon.svg`, `brand/casquette-icon-{light,dark}.svg` (cap alone) and – rendered with the local Chromium from HTML that loads Damion (`@fontsource/damion`) – `public/apple-touch-icon.png`, `public/og.png` and `brand/casquette-logo-{light,dark}.png` (README header; PNG because GitHub doesn't load web fonts in SVG). `src/brand.test.ts` fails when an asset is out of date (`brand/png-sources.json` fingerprints the PNG sources). Earlier directions (Cells, Curve, Monogram, the cap sketch, the unrefined Damion setting) are kept with previews in `brand/explorations/`. The promo website (`website/`, no build) carries copies: the palette as tokens in `website/site.css`, the logo as markup + static em offsets (checked against `brand.ts` by `src/brand.test.ts`), Damion in `website/fonts/`, and its favicon, apple-touch icon and OG image, which `npm run brand` writes/copies there too.
 
 ## Do / Don't
 

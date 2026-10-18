@@ -7,7 +7,7 @@ import { AppLogo, AppMark } from './AppMark';
 import { ThemeMenu } from './ThemeMenu';
 import { NavSubmenu, RESTORE_SUBMENUS } from './NavSubmenu';
 import { NAV_GROUPS, BASE, navHref, type NavKey, type NavSubmenus } from './nav';
-import { t } from '@/i18n/index.js';
+import { t } from '@/i18n/index.ts';
 
 // Runs while the HTML is parsed, right after the sidebar element: applies a stored "collapsed"
 // before the first paint, so the static (expanded) HTML never flashes. React adopts it after hydration.
@@ -23,7 +23,7 @@ export interface AppSidebarProps {
   submenus?: NavSubmenus;
   /** Path of the current page (marks the current submenu entry). */
   path?: string;
-  /** Legal notice and privacy policy of the hosting website (PUBLIC_LEGAL_URL, src/lib/legal-links.js); none without. */
+  /** Legal notice and privacy policy of the hosting website (PUBLIC_LEGAL_URL, src/lib/legal-links.ts); none without. */
   legal?: { notice: string; privacy: string };
 }
 

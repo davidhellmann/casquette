@@ -33,7 +33,7 @@ What the build does:
 
 It reads only the process environment, never a `.env` file. Values are public once deployed, but keep them out of the repository: set them as repository variables of the deploy.
 
-The custom events Cabin counts are the `data-cabin-event` attributes in `index.html`: *See the demo*, *Open GitHub*, *Copy clone command*, *Copy demo command*, *Copy connect command* and *Copy sync command*. The privacy policy lists the same names; a unit test (`scripts/site/lib/site-template.test.js`) checks that both agree. When you add an event, add it to the policy too. Keep the names fixed and free of personal data.
+The custom events Cabin counts are the `data-cabin-event` attributes in `index.html`: *See the demo*, *Open GitHub*, *Copy clone command*, *Copy demo command*, *Copy connect command* and *Copy sync command*. The privacy policy lists the same names; a unit test (`scripts/site/lib/site-template.test.ts`) checks that both agree. When you add an event, add it to the policy too. Keep the names fixed and free of personal data.
 
 ### In the deploy (#54)
 

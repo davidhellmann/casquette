@@ -1,7 +1,7 @@
 import { EmptyState } from '@/components/app/EmptyState';
-import { POWER_ZONE_NAMES, HR_ZONE_NAMES } from '@/training/index.js';
-import { fmtDur, nf, zr } from '@/scripts/format.js';
-import { t } from '@/i18n/index.js';
+import { POWER_ZONE_NAMES, HR_ZONE_NAMES } from '@/training/index.ts';
+import { fmtDur, nf, zr } from '@/scripts/format.ts';
+import { t } from '@/i18n/index.ts';
 import { zoneColor } from './series';
 
 export interface ZoneRow { zone: number; name: string; range: string; sec: number }

@@ -5,14 +5,14 @@
  */
 import type { RidePayload } from '../components/ride/RideView';
 import type { LatLng } from '../components/ride/RideMap';
-import type { BuildDataset } from './build-dataset.js';
-import { routes } from './routes.js';
-import { activityUrl, segmentUrl } from './strava-links.js';
-import { rideClassification, tizBasisLabel } from '../components/ride/ride-presentation.js';
-import { decodePolyline } from '../scripts/polyline.js';
-import { curveLabel, fmtLongDate, fmtTime } from '../scripts/format.js';
-import { bestCurve, fuel } from '../training/index.js';
-import { t } from '../i18n/index.js';
+import type { BuildDataset } from './build-dataset.ts';
+import { routes } from './routes.ts';
+import { activityUrl, segmentUrl } from './strava-links.ts';
+import { rideClassification, tizBasisLabel } from '../components/ride/ride-presentation.ts';
+import { decodePolyline } from '../scripts/polyline.ts';
+import { curveLabel, fmtLongDate, fmtTime } from '../scripts/format.ts';
+import { bestCurve, fuel } from '../training/index.ts';
+import { t } from '../i18n/index.ts';
 
 const watts = (best: Record<string, { w: number }>) => Object.fromEntries(Object.entries(best).map(([k, v]) => [k, v.w]));
 const pick = (o: Record<string, any>, keys: string[]): any => Object.fromEntries(keys.map((k) => [k, o[k] ?? null]));

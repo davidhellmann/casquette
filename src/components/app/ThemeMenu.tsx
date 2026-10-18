@@ -3,7 +3,7 @@ import { Monitor, Moon, Sun } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { SidebarMenuButton } from '@/components/ui/sidebar';
 import { DEFAULT_THEME, followSystemTheme, readThemePreference, setThemePreference, type ThemePreference } from '@/lib/theme';
-import { t } from '@/i18n/index.js';
+import { t } from '@/i18n/index.ts';
 
 const ICONS = { light: Sun, dark: Moon, auto: Monitor } as const;
 const PREFS: ThemePreference[] = ['light', 'dark', 'auto'];

@@ -4,9 +4,9 @@ import { EmptyState } from '@/components/app/EmptyState';
 import { useDashboard } from '@/components/dashboard/use-dashboard';
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { t } from '@/i18n/index.js';
+import { t } from '@/i18n/index.ts';
 import { RideList } from './RideList';
-import { rideRows } from './ride-list.js';
+import { rideRows } from './ride-list.ts';
 import { useIslandReady } from '@/lib/island-ready';
 
 /** Ride log (new UI): every ride of the period chosen in the page header – sortable, searchable, paged. */

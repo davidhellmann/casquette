@@ -1,8 +1,8 @@
 import { ExternalLink } from 'lucide-react';
 import { cn } from 'cn';
 import { DataTable, dataTableColumns, numeric, numSort, type DataTableColumn } from '@/components/app/DataTable';
-import { fmtClock, nf } from '@/scripts/format.js';
-import { t } from '@/i18n/index.js';
+import { fmtClock, nf } from '@/scripts/format.ts';
+import { t } from '@/i18n/index.ts';
 
 export interface Lap {
   index: number; name: string | null; distance: number | null; moving_time: number | null; average_speed: number | null;

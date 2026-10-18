@@ -1,11 +1,11 @@
 /**
  * The logo, the only place it comes from in the UI. AppLogo: "casquette." set in Damion (real text,
  * font via the Astro Fonts API) with the cap resting on the "c"; AppMark: the cap alone.
- * Geometry and placement: src/lib/brand.js (also the source of the favicon and icons). Rules: DESIGN.md → Brand.
+ * Geometry and placement: src/lib/brand.ts (also the source of the favicon and icons). Rules: DESIGN.md → Brand.
  * Ink follows `currentColor`, the stripe and the full stop are `--brand`.
  */
 import type { CSSProperties } from 'react';
-import { CAP, WORDMARK, capPlacement } from '@/lib/brand.js';
+import { CAP, WORDMARK, capPlacement } from '@/lib/brand.ts';
 import { cn } from 'cn';
 
 function Cap({ className, style, slot }: { className?: string; style?: CSSProperties; slot?: string }) {

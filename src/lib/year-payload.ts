@@ -4,14 +4,14 @@
  */
 import type { YearPayload } from '../components/years/YearView';
 import type { YearsPayload } from '../components/years/YearsView';
-import type { BuildDataset } from './build-dataset.js';
-import { routes } from './routes.js';
-import { yearData, MONTHS, MONTHS_L, WEEKDAYS } from './years.js';
-import { POWER_ZONE_NAMES, yearTotals } from '../training/index.js';
-import { yearCalendar } from './year-calendar.js';
-import { rideRows } from '../components/rides/ride-list.js';
-import { nf, fmtDateL, fmtTime } from '../scripts/format.js';
-import { t } from '../i18n/index.js';
+import type { BuildDataset } from './build-dataset.ts';
+import { routes } from './routes.ts';
+import { yearData, MONTHS, MONTHS_L, WEEKDAYS } from './years.ts';
+import { POWER_ZONE_NAMES, yearTotals } from '../training/index.ts';
+import { yearCalendar } from './year-calendar.ts';
+import { rideRows } from '../components/rides/ride-list.ts';
+import { nf, fmtDateL, fmtTime } from '../scripts/format.ts';
+import { t } from '../i18n/index.ts';
 
 const pct = (a: number, b: number) => (b ? ((a - b) / b) * 100 : null);
 const yt = (key: string, p?: Record<string, unknown>) => t('year.' + key, p);

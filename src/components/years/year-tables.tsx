@@ -1,7 +1,7 @@
 import { dataTableColumns, numeric, numSort, type DataTableColumn } from '@/components/app/DataTable';
 import { Badge } from '@/components/ui/badge';
-import { nf } from '@/scripts/format.js';
-import { t } from '@/i18n/index.js';
+import { nf } from '@/scripts/format.ts';
+import { t } from '@/i18n/index.ts';
 import type { YearMonth } from './YearView';
 
 const col = dataTableColumns<YearMonth>();

@@ -1,7 +1,7 @@
 import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
-import { rideSchema, gearSchema } from './content-schemas.js';
-import { selectDataSource } from './lib/data-source.js';
+import { rideSchema, gearSchema } from './content-schemas.ts';
+import { selectDataSource } from './lib/data-source.ts';
 
 /**
  * rides: one Markdown file per ride – src/content/rides/<year>/<date>_<id>.md
@@ -11,8 +11,8 @@ import { selectDataSource } from './lib/data-source.js';
  * Both folders are gitignored (only .gitkeep is tracked) – the sync fills them locally.
  *
  * Without any synced ride, both collections read the shipped demo dataset from demo/
- * instead (see src/lib/data-source.js). Real and demo data are never mixed.
- * Schemas: src/content-schemas.js.
+ * instead (see src/lib/data-source.ts). Real and demo data are never mixed.
+ * Schemas: src/content-schemas.ts.
  */
 const source = selectDataSource();
 

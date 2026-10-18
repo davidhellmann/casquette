@@ -3,10 +3,10 @@ import { ArrowRight } from 'lucide-react';
 import { ChartCard } from '@/components/app/ChartCard';
 import { RideList } from '@/components/rides/RideList';
 import type { RideColumnId } from '@/components/rides/ride-columns';
-import { rideRows } from '@/components/rides/ride-list.js';
+import { rideRows } from '@/components/rides/ride-list.ts';
 import { Button } from '@/components/ui/button';
-import { routes } from '@/lib/routes.js';
-import { t } from '@/i18n/index.js';
+import { routes } from '@/lib/routes.ts';
+import { t } from '@/i18n/index.ts';
 
 const COLUMNS: RideColumnId[] = ['date', 'name', 'km', 'time', 'elev', 'w', 'zone', 'tss'];
 

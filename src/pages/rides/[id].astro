@@ -2,9 +2,9 @@
 import Base from '../../layouts/Base.astro';
 import { render } from 'astro:content';
 import { RideView } from '../../components/ride/RideView';
-import { getDataset } from '../../lib/data.js';
+import { getDataset } from '../../lib/data.ts';
 import { ridePayload } from '../../lib/ride-payload.ts';
-import { t } from '../../i18n/index.js';
+import { t } from '../../i18n/index.ts';
 
 export async function getStaticPaths() {
   return (await getDataset()).rides.map((r) => ({ params: { id: r.id }, props: { id: r.id } }));

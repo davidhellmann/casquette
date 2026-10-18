@@ -7,12 +7,12 @@
   REPOSITORY URL: lives only in the elements marked data-repo (nav GitHub link, clone command in
   #get, footer links). Change it there.
   LOGO: the approved "cap on the c" – same spec as the app (DESIGN.md → Brand); the markup below
-  and the .logo rules in site.css are checked against src/lib/brand.js by src/brand.test.js.
+  and the .logo rules in site.css are checked against src/lib/brand.ts by src/brand.test.ts.
   LEGAL PAGES AND ANALYTICS: legal-notice.html and privacy-policy.html are templates filled at deploy
   time by `npm run site:build` (website/README.md), which also injects Cabin when SITE_CABIN_HOST is set.
   The data-cabin-event attributes name the clicks Cabin counts; privacy-policy.html lists them – keep
-  both in step (scripts/site/lib/site-template.test.js checks it).
-  SOCIAL IMAGE: og.png is rendered by `npm run og` (scripts/site/og.mjs) from the real dashboard fragment;
+  both in step (scripts/site/lib/site-template.test.ts checks it).
+  SOCIAL IMAGE: og.png is rendered by `npm run og` (scripts/site/og.ts) from the real dashboard fragment;
   social networks need absolute URLs, hence https://casquette.es/ in the meta tags.
 -->
 <html lang="en" class="dark">
@@ -162,7 +162,7 @@
       <!-- What you need: four chips; the two you have to get are links -->
       <ul class="needs" aria-label="What you need">
         <li><a href="https://www.strava.com/subscribe"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg>Strava subscription</a></li>
-        <li><a href="https://nodejs.org/en/download"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l8 4.6v9.2l-8 4.6-8-4.6V7.4z"/><path d="M12 8v8"/></svg>Node.js 22.12+</a></li>
+        <li><a href="https://nodejs.org/en/download"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l8 4.6v9.2l-8 4.6-8-4.6V7.4z"/><path d="M12 8v8"/></svg>Node.js 22.18+</a></li>
         <li><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M7 10l3 2.5L7 15M12.5 15H17"/></svg>Git · terminal</li>
         <li><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></svg>~10 min setup</li>
       </ul>

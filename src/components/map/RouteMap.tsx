@@ -1,8 +1,8 @@
 import * as React from 'react';
-import { esc, fmtIso, nf } from '@/scripts/format.js';
-import { t } from '@/i18n/index.js';
+import { esc, fmtIso, nf } from '@/scripts/format.ts';
+import { t } from '@/i18n/index.ts';
 import { NO_BIKE_COLOR } from '@/components/charts/categories';
-import { homeRoutes } from './map-data.js';
+import { homeRoutes } from './map-data.ts';
 import { useLeaflet, withColors } from './use-leaflet';
 
 export type ColourMode = 'mono' | 'year' | 'bike';

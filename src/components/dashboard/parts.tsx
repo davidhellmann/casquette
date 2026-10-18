@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { SegmentedToggle } from '@/components/app/SegmentedToggle';
-import { t } from '@/i18n/index.js';
+import { t } from '@/i18n/index.ts';
 import { cn } from 'cn';
 
 export type Basis = 'power' | 'hr';

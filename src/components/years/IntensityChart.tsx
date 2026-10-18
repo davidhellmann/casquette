@@ -2,8 +2,8 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { ChartContainer, ChartTooltip, type ChartConfig } from '@/components/ui/chart';
 import { EmptyState } from '@/components/app/EmptyState';
 import { SeriesLegend, TooltipBox } from '@/components/charts/chart-parts';
-import { nf } from '@/scripts/format.js';
-import { t } from '@/i18n/index.js';
+import { nf } from '@/scripts/format.ts';
+import { t } from '@/i18n/index.ts';
 import type { YearMonth } from './YearView';
 
 /** Share of time in each power zone per month, as 100 % stacked bars (square: the segments touch). */

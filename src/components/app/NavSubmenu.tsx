@@ -5,7 +5,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import {
   SidebarMenuAction, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem, useSidebar,
 } from '@/components/ui/sidebar';
-import { t } from '@/i18n/index.js';
+import { t } from '@/i18n/index.ts';
 import { navHref, samePath, type NavItem, type NavSubEntry, type NavSubKey } from './nav';
 
 /** Open submenus, remembered across pages: `{ "years": true, "gear": false }`. */

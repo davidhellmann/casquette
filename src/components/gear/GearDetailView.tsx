@@ -8,8 +8,8 @@ import type { RideColumnId, RideRow } from '@/components/rides/ride-columns';
 import { RideList } from '@/components/rides/RideList';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
-import { fmtDur, fmtIso, nf } from '@/scripts/format.js';
-import { t } from '@/i18n/index.js';
+import { fmtDur, fmtIso, nf } from '@/scripts/format.ts';
+import { t } from '@/i18n/index.ts';
 import { GearCurveChart, MonthBars, TerrainChart, YearBars } from './GearCharts';
 import { PrimaryBadge, StatusBadge } from './GearView';
 import { useIslandReady } from '@/lib/island-ready';
@@ -47,7 +47,7 @@ export interface GearDetailPayload {
   curve: Record<string, number>;
   curveWkg: Record<string, number | null>;
   records: GearRecord[];
-  /** rideRows in src/components/rides/ride-list.js. */
+  /** rideRows in src/components/rides/ride-list.ts. */
   rides: RideRow[];
   currentYear: number;
 }

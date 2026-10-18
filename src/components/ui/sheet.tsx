@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { t } from "@/i18n/index.js"
+import { t } from "@/i18n/index.ts"
 import { cn } from "cn"
 import { XIcon } from "lucide-react"
 import { Dialog as SheetPrimitive } from "radix-ui"

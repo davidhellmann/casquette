@@ -3,10 +3,10 @@
  * route data for #map-data (every outdoor ride with a route; places once, referenced by index). Build time.
  */
 import type { MapData, MapViewProps } from '../components/map/MapView';
-import type { BuildDataset } from './build-dataset.js';
+import type { BuildDataset } from './build-dataset.ts';
 import { bikeColors } from '../components/charts/categories';
-import { rideDate } from '../training/index.js';
-import { t } from '../i18n/index.js';
+import { rideDate } from '../training/index.ts';
+import { t } from '../i18n/index.ts';
 
 /** `props` for MapView, `json` (the escaped text of #map-data). */
 export function mapPayload(data: BuildDataset): { props: MapViewProps; json: string } {

@@ -2,10 +2,10 @@ import { Area, Bar, CartesianGrid, ComposedChart, Line, XAxis, YAxis } from 'rec
 import { ChartContainer, ChartTooltip, type ChartConfig } from '@/components/ui/chart';
 import { EmptyState } from '@/components/app/EmptyState';
 import { SERIES, barRadius, niceTicks } from '@/components/charts/series';
-import { monthLabel, monthTick, nf } from '@/scripts/format.js';
-import { t } from '@/i18n/index.js';
+import { monthLabel, monthTick, nf } from '@/scripts/format.ts';
+import { t } from '@/i18n/index.ts';
 import { SeriesLegend, TooltipBox } from '@/components/charts/chart-parts';
-import { ftpChartData, hasValues } from './performance-data.js';
+import { ftpChartData, hasValues } from './performance-data.ts';
 import type { PerformanceMonth } from './PerformanceView';
 
 type Row = ReturnType<typeof ftpChartData>[number];

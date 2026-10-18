@@ -3,9 +3,9 @@ import { EmptyState } from '@/components/app/EmptyState';
 import { RichText } from '@/components/app/RichText';
 import { Bar, ZoneLabel } from '@/components/charts/ZoneBars';
 import { zoneColor } from '@/components/charts/series';
-import { t } from '@/i18n/index.js';
+import { t } from '@/i18n/index.ts';
 import * as React from 'react';
-import { garage, nutrition, zoneTable, zonesSub } from './nutrition-data.js';
+import { garage, nutrition, zoneTable, zonesSub } from './nutrition-data.ts';
 import { BasisToggle, type Basis } from './parts';
 
 const n = (key: string) => t('dash.nutrition.' + key);

@@ -7,12 +7,12 @@ import { Card } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, type ChartConfig } from '@/components/ui/chart';
 import { COMPARE_COLORS, SERIES, barRadius, niceTicks } from '@/components/charts/series';
 import { SeriesLegend, TooltipBox } from '@/components/charts/chart-parts';
-import { nf } from '@/scripts/format.js';
-import { t } from '@/i18n/index.js';
-import { allTime, historySince, kilometreRace, records, yearsCompared } from './history-data.js';
+import { nf } from '@/scripts/format.ts';
+import { t } from '@/i18n/index.ts';
+import { allTime, historySince, kilometreRace, records, yearsCompared } from './history-data.ts';
 import { Figure } from '@/components/app/KeyFigures';
 import { Section } from './parts';
-import { routes } from '@/lib/routes.js';
+import { routes } from '@/lib/routes.ts';
 
 const cd = (key: string) => t('dash.card.' + key);
 

@@ -2,10 +2,10 @@ import { Area, CartesianGrid, ComposedChart, Line, XAxis, YAxis } from 'recharts
 import { ChartContainer, ChartTooltip, type ChartConfig } from '@/components/ui/chart';
 import { EmptyState } from '@/components/app/EmptyState';
 import { SERIES, niceTicks } from '@/components/charts/series';
-import { curveLabel, nf } from '@/scripts/format.js';
-import { t } from '@/i18n/index.js';
+import { curveLabel, nf } from '@/scripts/format.ts';
+import { t } from '@/i18n/index.ts';
 import { SeriesLegend, TooltipBox } from '@/components/charts/chart-parts';
-import { hasValues, powerCurveData } from './performance-data.js';
+import { hasValues, powerCurveData } from './performance-data.ts';
 
 type Row = ReturnType<typeof powerCurveData>[number];
 type Curves = Record<'all' | 'd90' | 'ly', Record<string, number | null>>;

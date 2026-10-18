@@ -3,9 +3,9 @@ import { ChevronLeft, Search, X } from 'lucide-react';
 import { cn } from 'cn';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { fmtIso, nf } from '@/scripts/format.js';
-import { LOCALE, t } from '@/i18n/index.js';
-import { routes } from '@/lib/routes.js';
+import { fmtIso, nf } from '@/scripts/format.ts';
+import { LOCALE, t } from '@/i18n/index.ts';
+import { routes } from '@/lib/routes.ts';
 import type { Route } from './RouteMap';
 
 export interface Geo { country: string; region: string; place: number | null; spot: Set<string> | null }

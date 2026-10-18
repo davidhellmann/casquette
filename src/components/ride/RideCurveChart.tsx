@@ -3,9 +3,9 @@ import { ChartContainer, ChartTooltip, type ChartConfig } from '@/components/ui/
 import { EmptyState } from '@/components/app/EmptyState';
 import { SERIES, niceTicks } from '@/components/charts/series';
 import { SeriesLegend, TooltipBox } from '@/components/charts/chart-parts';
-import { curveLabel, nf } from '@/scripts/format.js';
-import { t } from '@/i18n/index.js';
-import { rideCurveData } from './ride-data.js';
+import { curveLabel, nf } from '@/scripts/format.ts';
+import { t } from '@/i18n/index.ts';
+import { rideCurveData } from './ride-data.ts';
 
 type Row = ReturnType<typeof rideCurveData>[number];
 type Curve = Record<string, number | null>;

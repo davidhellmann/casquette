@@ -1,9 +1,9 @@
 import { Badge } from '@/components/ui/badge';
 import { DataTable, dataTableColumns, numeric, numSort, type DataTableColumn } from '@/components/app/DataTable';
 import { EmptyState } from '@/components/app/EmptyState';
-import { routes } from '@/lib/routes.js';
-import { fmtIso, nf } from '@/scripts/format.js';
-import { t } from '@/i18n/index.js';
+import { routes } from '@/lib/routes.ts';
+import { fmtIso, nf } from '@/scripts/format.ts';
+import { t } from '@/i18n/index.ts';
 
 export interface HistoryEntry { date: string; ftp: number | null; weight: number | null; source: string | null; note: string | null }
 type Best = { w: number; wkg: number; kg: number; id: string };

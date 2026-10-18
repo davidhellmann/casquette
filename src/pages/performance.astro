@@ -1,9 +1,9 @@
 ---
 import Base from '../layouts/Base.astro';
 import { PerformanceView } from '../components/performance/PerformanceView';
-import { getDataset } from '../lib/data.js';
+import { getDataset } from '../lib/data.ts';
 import { performancePayload } from '../lib/performance-payload.ts';
-import { t } from '../i18n/index.js';
+import { t } from '../i18n/index.ts';
 
 const payload = performancePayload(await getDataset());
 ---

@@ -2,9 +2,9 @@ import { Area, Bar, CartesianGrid, Cell, ComposedChart, Line, XAxis, YAxis } fro
 import { ChartContainer, ChartTooltip, type ChartConfig } from '@/components/ui/chart';
 import { EmptyState } from '@/components/app/EmptyState';
 import { SERIES, niceTicks } from '@/components/charts/series';
-import { fmtDate, nf, fmtWeekdayDate, fmtMonthYearShort } from '@/scripts/format.js';
-import { t } from '@/i18n/index.js';
-import { fitnessChartData } from './fitness-data.js';
+import { fmtDate, nf, fmtWeekdayDate, fmtMonthYearShort } from '@/scripts/format.ts';
+import { t } from '@/i18n/index.ts';
+import { fitnessChartData } from './fitness-data.ts';
 
 type Row = ReturnType<typeof fitnessChartData>[number];
 

@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { defineConfig } from '@playwright/test';
-import { localBrowser } from './scripts/site/lib/capture.mjs';
-import { THEME_KEY } from './src/lib/theme-key.js';
+import { localBrowser } from './scripts/site/lib/capture.ts';
+import { THEME_KEY } from './src/lib/theme-key.ts';
 
 // e2e tests run against a production build of the demo dataset (DATA_SOURCE=demo), so results
 // are deterministic and never touch personal data. A locally installed Chromium/Chrome is used
@@ -30,7 +30,7 @@ export default defineConfig({
     launchOptions: { executablePath },
   },
   webServer: {
-    command: `DATA_SOURCE=demo astro build --outDir dist-e2e && node e2e/serve.mjs`,
+    command: `DATA_SOURCE=demo astro build --outDir dist-e2e && node e2e/serve.ts`,
     env: { PORT: String(PORT) },
     url: `http://localhost:${PORT}/`,
     // Never reuse: another checkout's server on the same port would be tested instead of this one

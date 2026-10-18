@@ -3,13 +3,13 @@ import { House } from 'lucide-react';
 import { cn } from 'cn';
 import { dataTableColumns, numeric, numSort, type DataTableColumn, type DataTableGrouping, type DataTableTiles } from '@/components/app/DataTable';
 import type { GroupBy } from '@/components/app/table-groups';
-import { fmtDayMonth, fmtDur, fmtWeekday, nf } from '@/scripts/format.js';
-import { t } from '@/i18n/index.js';
-import { zoneBg } from '@/components/ride/ride-presentation.js';
-import { routes } from '@/lib/routes.js';
-import { rideTotals } from './ride-list.js';
+import { fmtDayMonth, fmtDur, fmtWeekday, nf } from '@/scripts/format.ts';
+import { t } from '@/i18n/index.ts';
+import { zoneBg } from '@/components/ride/ride-presentation.ts';
+import { routes } from '@/lib/routes.ts';
+import { rideTotals } from './ride-list.ts';
 
-/** One ride as a row of a ride list (built by rideRows in ride-list.js). Zone, its source and fueling follow the list's zone basis. */
+/** One ride as a row of a ride list (built by rideRows in ride-list.ts). Zone, its source and fueling follow the list's zone basis. */
 export interface RideRow {
   id: string;
   date: Date;

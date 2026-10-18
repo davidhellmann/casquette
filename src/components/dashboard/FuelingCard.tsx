@@ -1,8 +1,8 @@
 import { ChartCard } from '@/components/app/ChartCard';
 import { zoneColor } from '@/components/charts/series';
-import { t } from '@/i18n/index.js';
+import { t } from '@/i18n/index.ts';
 import { cn } from 'cn';
-import { fuelMatrix } from './fueling-data.js';
+import { fuelMatrix } from './fueling-data.ts';
 
 const f = (key: string) => t('dash.fueling.' + key);
 

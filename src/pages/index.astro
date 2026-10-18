@@ -1,8 +1,8 @@
 ---
 import Base from '../layouts/Base.astro';
 import { DashboardView } from '../components/dashboard/DashboardView';
-import { encodeDashboard } from '../lib/dashboard-payload.js';
-import { getDataset } from '../lib/data.js';
+import { encodeDashboard } from '../lib/dashboard-payload.ts';
+import { getDataset } from '../lib/data.ts';
 
 const data = await getDataset();
 const json = encodeDashboard({ rides: data.rides, athlete: data.athlete, athleteState: data.athleteToday, goals: data.goals });

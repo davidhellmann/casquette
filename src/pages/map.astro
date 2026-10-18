@@ -1,9 +1,9 @@
 ---
 import Base from '../layouts/Base.astro';
 import { MapView } from '../components/map/MapView';
-import { getDataset } from '../lib/data.js';
+import { getDataset } from '../lib/data.ts';
 import { mapPayload } from '../lib/map-payload.ts';
-import { t } from '../i18n/index.js';
+import { t } from '../i18n/index.ts';
 
 const { props, json } = mapPayload(await getDataset());
 ---

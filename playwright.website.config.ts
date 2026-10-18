@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { defineConfig } from '@playwright/test';
-import { localBrowser } from './scripts/site/lib/capture.mjs';
+import { localBrowser } from './scripts/site/lib/capture.ts';
 
 // Browser test of the promo website (website/, plain HTML/CSS/JS, no build): `npm run test:website`.
 // Separate from the app e2e (playwright.config.ts): no Astro build, own port range, own folder.
@@ -26,7 +26,7 @@ export default defineConfig({
     launchOptions: { executablePath },
   },
   webServer: {
-    command: 'node e2e/serve.mjs',
+    command: 'node e2e/serve.ts',
     env: { PORT: String(PORT), SERVE_ROOT: 'website' },
     url: `http://localhost:${PORT}/`,
     // Never reuse: another checkout's server on the same port would be tested instead of this one

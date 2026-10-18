@@ -1,7 +1,7 @@
 import { ChartCard } from '@/components/app/ChartCard';
 import { KpiCard, type KpiCardProps } from '@/components/app/KpiCard';
-import { fmtIso, monthLabel, nf } from '@/scripts/format.js';
-import { t } from '@/i18n/index.js';
+import { fmtIso, monthLabel, nf } from '@/scripts/format.ts';
+import { t } from '@/i18n/index.ts';
 import { FtpChart } from './FtpChart';
 import { WkgChart } from './WkgChart';
 import { LongTermFitnessChart } from './LongTermFitnessChart';

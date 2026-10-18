@@ -8,8 +8,8 @@ import { FormGauge } from '@/components/charts/FormGauge';
 import { PolarizationRing } from '@/components/charts/PolarizationRing';
 import { Bar, ShareStrip, ZoneLabel } from '@/components/charts/ZoneBars';
 import { barRadius, zoneColor } from '@/components/charts/series';
-import { t } from '@/i18n/index.js';
-import { FORM_SCALE, formToday, polarization, powerProfile, trainingLoad } from './overview-data.js';
+import { t } from '@/i18n/index.ts';
+import { FORM_SCALE, formToday, polarization, powerProfile, trainingLoad } from './overview-data.ts';
 import { Row, WithTip } from '@/components/app/KeyFigures';
 import { Status } from './parts';
 

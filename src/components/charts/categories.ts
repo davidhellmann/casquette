@@ -20,7 +20,7 @@ export function bikeColors(bikeIds: string[]): Record<string, string> {
   return Object.fromEntries(bikeIds.map((id, i) => [id, categoryColor(i)]));
 }
 
-/** Terrains (`terrain()` in gear-data.js) in palette order. */
+/** Terrains (`terrain()` in gear-data.ts) in palette order. */
 const TERRAINS = ['road', 'gravel', 'mtb', 'indoor'];
 export const terrainColor = (terrain: string) => {
   const i = TERRAINS.indexOf(terrain);

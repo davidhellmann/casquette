@@ -1,9 +1,9 @@
 import { Card } from '@/components/ui/card';
 import { RichText } from '@/components/app/RichText';
 import { CardLabel } from '@/components/app/CardLabel';
-import { t } from '@/i18n/index.js';
+import { t } from '@/i18n/index.ts';
 import { cn } from 'cn';
-import { goalCards } from './goals-data.js';
+import { goalCards } from './goals-data.ts';
 import { WithTip } from '@/components/app/KeyFigures';
 import { Section } from './parts';
 

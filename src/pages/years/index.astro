@@ -1,9 +1,9 @@
 ---
 import Base from '../../layouts/Base.astro';
 import { YearsView } from '../../components/years/YearsView';
-import { getDataset } from '../../lib/data.js';
+import { getDataset } from '../../lib/data.ts';
 import { yearsIndexPayload } from '../../lib/year-payload.ts';
-import { t } from '../../i18n/index.js';
+import { t } from '../../i18n/index.ts';
 
 const payload = yearsIndexPayload(await getDataset());
 ---

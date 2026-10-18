@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { t } from '@/i18n/index.js';
+import { t } from '@/i18n/index.ts';
 import { useLeaflet, withColors } from '@/components/map/use-leaflet';
 
 /** The segment's route on a Leaflet map: the line, start (positive) and finish (negative). Client-only. */
