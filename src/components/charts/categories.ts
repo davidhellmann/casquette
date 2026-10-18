@@ -1,5 +1,5 @@
 /**
- * Colours for categories without a data meaning of their own – bikes, ride types. One palette
+ * Colours for categories without a data meaning of their own – bikes, terrains. One palette
  * (`--category-1…6`), apart from the brand pink and the zone colours. Used by the route map and
  * the gear charts, so a bike has the same colour on every page.
  */
@@ -20,9 +20,9 @@ export function bikeColors(bikeIds: string[]): Record<string, string> {
   return Object.fromEntries(bikeIds.map((id, i) => [id, categoryColor(i)]));
 }
 
-/** Ride types on a bike (`rideType()` in gear-data.js) in palette order. */
-const RIDE_TYPES = ['road', 'gravel', 'mtb', 'indoor'];
-export const rideTypeColor = (type: string) => {
-  const i = RIDE_TYPES.indexOf(type);
+/** Terrains (`terrain()` in gear-data.js) in palette order. */
+const TERRAINS = ['road', 'gravel', 'mtb', 'indoor'];
+export const terrainColor = (terrain: string) => {
+  const i = TERRAINS.indexOf(terrain);
   return i < 0 ? NO_BIKE_COLOR : categoryColor(i);
 };

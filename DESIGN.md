@@ -34,10 +34,10 @@ Pink is the default data colour. Grey comes from the frame. Other colours only w
 | Zones | `--zone-1` … `--zone-7` | Power zones (7) and HR zones (5), traditional saturated scale: zone bars, zone badges, zone-coloured routes, **zone-coloured power and heart-rate streams** (ride page, `SERIES.*.zoned`), weekly volume by zone, fueling matrix, EF dots. Nothing else. |
 | Stream context | `--muted-foreground` (grey) | Cadence, speed and elevation in the ride streams – no colours of their own |
 | Training calendar | `--load-0` … `--load-4` | Empty day + four pink load steps. Nothing else. |
-| Categories | `--category-1` … `--category-6` | Several things side by side without a meaning of their own: bikes, ride types, earlier years. Pink first, then navy, slate, berry, rose, grey – so even a multi-bike chart stays grey and pink. |
+| Categories | `--category-1` … `--category-6` | Several things side by side without a meaning of their own: bikes, terrains, earlier years. Pink first, then navy, slate, berry, rose, grey – so even a multi-bike chart stays grey and pink. |
 | Chart grid | `--grid` | `CartesianGrid` lines |
 
-- Bikes keep one colour everywhere: `bikeColors(allBikeIds)` in `src/components/charts/categories.ts` assigns `--category-*` by position in the full bike list; ride types via `rideTypeColor()`. Earlier years: `COMPARE_COLORS` in `series.ts`.
+- Bikes keep one colour everywhere: `bikeColors(allBikeIds)` in `src/components/charts/categories.ts` assigns `--category-*` by position in the full bike list; terrains via `terrainColor()`. Earlier years: `COMPARE_COLORS` in `series.ts`.
 - `--chart-1…5` exist for shadcn defaults and point at the categories – use the named tokens.
 - Zone colours sit next to text, never behind it (contrast). Text on a solid pink fill uses `--brand-foreground` (ink).
 
@@ -69,6 +69,8 @@ shadcn charts on Recharts (`ChartContainer` + `ChartConfig`, `src/components/ui/
 ## Tables
 
 One look for every `DataTable` (`app/DataTable.tsx`); ride lists add two options on top. Reference: `rides/ride-columns.tsx`.
+
+- **Ride lists** (ride log, recent rides, a year's and a bike's rides) are one composite, `RideList` (`rides/RideList.tsx`): it owns the table setup (columns, row id and link, search by name and place, tiles, grouping, summary). Rows come from `rideRows(rides, { basis })` (`rides/ride-list.js`) – the same fields everywhere (places, zone and its source, fueling); build pages pass them as island props (dates stay Dates).
 
 - **Base style:** header labels small uppercase mono, muted; rows separated by a thin hairline (`border-border/70`) – no zebra, no card per row; comfortable height (`py-2.5`). Sortable headers. Numbers right-aligned, tabular.
 - **Hover:** a linked row takes the panel fill (`bg-background` on the card), the pointer cursor and a thin pink edge on its left (3 px inset line on the first cell, `--brand`; also on keyboard focus) – calm, no movement.
@@ -106,11 +108,14 @@ Look here first. If something fits 80 %, extend it rather than writing a second 
 | i18n string with `<b>` | `RichText` | `app/RichText.tsx` |
 | Legend, tooltip | `SeriesLegend`, `TooltipBox` | `charts/chart-parts.tsx` |
 | Colour + shape of a series | `SERIES`, `zoneColor()`, `COMPARE_COLORS`, `barRadius()`, `niceTicks()`, `thin()` | `charts/series.ts` |
-| Bikes, ride types | `bikeColors()`, `rideTypeColor()` | `charts/categories.ts` |
+| Bikes, terrains | `bikeColors()`, `terrainColor()` | `charts/categories.ts` |
 | Time in zones, zone bars | `TimeInZones` (stored seconds), `ZoneBars` (rows), `ZoneLabel`, `Bar`, `ShareStrip` | `charts/ZoneBars.tsx` |
 | Training calendar | `TrainingCalendar` + `CalendarStats` + `CalendarLegend` | `charts/TrainingCalendar.tsx` |
 | Gauge, share ring | `FormGauge`, `PolarizationRing` | `charts/` |
-| Table | `DataTable` + `dataTableColumns<Row>()`, `numeric()`, `numSort`; ride lists: `rideColumns()`, `rideGrouping()`, `rideTiles()`, `WithUnit` (see Tables) | `app/DataTable.tsx`, `app/table-groups.ts`, `rides/ride-columns.tsx` |
+| Table | `DataTable` + `dataTableColumns<Row>()`, `numeric()`, `numSort`; ride lists: `RideList` + `rideRows()` (built on `rideColumns()`, `rideGrouping()`, `rideTiles()`, `WithUnit` – see Tables) | `app/DataTable.tsx`, `app/table-groups.ts`, `rides/RideList.tsx`, `rides/ride-list.js`, `rides/ride-columns.tsx` |
+| A ride's classification, TIZ basis, decoupling as text and tones | `rideClassification()`, `tizBasisLabel()`, `rideTimeInZones()`, `rideDecoupling()` + `DecouplingScale` (one scale, 0 – 1.5 × the drift limit), `zoneBg()`, `toneBg()`, `ZoneBadge` | `ride/ride-presentation.js`, `ride/DecouplingScale.tsx`, `rides/ride-columns.tsx` |
+| A ride's streams | `useChartStreams(id)` (loads once per page), `streamRows()` (downsampled, optionally smoothed rows), `rollingMean()` | `app/use-chart-streams.ts`, `src/lib/chart-streams.js` |
+| Internal links | `routes.ride(id)`, `.gear()`, `.year()`, `.segment()`, `.map({ country, place })`, `.rides()`, `.streams()` – never build paths by hand | `src/lib/routes.js` |
 | Map | `useLeaflet` hook; `withColors()` to resolve tokens for Leaflet's canvas | `map/use-leaflet.ts` |
 | Primitives | shadcn: Badge, Breadcrumb, Button, Collapsible, DropdownMenu, Input, Select, Separator, Sheet, Sidebar, Skeleton, Table, Tabs, ToggleGroup, Tooltip, Chart (owned – edit freely; add more with `npx shadcn@latest add <name>`) | `src/components/ui/` |
 
@@ -126,7 +131,7 @@ Look here first. If something fits 80 %, extend it rather than writing a second 
 
 **New chart** – `ChartCard` → `SeriesLegend` → `ChartContainer` with a `ChartConfig` whose colours come from `SERIES`. One series → pink. Two or more: pink for the main one, ink for a reference, grey for a comparison; own colours only for streams, zones or categories. Add an `sr-only` sentence with the key values.
 
-**New table** – `DataTable` with `dataTableColumns<Row>()`; set `meta.label` on every column and `numeric()` on numbers; `rowHref` for linked rows (keep one real link per row). A list of rides reuses `rideColumns({ only })` and gets `grouping={rideGrouping()}` + `tiles={rideTiles()}` + a `storageId`. Plain `ui/table` only for static key/value lists or fixed grids (fueling matrix).
+**New table** – `DataTable` with `dataTableColumns<Row>()`; set `meta.label` on every column and `numeric()` on numbers; `rowHref` for linked rows (keep one real link per row). A list of rides is a `RideList` with rows from `rideRows()`, the `columns` it shows and a `storageId`. Plain `ui/table` only for static key/value lists or fixed grids (fueling matrix).
 
 ## Language & numbers
 

@@ -3,7 +3,8 @@ import { BASE } from '../../components/app/nav';
 import Base from '../../layouts/Base.astro';
 import { render } from 'astro:content';
 import { GearDetailView, type GearDetailPayload, type GearRecord } from '../../components/gear/GearDetailView';
-import { avgOutdoorSpeed, gearRecords, kmPerMonth, kmPerType, kmPerYear } from '../../components/gear/gear-data.js';
+import { rideRows } from '../../components/rides/ride-list.js';
+import { avgOutdoorSpeed, gearRecords, kmPerMonth, kmPerTerrain, kmPerYear } from '../../components/gear/gear-data.js';
 import { loadGear, curveWkg } from '../../lib/data.js';
 import { bestCurve } from '../../training/index.js';
 import { gearUrl } from '../../lib/strava-links.js';
@@ -26,7 +27,6 @@ const purchase = c.purchase_date && !isNaN(Date.parse(c.purchase_date)) ? new Da
 const curve = bestCurve(rides);
 const recs = gearRecords(rides);
 const recordValue = { longest: (r: any) => r.distance, climb: (r: any) => r.elev, fastest: (r: any) => r.speed, np: (r: any) => r.np };
-const num = (v: number | null | undefined) => (v == null ? undefined : v);
 
 const payload: GearDetailPayload = {
   name: g.name,
@@ -54,18 +54,14 @@ const payload: GearDetailPayload = {
   notes: c.notes || null,
   months: kmPerMonth(rides, new Date()),
   years: kmPerYear(rides),
-  types: kmPerType(rides),
+  terrains: kmPerTerrain(rides),
   curve: Object.fromEntries(Object.entries(curve).map(([k, v]: any) => [k, v.w])),
   curveWkg: await curveWkg(curve),
   records: (Object.keys(recordValue) as GearRecord['key'][]).map((key) => {
     const r: any = recs[key];
     return { key, ride: r ? { href: `${base}rides/${r.id}`, name: r.name, date: dkey(r.d), value: recordValue[key](r) } : null };
   }),
-  rides: rides.map((r) => ({
-    id: r.id, href: `${base}rides/${r.id}`, date: r.d.toISOString(), name: r.name || '', places: '', indoor: !!r.indoor, eBike: null,
-    pr: r.pr || 0, km: (r.distance || 0) / 1000, time: r.moving_time || 0, elev: r.elev || 0,
-    w: num(r.w), np: num(r.np), hr: num(r.hr), zoneBy: '', tss: num(r.tss),
-  })),
+  rides: rideRows(rides),
   currentYear: new Date().getFullYear(),
 };
 ---

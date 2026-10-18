@@ -94,7 +94,7 @@ function DashboardContent() {
         </ChartCard>
         <CalendarCard D={D} base={source.base} />
         <DashboardCards D={D} source={source} basis={data.period.basis} />
-        <RecentRides D={D} basis={data.period.basis} base={source.base} />
+        <RecentRides D={D} basis={data.period.basis} />
         <DashboardFooter source={source} />
       </div>
     </TooltipProvider>

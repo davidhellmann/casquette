@@ -7,6 +7,7 @@ import { loadStatRides, totals, curveWkg } from './data.js';
 import { yearData, MONTHS, MONTHS_L, WEEKDAYS } from './years.js';
 import { POWER_ZONE_NAMES } from '../training/index.js';
 import { yearCalendar } from './year-calendar.js';
+import { rideRows } from '../components/rides/ride-list.js';
 import { nf, fmtDateL, fmtTime } from '../scripts/format.js';
 import { t } from '../i18n/index.js';
 
@@ -31,14 +32,6 @@ export async function yearsIndexPayload() {
   const best = list.slice().sort((a, b) => b.km - a.km)[0] || null;
   return { base: BASE, years: list, rides: rides.length, best: best && { year: best.year, km: best.km }, months: MONTHS, monthsLong: MONTHS_L };
 }
-
-/** A ride as a table row (shape of RideRow in src/components/rides/ride-columns.tsx; date as ISO string). */
-const rideRow = (r, base) => ({
-  id: String(r.id), href: `${base}rides/${r.id}`, date: r.d.toISOString(), name: r.name || '',
-  places: r.geo?.places.map((p) => p.name).join(' · ') || '', indoor: !!r.indoor, eBike: null, pr: r.pr || 0,
-  km: r.distance / 1000, time: r.moving_time || 0, elev: r.elev || 0,
-  w: r.w ?? undefined, np: r.np ?? undefined, hr: r.hr ?? undefined, tss: r.tss ?? undefined, zoneBy: '',
-});
 
 /** /years/<year>: key figures, months, calendar, intensity, power curve, bikes, highlights and rides. */
 export async function yearPayload(year) {
@@ -121,6 +114,6 @@ export async function yearPayload(year) {
     curves: { all: watts(Y.curveAll), d90: watts(Y.curve), ly: watts(Y.curvePrev) },
     curveWkg: { all: await curveWkg(Y.curveAll), d90: await curveWkg(Y.curve), ly: await curveWkg(Y.curvePrev) },
     bikes: Y.bikes.map((b) => ({ href: `${base}gear/${b.id}`, name: b.name, km: b.km, n: b.n })),
-    rides: Y.rides.map((r) => rideRow(r, base)),
+    rides: rideRows(Y.rides),
   };
 }

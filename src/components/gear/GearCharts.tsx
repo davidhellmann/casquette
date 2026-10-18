@@ -3,7 +3,7 @@ import { ChartContainer, ChartTooltip, type ChartConfig } from '@/components/ui/
 import { EmptyState } from '@/components/app/EmptyState';
 import { SERIES, barRadius, niceTicks } from '@/components/charts/series';
 import { SeriesLegend, TooltipBox } from '@/components/charts/chart-parts';
-import { rideTypeColor } from '@/components/charts/categories';
+import { terrainColor } from '@/components/charts/categories';
 import { curveLabel, monthLabel, monthTick, nf } from '@/scripts/format.js';
 import { t } from '@/i18n/index.js';
 
@@ -82,27 +82,27 @@ export function MonthBars({ months }: { months: { key: string; km: number }[] })
   );
 }
 
-/** Kilometres per ride type as a donut with the total in the middle. */
-export function TypeChart({ types }: { types: { type: string; km: number }[] }) {
-  if (!types.length) return <EmptyState>{t('common.noData')}</EmptyState>;
-  const total = types.reduce((s, x) => s + x.km, 0);
-  const label = (type: string) => t(`gear.types.${type}`);
-  const config = Object.fromEntries(types.map((x) => [x.type, { label: label(x.type), color: rideTypeColor(x.type) }])) satisfies ChartConfig;
+/** Kilometres per terrain as a donut with the total in the middle. */
+export function TerrainChart({ terrains }: { terrains: { terrain: string; km: number }[] }) {
+  if (!terrains.length) return <EmptyState>{t('common.noData')}</EmptyState>;
+  const total = terrains.reduce((s, x) => s + x.km, 0);
+  const label = (terrain: string) => t(`gear.terrains.${terrain}`);
+  const config = Object.fromEntries(terrains.map((x) => [x.terrain, { label: label(x.terrain), color: terrainColor(x.terrain) }])) satisfies ChartConfig;
   const share = (v: number) => `${km(v)} · ${nf((v / total) * 100)} %`;
-  const Tip = ({ active, payload }: TipProps<{ type: string; km: number }>) => {
+  const Tip = ({ active, payload }: TipProps<{ terrain: string; km: number }>) => {
     const row = active && payload?.[0]?.payload;
-    return row ? <TooltipBox title={label(row.type)} lines={[{ label: t('gear.usage'), color: rideTypeColor(row.type), value: share(row.km) }]} /> : null;
+    return row ? <TooltipBox title={label(row.terrain)} lines={[{ label: t('gear.usage'), color: terrainColor(row.terrain), value: share(row.km) }]} /> : null;
   };
   return (
     <>
-      <p className="sr-only">{types.map((x) => `${label(x.type)}: ${share(x.km)}`).join(', ')}</p>
-      <SeriesLegend items={types.map((x) => ({ label: label(x.type), color: rideTypeColor(x.type), kind: 'bar' }))} />
+      <p className="sr-only">{terrains.map((x) => `${label(x.terrain)}: ${share(x.km)}`).join(', ')}</p>
+      <SeriesLegend items={terrains.map((x) => ({ label: label(x.terrain), color: terrainColor(x.terrain), kind: 'bar' }))} />
       <div className="relative">
         <ChartContainer config={config} className="aspect-auto h-[220px] w-full">
           <PieChart>
             <ChartTooltip content={<Tip />} />
-            <Pie data={types} dataKey="km" nameKey="type" innerRadius="66%" outerRadius="92%" paddingAngle={2} cornerRadius={2} stroke="none" isAnimationActive={false}>
-              {types.map((x) => <Cell key={x.type} fill={rideTypeColor(x.type)} />)}
+            <Pie data={terrains} dataKey="km" nameKey="terrain" innerRadius="66%" outerRadius="92%" paddingAngle={2} cornerRadius={2} stroke="none" isAnimationActive={false}>
+              {terrains.map((x) => <Cell key={x.terrain} fill={terrainColor(x.terrain)} />)}
             </Pie>
           </PieChart>
         </ChartContainer>

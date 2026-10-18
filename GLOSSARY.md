@@ -34,6 +34,10 @@ _Avoid_: start date (ambiguous with ride date)
 The searchable, sortable list of all rides, including e-bike rides.
 _Avoid_: logbook, activity list
 
+**Ride list**:
+Any list of rides in the UI – the ride log, recent rides, a year's or a bike's rides – with the same row per ride (places, zone and what decided it, fueling, e-bike tag), columns and tiles.
+_Avoid_: ride table, activity list
+
 **Ride page**:
 The detail page of a single ride.
 _Avoid_: activity page
@@ -196,6 +200,10 @@ _Avoid_: range, window, timeframe
 All dashboard card results for one period and basis.
 _Avoid_: dashboard state, filter
 
+**Dashboard payload**:
+The build data the dashboard and the ride log compute their dashboard period from in the browser: slim final rides, the athlete with today's athlete state, and the goals – encoded on the build, decoded in the browser, losslessly.
+_Avoid_: dash data, build JSON
+
 **All time**:
 The period from the first stat ride's date to the calendar end; it has no previous period.
 _Avoid_: lifetime, total
@@ -237,6 +245,10 @@ _Avoid_: equipment
 **Bike**:
 Gear used on rides; its distance counts only synced stat rides.
 _Avoid_: wheel, cycle
+
+**Terrain**:
+Where a ride on a bike happened, for the bike's usage chart: indoor, gravel, MTB or road/outdoor – from the indoor flag and the sport type.
+_Avoid_: ride type (that is ride vs. e-bike), surface
 
 **Garage**:
 The dashboard overview of all bikes with distance, cost per km and ranking.

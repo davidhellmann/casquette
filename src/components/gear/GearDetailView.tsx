@@ -2,20 +2,17 @@ import * as React from 'react';
 import { ExternalLink } from 'lucide-react';
 import { CardLabel } from '@/components/app/CardLabel';
 import { ChartCard } from '@/components/app/ChartCard';
-import { DataTable } from '@/components/app/DataTable';
 import { KpiCard, type KpiCardProps } from '@/components/app/KpiCard';
 import { Row as KeyRow } from '@/components/app/KeyFigures';
-import { rideColumns, rideGrouping, rideTiles, type RideRow } from '@/components/rides/ride-columns';
+import type { RideColumnId, RideRow } from '@/components/rides/ride-columns';
+import { RideList } from '@/components/rides/RideList';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import { fmtDur, fmtIso, nf } from '@/scripts/format.js';
 import { t } from '@/i18n/index.js';
-import { GearCurveChart, MonthBars, TypeChart, YearBars } from './GearCharts';
+import { GearCurveChart, MonthBars, TerrainChart, YearBars } from './GearCharts';
 import { PrimaryBadge, StatusBadge } from './GearView';
 import { useIslandReady } from '@/lib/island-ready';
-
-/** A ride on the bike (build payload): `date` as an ISO string. */
-export type GearRide = Omit<RideRow, 'date'> & { date: string };
 
 export interface GearRecord {
   key: 'longest' | 'climb' | 'fastest' | 'np';
@@ -46,11 +43,12 @@ export interface GearDetailPayload {
   notes: string | null;
   months: { key: string; km: number }[];
   years: { year: number; km: number }[];
-  types: { type: string; km: number }[];
+  terrains: { terrain: string; km: number }[];
   curve: Record<string, number>;
   curveWkg: Record<string, number | null>;
   records: GearRecord[];
-  rides: GearRide[];
+  /** rideRows in src/components/rides/ride-list.js. */
+  rides: RideRow[];
   currentYear: number;
 }
 
@@ -61,13 +59,7 @@ const recordValue: Record<GearRecord['key'], (v: number) => string> = {
   fastest: (v) => `${nf(v * 3.6, 1)} km/h`,
   np: (v) => `${Math.round(v)} W`,
 };
-const COLUMNS = rideColumns({ longDate: true, only: ['date', 'name', 'km', 'time', 'elev', 'w', 'np', 'hr', 'tss'] });
-const SORT = [{ id: 'date', desc: true }];
-const GROUPING = rideGrouping();
-const TILES = rideTiles(true);
-const getRowId = (r: RideRow) => r.id;
-const rowHref = (r: RideRow) => r.href;
-const searchText = (r: RideRow) => r.name;
+const COLUMNS: RideColumnId[] = ['date', 'name', 'km', 'time', 'elev', 'w', 'np', 'hr', 'tss'];
 
 const Row = (p: React.ComponentProps<typeof KeyRow>) => <KeyRow className="text-sm" {...p} />;
 
@@ -83,11 +75,10 @@ function kpis(P: GearDetailPayload): (KpiCardProps & { key: string })[] {
   return out;
 }
 
-/** Bike detail (new UI): figures, setup, kilometres per month/year, ride types, power curve, records, rides. */
+/** Bike detail (new UI): figures, setup, kilometres per month/year, terrains, power curve, records, rides. */
 export function GearDetailView({ P, children }: { P: GearDetailPayload; children?: React.ReactNode }) {
   useIslandReady();
   const s = P.stats;
-  const rows = React.useMemo(() => P.rides.map((r): RideRow => ({ ...r, date: new Date(r.date) })), [P.rides]);
   const figures = kpis(P);
   return (
     <div className="grid gap-3 pb-8" data-testid="gear-detail">
@@ -156,8 +147,8 @@ export function GearDetailView({ P, children }: { P: GearDetailPayload; children
             <div data-testid="gear-month-chart" className="grid lg:col-span-2">
               <ChartCard title={g('perMonth')} description={g('last24')}><MonthBars months={P.months} /></ChartCard>
             </div>
-            <div data-testid="gear-type-chart" className="grid">
-              <ChartCard title={g('usage')} description={g('usageSub')}><TypeChart types={P.types} /></ChartCard>
+            <div data-testid="gear-terrain-chart" className="grid">
+              <ChartCard title={g('usage')} description={g('usageSub')}><TerrainChart terrains={P.terrains} /></ChartCard>
             </div>
           </div>
           <div className="grid gap-3 lg:grid-cols-2">
@@ -193,18 +184,13 @@ export function GearDetailView({ P, children }: { P: GearDetailPayload; children
               <CardDescription className="text-xs">{g('allRidesSub', { rides: t('common.rides', { n: nf(P.rides.length) }) })}</CardDescription>
             </CardHeader>
             <CardContent>
-              <DataTable
+              <RideList
                 label={g('allRides')}
+                rides={P.rides}
                 columns={COLUMNS}
-                data={rows}
-                getRowId={getRowId}
-                rowHref={rowHref}
-                initialSorting={SORT}
-                searchText={searchText}
-                searchLabel={t('log.searchLabel')}
+                longDate
+                search
                 pageSize={10}
-                grouping={GROUPING}
-                tiles={TILES}
                 storageId="bike-rides"
                 empty={t('common.noRidesFound')}
               />

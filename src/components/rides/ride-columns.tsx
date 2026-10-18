@@ -3,20 +3,21 @@ import { House } from 'lucide-react';
 import { cn } from 'cn';
 import { dataTableColumns, numeric, numSort, type DataTableColumn, type DataTableGrouping, type DataTableTiles } from '@/components/app/DataTable';
 import type { GroupBy } from '@/components/app/table-groups';
-import { classificationText } from '@/scripts/dashboard-display.js';
 import { fmtDayMonth, fmtDur, fmtWeekday, nf } from '@/scripts/format.js';
 import { t } from '@/i18n/index.js';
+import { zoneBg } from '@/components/ride/ride-presentation.js';
+import { routes } from '@/lib/routes.js';
+import { rideTotals } from './ride-list.js';
 
-/** One ride as a table row: the ride plus its period-dependent values (zone by basis, fuelling). */
+/** One ride as a row of a ride list (built by rideRows in ride-list.js). Zone, its source and fueling follow the list's zone basis. */
 export interface RideRow {
   id: string;
-  href: string;
   date: Date;
   name: string;
   /** Names of the places the ride passed through, for the search. */
   places: string;
   indoor: boolean;
-  /** E-bike type when the ride does not count towards statistics. */
+  /** E-bike label ("E-bike", "E-MTB") – e-bike rides do not count towards statistics. */
   eBike: string | null;
   pr: number;
   km: number;
@@ -33,46 +34,11 @@ export interface RideRow {
   fuel?: number;
 }
 
-const num = (v: number | null | undefined) => (v == null ? undefined : v);
-
-/** Ride-log rows for one dashboard period (D.log) and zone basis. */
-export function rideRows(D: any, basis: 'power' | 'hr', base: string): RideRow[] {
-  return D.log.map((r: any): RideRow => {
-    const c = basis === 'hr' ? r.clsH : r.clsP;
-    const { src, val } = classificationText(r, c);
-    return {
-      id: r.id,
-      href: `${base}rides/${r.id}`,
-      date: r.d,
-      name: r.name || '',
-      places: r.geo?.places.map((p: { name: string }) => p.name).join(' · ') || '',
-      indoor: !!r.indoor,
-      eBike: r.stats ? null : r.sport_type === 'EMountainBikeRide' ? 'E-MTB' : 'E-Bike',
-      pr: r.pr || 0,
-      km: (r.distance || 0) / 1000,
-      time: r.moving_time || 0,
-      elev: r.elev || 0,
-      w: num(r.w),
-      np: num(r.np),
-      hr: num(r.hr),
-      zone: num(c.zone),
-      zoneBy: `${src}: ${val}`,
-      tss: num(r.tss),
-      fuel: D.fueling[r.id]?.gph || undefined,
-    };
-  });
-}
-
-export const rideSearchText = (r: RideRow) => `${r.name} ${r.places}`;
-
-// Literal class names, so Tailwind generates them
-const ZONE_DOT = ['bg-zone-1', 'bg-zone-1', 'bg-zone-2', 'bg-zone-3', 'bg-zone-4', 'bg-zone-5', 'bg-zone-6', 'bg-zone-7'];
-
 /** Zone as a small badge: a zone-coloured square and Z1–Z7 (or "?" when unclassified). */
 export function ZoneBadge({ zone, title }: { zone?: number; title?: string }) {
   return (
     <span className="inline-flex items-center gap-1.5 rounded-sm bg-muted px-1.5 py-0.5 font-mono text-xs" title={title}>
-      <span className={cn('size-2 rounded-[2px]', zone ? ZONE_DOT[Math.min(zone, 7)] : 'bg-muted-foreground/40')} aria-hidden="true" />
+      <span className={cn('size-2 rounded-[2px]', zone ? zoneBg(zone) : 'bg-muted-foreground/40')} aria-hidden="true" />
       {zone ? `Z${zone}` : '?'}
     </span>
   );
@@ -114,7 +80,7 @@ function RideName({ r, link = true }: { r: RideRow; link?: boolean }) {
     <div className="grid max-w-[22rem] min-w-0 leading-tight" data-testid="ride-cell">
       <div className="flex min-w-0 items-center gap-1.5">
         {link
-          ? <a href={r.href} className="truncate font-medium hover:underline focus-visible:underline" title={r.name}>{r.name}</a>
+          ? <a href={routes.ride(r.id)} className="truncate font-medium hover:underline focus-visible:underline" title={r.name}>{r.name}</a>
           : <span className="truncate font-medium">{r.name}</span>}
         {r.eBike && <span className="shrink-0 rounded-sm bg-muted px-1 font-mono text-[10px] text-muted-foreground" title={t('log.statsTag')}>{r.eBike}</span>}
         {r.pr > 0 && <PrChip n={r.pr} />}
@@ -161,10 +127,6 @@ export function rideColumns({ longDate, only }: { longDate: boolean; only?: Ride
 }
 
 /* ---------------- Ride lists: grouping and tiles ---------------- */
-
-const sum = (rows: RideRow[], f: (r: RideRow) => number) => rows.reduce((s, r) => s + f(r), 0);
-/** Totals of a week or month: "123 km · 4:30 h". */
-export const rideTotals = (rows: RideRow[]) => t('log.groupTotals', { km: nf(sum(rows, (r) => r.km)), time: fmtDur(sum(rows, (r) => r.time)) });
 
 /** Week/month grouping of a ride list (by its date column). */
 export const rideGrouping = (initial: GroupBy = 'none'): DataTableGrouping<RideRow> => ({
