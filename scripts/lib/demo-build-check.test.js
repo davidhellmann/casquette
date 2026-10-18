@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { checkDemoBuild, demoIds, normaliseBase, rootRelativeUrls } from './demo-build-check.mjs';
+import { checkDemoBuild, normaliseBase, rootRelativeUrls } from './demo-build-check.mjs';
 
 // Refs #54: the deploy publishes the demo build only when it contains nothing but the demo dataset.
 let tmp;
@@ -33,7 +33,7 @@ beforeEach(() => {
 });
 afterEach(() => fs.rmSync(tmp, { recursive: true, force: true }));
 
-const check = () => checkDemoBuild({ build, demo, base: '/demo/' });
+const check = () => checkDemoBuild({ build, root: tmp, base: '/demo/' });
 
 describe('checkDemoBuild', () => {
   it('passes a build of the demo dataset under its base path', () => {
@@ -76,17 +76,7 @@ describe('checkDemoBuild', () => {
   });
 
   it('fails without a build', () => {
-    expect(checkDemoBuild({ build: path.join(tmp, 'nothing'), demo, base: '/demo/' })).toEqual([expect.stringMatching(/no index\.html/)]);
-  });
-});
-
-describe('demoIds', () => {
-  it('reads rides, their segments, bikes and streams from the demo dataset', () => {
-    const ids = demoIds(demo);
-    expect([...ids.rides]).toEqual(['demo-0001']);
-    expect([...ids.segments]).toEqual(['demo-seg-box-hill']);
-    expect([...ids.gear]).toEqual(['bdemo1']);
-    expect([...ids.streams]).toEqual(['demo-0001']);
+    expect(checkDemoBuild({ build: path.join(tmp, 'nothing'), root: tmp, base: '/demo/' })).toEqual([expect.stringMatching(/no index\.html/)]);
   });
 });
 

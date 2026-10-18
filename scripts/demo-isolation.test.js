@@ -17,6 +17,8 @@ const DEMO_TOOLS = new Set([
   'site-build.mjs', path.join('lib', 'site-build.mjs'), path.join('lib', 'site-template.test.js'),
   // Refs #54: the deploy's check that the demo build contains only the demo dataset (reads demo/, never writes).
   'check-demo-build.mjs', path.join('lib', 'demo-build-check.mjs'), path.join('lib', 'demo-build-check.test.js'),
+  // The demo dataset as the build sees it, and the capture of demo build pages (read-only).
+  path.join('lib', 'demo-dataset.mjs'), path.join('lib', 'demo-dataset.test.js'), path.join('lib', 'capture.mjs'),
 ]);
 
 it('keeps every sync script away from the demo data', () => {

@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { defineConfig } from '@playwright/test';
-import { localBrowser } from './scripts/lib/browser.mjs';
+import { localBrowser } from './scripts/lib/capture.mjs';
+import { THEME_KEY } from './src/lib/theme-key.js';
 
 // e2e tests run against a production build of the demo dataset (DATA_SOURCE=demo), so results
 // are deterministic and never touch personal data. A locally installed Chromium/Chrome is used
@@ -21,7 +22,7 @@ export default defineConfig({
     baseURL: `http://localhost:${PORT}`,
     // The app defaults to light; the tests pick light/dark through the system (emulateMedia), so
     // every context starts on "auto". Tests of the default clear it.
-    storageState: { cookies: [], origins: [{ origin: `http://localhost:${PORT}`, localStorage: [{ name: 'rc_theme', value: 'auto' }] }] },
+    storageState: { cookies: [], origins: [{ origin: `http://localhost:${PORT}`, localStorage: [{ name: THEME_KEY, value: 'auto' }] }] },
     viewport: { width: 1440, height: 900 },
     // Transitions and enter/exit animations (tooltips, menus, sheets) collapse to ~0 ms
     // (app.css), so assertions never race a fade. Readiness: e2e/fixtures.ts.

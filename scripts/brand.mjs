@@ -5,20 +5,17 @@
 // Usage: npm run brand
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { chromium } from '@playwright/test';
-import { localBrowser } from './lib/browser.mjs';
 import { BRAND_PNGS, WEBSITE_COPIES, brandFiles } from './lib/brand-assets.mjs';
 import { openBrandPage } from './lib/brand-render.mjs';
-
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+import { launchBrowser } from './lib/capture.mjs';
+import { ROOT } from './lib/env.mjs';
 
 for (const [file, content] of Object.entries(brandFiles())) {
   fs.writeFileSync(path.join(ROOT, file), content);
   console.log(`wrote ${file}`);
 }
 
-const browser = await chromium.launch({ executablePath: localBrowser() });
+const browser = await launchBrowser();
 try {
   for (const [file, spec] of Object.entries(BRAND_PNGS)) {
     const page = await openBrandPage(browser, spec);

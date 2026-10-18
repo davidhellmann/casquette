@@ -6,6 +6,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
+import { DEMO_MARKER, readDemoDataset } from './demo-dataset.mjs';
 
 /** Every file below `dir`, as paths relative to it ('/'-separated). */
 function walk(dir, rel = '') {
@@ -18,17 +19,13 @@ function walk(dir, rel = '') {
 const list = (dir) => { try { return fs.readdirSync(dir, { withFileTypes: true }); } catch { return []; } };
 
 /** IDs of the demo dataset: rides and their segments, bikes, streams. */
-export function demoIds(demoDir) {
-  const rides = new Set();
-  const segments = new Set();
-  for (const file of walk(path.join(demoDir, 'rides')).filter((f) => f.endsWith('.md'))) {
-    const text = fs.readFileSync(path.join(demoDir, 'rides', file), 'utf8');
-    const id = text.match(/^id:\s*"?([^"\n]+)"?\s*$/m);
-    if (id) rides.add(id[1]);
-    for (const [, seg] of text.matchAll(/^\s*segment_id:\s*"?([^"\n]+)"?\s*$/gm)) segments.add(seg);
-  }
-  const names = (sub, ext) => new Set(list(path.join(demoDir, sub)).filter((e) => e.isFile() && e.name.endsWith(ext)).map((e) => e.name.slice(0, -ext.length)));
-  return { rides, segments, gear: names('gear', '.md'), streams: names('streams', '.json') };
+function demoIds(dataset) {
+  return {
+    rides: new Set(dataset.rides.map((r) => String(r.id))),
+    segments: new Set(dataset.rides.flatMap((r) => (r.segment_efforts ?? []).map((e) => e.segment_id))),
+    gear: new Set(dataset.gear),
+    streams: new Set(dataset.streams),
+  };
 }
 
 /** The base path in the form Astro writes it: leading and trailing slash ('/', '/demo/', '/repo/demo/'). */
@@ -68,21 +65,22 @@ const SECTIONS = [
 
 /**
  * Checks a demo build. Returns the problems found (empty: the build is fine).
- * @param {{ build: string, demo: string, base?: string }} options build folder, demo dataset folder, base path
+ * @param {{ build: string, root: string, base?: string }} options build folder, project root (holding demo/), base path
  * @returns {string[]}
  */
-export function checkDemoBuild({ build, demo, base = '/' }) {
+export function checkDemoBuild({ build, root, base = '/' }) {
   const buildDir = path.resolve(build);
   const prefix = normaliseBase(base);
   const index = path.join(buildDir, 'index.html');
   if (!fs.existsSync(index)) return [`no index.html in ${build}`];
 
   const problems = [];
-  if (!fs.readFileSync(index, 'utf8').includes('data-demo-note')) {
-    problems.push('index.html has no demo marker (data-demo-note): the build did not use the demo dataset (DATA_SOURCE=demo)');
+  if (!fs.readFileSync(index, 'utf8').includes(DEMO_MARKER)) {
+    problems.push(`index.html has no demo marker (${DEMO_MARKER}): the build did not use the demo dataset (DATA_SOURCE=demo)`);
   }
 
-  const ids = demoIds(demo);
+  const dataset = readDemoDataset({ root });
+  const ids = demoIds(dataset);
   for (const [folder, key, what] of SECTIONS) {
     for (const entry of list(path.join(buildDir, folder))) {
       if (!entry.isDirectory()) continue;
@@ -101,7 +99,7 @@ export function checkDemoBuild({ build, demo, base = '/' }) {
     try {
       same = isDeepStrictEqual(
         JSON.parse(fs.readFileSync(path.join(buildDir, 'streams', entry.name), 'utf8')),
-        JSON.parse(fs.readFileSync(path.join(demo, 'streams', entry.name), 'utf8')),
+        JSON.parse(fs.readFileSync(path.join(dataset.dir, 'streams', entry.name), 'utf8')),
       );
     } catch { same = false; }
     if (!same) problems.push(`streams/${entry.name}: differs from the demo stream of the same name`);
