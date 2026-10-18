@@ -1,13 +1,15 @@
 /**
- * Light / dark / auto theme. Every choice is stored under `rc_theme` ("light" | "dark" | "auto"); without
+ * Light / dark / auto theme. Every choice is stored under THEME_KEY (`rc_theme`, ./theme-key.js) ("light" | "dark" | "auto"); without
  * an entry the app is light – the better theme for reading – and auto follows the system. Applied
  * before paint by the inline script in Base.astro and announced with THEME_EVENT so charts can re-read
  * their colours. The website keeps a key and a default of its own (rc_site_theme, dark).
  */
+import { THEME_KEY } from './theme-key.js';
+
+export { THEME_KEY };
 export type ThemePreference = 'light' | 'dark' | 'auto';
 export type Theme = 'light' | 'dark';
 
-export const THEME_KEY = 'rc_theme';
 export const DEFAULT_THEME: ThemePreference = 'light';
 export const THEME_EVENT = 'app:theme';
 

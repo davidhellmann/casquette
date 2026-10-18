@@ -13,29 +13,23 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
-import { chromium } from '@playwright/test';
-import { localBrowser } from './lib/browser.mjs';
-import { pickHeroRide, readDemoRides, reviewYear, rideYears } from './lib/screenshots.mjs';
+import { captureWebp, launchBrowser, openDemoPage, waitUntilReady } from './lib/capture.mjs';
+import { heroRide, readDemoDataset, reviewYear } from './lib/demo-dataset.mjs';
+import { ROOT } from './lib/env.mjs';
 import { serveStatic } from './lib/static-server.mjs';
 import { collectMedia, collectSelectors, parseCss, scopeCss } from './lib/css-scope.mjs';
 import {
   DESCENDANT_RESET, MAP, MAP_SCALE, PIECES, SCOPE_CLASS, TIME_ZONE, VIEWPORT, WRAPPER_RESET,
-  STYLE_PROPS, appFonts, assertStatic, cleanTree, diffStyles, fixedNow, inlineRemToPx, keepAttribute, manifestEntry, piecePath, previewPage, readDemoMeta, renameRefs,
+  STYLE_PROPS, appFonts, assertStatic, cleanTree, diffStyles, fixedNow, inlineRemToPx, keepAttribute, manifestEntry, piecePath, previewPage, renameRefs,
   snapshotStyles, wrapFragment,
 } from './lib/fragments.mjs';
 
-const ROOT = path.resolve(import.meta.dirname, '..');
 const OUT_DIR = path.join(ROOT, 'website', 'ui');
 const DIST = path.join(ROOT, 'dist-fragments');
 /** Hand-written files in the output folder; everything else there is generated and replaced. */
 const KEEP_FILES = new Set(['README.md', 'OFL.txt']);
-const READY_TIMEOUT_MS = 30000;
-const SETTLE_MS = 600;
-const DEMO_BADGE = '[data-demo-note]';
 
 const { values: args } = parseArgs({ options: { check: { type: 'boolean', default: false }, 'no-build': { type: 'boolean', default: false } } });
-
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function build(now) {
   console.log(`Building the demo (clock ${now}, ${TIME_ZONE}) into ${path.relative(ROOT, DIST)}/ …`);
@@ -47,45 +41,9 @@ function build(now) {
   if (res.status !== 0) throw new Error('Demo build failed');
 }
 
-/** Fonts, hydrated islands and the piece's charts are done; the page shows demo data. */
-async function ready(page, url, rootSelector) {
-  const t0 = Date.now();
-  const check = (sel) => {
-    if (document.readyState !== 'complete' || document.fonts.status !== 'loaded') return false;
-    if (Number(document.documentElement.dataset.hydrated ?? 0) < document.querySelectorAll('astro-island').length) return false;
-    if (document.querySelector('.leaflet-tile:not(.leaflet-tile-loaded)')) return false;
-    if (document.querySelector('.leaflet-container') && !document.querySelector('.leaflet-tile-loaded')) return false;
-    const root = sel && document.querySelector(sel);
-    if (sel && !root) return false;
-    return !root || [...root.querySelectorAll('.recharts-responsive-container')].every((c) => c.querySelector('svg.recharts-surface'));
-  };
-  for (let settled = false; ;) {
-    if (await page.evaluate(check, rootSelector)) {
-      if (settled) break;
-      await sleep(SETTLE_MS); // responsive charts re-measuring, Leaflet's tile fade-in
-      settled = true;
-      continue;
-    }
-    if (Date.now() - t0 > READY_TIMEOUT_MS) throw new Error(`Timed out waiting for ${url} (${rootSelector})`);
-    await sleep(200);
-  }
-}
-
-async function openPage(browser, { base, url, theme, now, scale = 1 }) {
-  const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: scale, colorScheme: theme, timezoneId: TIME_ZONE, locale: 'en-US' });
-  await context.addInitScript((t) => localStorage.setItem('rc_theme', t), theme); // the app defaults to light
-  const page = await context.newPage();
-  const errors = [];
-  page.on('pageerror', (e) => errors.push(e.message));
-  // The demo's "today" (time keeps running from there: Leaflet's tile fade needs a moving clock)
-  await page.clock.install({ time: new Date(now) });
-  await page.clock.resume();
-  const res = await page.goto(base + url);
-  if (res?.status() !== 200) throw new Error(`${url}: HTTP ${res?.status()}`);
-  // Privacy guard: the badge only renders in demo mode – never capture real data.
-  if (!(await page.locator(DEMO_BADGE).count())) throw new Error(`${url} is not showing the demo data.`);
-  return { page, errors, close: () => context.close() };
-}
+/** A page of the demo build (served at `base`) in `theme`, with the demo's clock, time zone and locale. */
+const openPage = (browser, { base, url, theme, now, scale = 1 }) =>
+  openDemoPage(browser, base + url, { theme, viewport: VIEWPORT, scale, now, timeZone: TIME_ZONE, locale: 'en-US' });
 
 /**
  * Runs in the page: the piece's element, reduced to `keep`, cleaned; its markup, chart CSS, size and
@@ -110,7 +68,7 @@ async function capturePiece(browser, opts, piece) {
   const { page, errors, close } = await openPage(browser, opts);
   try {
     await page.evaluate((sel) => document.querySelector(sel)?.scrollIntoView(), piece.root);
-    await ready(page, opts.url, piece.root);
+    await waitUntilReady(page, piece.root);
     const fn = `(${extract})(${JSON.stringify(piece)}, ${keepAttribute}, ${cleanTree}, ${snapshotStyles}, ${JSON.stringify(STYLE_PROPS)})`;
     const res = await page.evaluate(fn);
     if (res.error) throw new Error(`${opts.url}: ${res.error}`);
@@ -126,11 +84,9 @@ async function capturePiece(browser, opts, piece) {
 async function captureMap(browser, opts) {
   const { page, close } = await openPage(browser, { ...opts, scale: MAP_SCALE });
   try {
-    await ready(page, opts.url, MAP.root);
+    await waitUntilReady(page, MAP.root);
     const box = await page.evaluate((sel) => { scrollTo(0, 0); const r = document.querySelector(sel).getBoundingClientRect(); return { x: r.left, y: r.top, width: r.width, height: r.height }; }, MAP.root);
-    const cdp = await page.context().newCDPSession(page);
-    const { data } = await cdp.send('Page.captureScreenshot', { format: 'webp', quality: 80, clip: { ...box, scale: 1 } });
-    return { image: Buffer.from(data, 'base64'), width: Math.round(box.width), height: Math.round(box.height) };
+    return { image: await captureWebp(page, box), width: Math.round(box.width), height: Math.round(box.height) };
   } finally { await close(); }
 }
 
@@ -152,15 +108,16 @@ async function cascadeFacts(browser, html, selectors, media) {
 }
 
 async function generate(outDir) {
-  const meta = readDemoMeta(ROOT);
+  const { meta } = readDemoDataset();
   const now = fixedNow(meta.newest_day);
   if (!args['no-build']) build(now);
   else if (!fs.existsSync(path.join(DIST, 'index.html'))) throw new Error(`No build in ${path.relative(ROOT, DIST)}/ – run without --no-build.`);
-  const rides = readDemoRides(path.join(ROOT, 'demo', 'rides'));
-  const vars = { ride: pickHeroRide(rides), year: reviewYear(rideYears(rides)) };
+  // The dataset as the build on the fixed clock sees it
+  const { rides } = readDemoDataset({ today: new Date(now) });
+  const vars = { ride: heroRide(rides), year: reviewYear(rides) };
 
   const server = await serveStatic(DIST);
-  const browser = await chromium.launch({ executablePath: localBrowser() });
+  const browser = await launchBrowser();
   try {
     const fragments = [];
     const sheets = new Set();

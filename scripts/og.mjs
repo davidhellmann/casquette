@@ -3,16 +3,15 @@
 // `npm run og`. Run `npm run fragments` first when the app changed.
 import fs from 'node:fs';
 import path from 'node:path';
-import { chromium } from '@playwright/test';
-import { localBrowser } from './lib/browser.mjs';
+import { launchBrowser } from './lib/capture.mjs';
+import { ROOT } from './lib/env.mjs';
 import { serveStatic } from './lib/static-server.mjs';
 
-const ROOT = path.resolve(import.meta.dirname, '..');
 const TEMPLATE = path.join(ROOT, 'scripts/og/template.html');
 const OUT = path.join(ROOT, 'website/og.png');
 
 const server = await serveStatic(path.join(ROOT, 'website'));
-const browser = await chromium.launch({ executablePath: localBrowser() });
+const browser = await launchBrowser();
 try {
   const page = await browser.newPage({ viewport: { width: 1200, height: 630 }, deviceScaleFactor: 1, colorScheme: 'dark', reducedMotion: 'reduce' });
   const errors = [];

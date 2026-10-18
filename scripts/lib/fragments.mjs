@@ -1,7 +1,6 @@
 // Refs #46: real UI fragments for the website – which pieces of the demo build are captured and how
 // their markup is made static. Config + pure helpers (unit-tested); the browser driver lives in
 // scripts/fragments.mjs, the stylesheet transform in ./css-scope.mjs.
-import fs from 'node:fs';
 import path from 'node:path';
 import { t } from '../../src/i18n/index.js';
 import { remToPx } from './css-scope.mjs';
@@ -16,8 +15,8 @@ export const MAP_SCALE = 2;
  * (src/lib/demo-clock.js) and the dashboard periods always show the same rides. */
 export const TIME_ZONE = 'Europe/Berlin';
 /** App fonts the fragments use (their CSS variables), renamed so they can't clash with the host's. */
-export const FONT_VARS = ['--font-geist', '--font-geist-mono'];
-export const FONT_PREFIX = 'Casquette UI ';
+const FONT_VARS = ['--font-geist', '--font-geist-mono'];
+const FONT_PREFIX = 'Casquette UI ';
 
 /**
  * The pieces. `root` selects the captured element (`label`: the one whose text starts with it),
@@ -73,8 +72,6 @@ export function fixedNow(newestDay) {
   d.setUTCDate(d.getUTCDate() + 1);
   return d.toISOString();
 }
-
-export const readDemoMeta = (root) => JSON.parse(fs.readFileSync(path.join(root, 'demo', 'data', 'meta.json'), 'utf8'));
 
 /** One URL per page, `{ride}` / `{year}` filled in. */
 export const piecePath = (piece, { ride, year }) => piece.path.replace('{ride}', ride).replace('{year}', String(year));

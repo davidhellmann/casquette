@@ -281,5 +281,9 @@ The single place where the sync reads and writes ride files: activity cache, rid
 _Avoid_: ride store, repository, writer
 
 **Demo data**:
-The synthetic, seeded dataset in `demo/` (rides, gear, chart streams, athlete, goals, FTP/weight history, zones file) shown while no synced ride exists. A fictional "travelling rider" rides real roads in five cities; the road geometry is cached in `demo/source/routes/` (OpenStreetMap data, ODbL). Real data and demo data are never mixed: one synced ride switches the whole site to real data. Demo dates move forward in whole weeks so the newest demo ride is recent. The sync never touches it.
+The synthetic, seeded dataset in `demo/` (rides, gear, chart streams, athlete, goals, FTP/weight history, zones file) shown while no synced ride exists. A fictional "travelling rider" rides real roads in five cities; the road geometry is cached in `demo/source/routes/` (OpenStreetMap data, ODbL). Real data and demo data are never mixed: one synced ride switches the whole site to real data. Demo dates move forward in whole weeks so the newest demo ride is recent. The sync never touches it. Every page built from it carries the demo marker (`data-demo-note`, the sidebar's demo indicator).
 _Avoid_: sample data, fixtures, example data (the `*.example.json` fallbacks are something else)
+
+**Demo capture**:
+Taking product screenshots or UI fragments of demo build pages in the local Chromium. A page without the demo marker is never captured, so real data cannot end up in them.
+_Avoid_: snapshot, scraping

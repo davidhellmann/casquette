@@ -41,20 +41,20 @@ const TILES = {
 };
 
 /** App icon: the cap alone on a rounded tile – ink in light contexts, navy in dark ones. */
-export function iconSvg(theme) {
+function iconSvg(theme) {
   const c = TILES[theme];
   return `<svg ${SVG_NS} viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Casquette"><title>Casquette</title>`
     + `<rect width="64" height="64" rx="14" fill="${c.tile}"/>${capAt(32, 32, 1.15, c)}</svg>\n`;
 }
 
 /** Apple touch icon source: full-bleed tile (iOS rounds the corners itself), rendered at 180 px. */
-export function touchIconSvg() {
+function touchIconSvg() {
   const c = TILES.light;
   return `<svg ${SVG_NS} viewBox="0 0 180 180" width="180" height="180"><rect width="180" height="180" fill="${c.tile}"/>${capAt(90, 90, 3.1, c)}</svg>\n`;
 }
 
 /** Favicon: the cap with a heavier stroke (legible at 16/32 px) on a tile that follows prefers-color-scheme. */
-export function faviconSvg() {
+function faviconSvg() {
   const l = TILES.light, d = TILES.dark;
   return `<svg ${SVG_NS} viewBox="0 0 64 64" width="16" height="16"><title>Casquette</title>`
     + `<style>.t{fill:${l.tile}}.i{stroke:${l.ink}}.a{stroke:${l.accent}}`
@@ -73,7 +73,7 @@ const THEMES = {
  * the "c" in its own span (measured for the placement), a pink full stop and the cap, which
  * scripts/brand.mjs places with capPlacement() once the font has loaded.
  */
-export function logoMarkup(fontSize, theme) {
+function logoMarkup(fontSize, theme) {
   const c = THEMES[theme];
   return `<span class="lk" style="--ink:${c.ink};--pk:${c.accent};color:${c.ink}">`
     + `<span class="wm" style="font-size:${fontSize}px"><span class="c">c</span>${WORDMARK.text.slice(1)}<span class="dot">${WORDMARK.stop}</span>`
@@ -83,7 +83,7 @@ export function logoMarkup(fontSize, theme) {
 }
 
 /** A page around `body`: Damion loaded from FONT_URL, the logo styles of the approval sheet. */
-export function page(body, css = '') {
+function page(body, css = '') {
   return `<!doctype html><html><head><meta charset="utf-8"><style>`
     + `@font-face{font-family:'Damion';src:url(${FONT_URL}) format('woff2');font-display:block}`
     + `html,body{margin:0}svg{display:block}`
@@ -93,15 +93,15 @@ export function page(body, css = '') {
 }
 
 /** README header: the logo on a transparent canvas, ink on light, light ink on dark (shown at 1×, rendered at 2×). */
-export const LOGO_CANVAS = { width: 320, height: 124, fontSize: 72 };
-export function logoHtml(theme) {
+const LOGO_CANVAS = { width: 320, height: 124, fontSize: 72 };
+function logoHtml(theme) {
   const { width, height, fontSize } = LOGO_CANVAS;
   return page(`<div class="stage" data-centre>${logoMarkup(fontSize, theme)}</div>`,
     `.stage{width:${width}px;height:${height}px;display:flex;align-items:center;justify-content:center}`);
 }
 
 /** OG image 1200 × 630: the logo large on the cool grey, the tagline on a navy band. */
-export function ogHtml() {
+function ogHtml() {
   const tagScale = 0.9, tagX = (1200 - TAGLINE.width * tagScale) / 2;
   return page(`<div class="stage" data-centre>${logoMarkup(160, 'light')}</div>`
     + `<svg ${SVG_NS} width="1200" height="160" viewBox="0 470 1200 160"><rect y="470" width="1200" height="160" fill="${COLORS.navy}"/>`
@@ -130,7 +130,7 @@ export const WEBSITE_COPIES = {
 };
 
 /** Fingerprint of everything a PNG is rendered from – brand/png-sources.json, checked by src/brand.test.js. */
-export function pngSources() {
+function pngSources() {
   const hash = (spec) => crypto.createHash('sha256')
     .update(JSON.stringify([spec, capPlacement({ cTop: -0.2, cLeft: 0.01 }), FONT_VERSION])).digest('hex').slice(0, 16);
   return Object.fromEntries(Object.entries(BRAND_PNGS).map(([file, spec]) => [file, hash(spec)]));

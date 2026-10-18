@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { defineConfig } from '@playwright/test';
-import { localBrowser } from './scripts/lib/browser.mjs';
+import { localBrowser } from './scripts/lib/capture.mjs';
 
 // Browser test of the promo website (website/, plain HTML/CSS/JS, no build): `npm run test:website`.
 // Separate from the app e2e (playwright.config.ts): no Astro build, own port range, own folder.

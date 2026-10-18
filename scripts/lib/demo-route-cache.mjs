@@ -14,7 +14,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { decodePolyline } from '../../src/scripts/polyline.js';
 
-export const ROUTER_ENDPOINT = 'https://brouter.de/brouter';
+const ROUTER_ENDPOINT = 'https://brouter.de/brouter';
 export const ROUTE_ATTRIBUTION = 'Route geometry © OpenStreetMap contributors (ODbL, https://www.openstreetmap.org/copyright). Routed with BRouter (https://brouter.de); elevation from SRTM via BRouter.';
 
 /** Simplification tolerances: horizontal (metres off the line) and vertical (metres off the gradient). */
