@@ -142,7 +142,7 @@ test('social preview: absolute URLs on casquette.es, og.png is 1200 × 630 (npm 
   const png = readFileSync(new URL('../website/og.png', import.meta.url));
   expect(png.subarray(1, 4).toString()).toBe('PNG');
   expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([Number(await meta('meta[property="og:image:width"]')), Number(await meta('meta[property="og:image:height"]'))]);
-  expect(existsSync(new URL('../scripts/og/template.html', import.meta.url))).toBe(true);
+  expect(existsSync(new URL('../scripts/site/og/template.html', import.meta.url))).toBe(true);
 });
 
 test('every repository place (data-repo) points to the repository', async ({ page }) => {

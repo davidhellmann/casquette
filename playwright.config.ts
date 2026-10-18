@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { defineConfig } from '@playwright/test';
-import { localBrowser } from './scripts/lib/capture.mjs';
+import { localBrowser } from './scripts/site/lib/capture.mjs';
 import { THEME_KEY } from './src/lib/theme-key.js';
 
 // e2e tests run against a production build of the demo dataset (DATA_SOURCE=demo), so results

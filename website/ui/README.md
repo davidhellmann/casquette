@@ -24,8 +24,8 @@ npm run fragments -- --check   # only compare: exit 1 if website/ui/ is out of d
 
 - Builds the demo dataset (`DATA_SOURCE=demo`) into `dist-fragments/` with a fixed clock (the day after the newest demo ride, Europe/Berlin), serves it on a free port and drives the local Chromium (`CHROME_PATH` if none is found). The output only changes when the app or the demo data change. `--no-build` reuses the last build.
 - Every piece is captured at the README screenshot viewport (1440×900, desktop layout) in light and dark; the markup has to be identical (colours are CSS variables). Afterwards the written fragments are rendered from `index.html` and every element's computed styles and box are compared with the app – any difference fails the run, and this folder is only replaced after a clean run.
-- Pieces and framing: `scripts/lib/fragments.mjs` (`PIECES`, `MAP`); browser, demo guard and readiness: `scripts/lib/capture.mjs` (shared with the README screenshots). The map crop needs network access (OpenStreetMap tiles); `--check` compares it by presence only.
-- Tests: `scripts/lib/{css-scope,fragments}.test.js` (scoping, stripping), `e2e-website/fragments.spec.ts` (`npm run test:website`: renders in light/dark, no app JS, isolation from a hostile host stylesheet, axe).
+- Pieces and framing: `scripts/site/lib/fragments.mjs` (`PIECES`, `MAP`); browser, demo guard and readiness: `scripts/site/lib/capture.mjs` (shared with the README screenshots). The map crop needs network access (OpenStreetMap tiles); `--check` compares it by presence only.
+- Tests: `scripts/site/lib/{css-scope,fragments}.test.js` (scoping, stripping), `e2e-website/fragments.spec.ts` (`npm run test:website`: renders in light/dark, no app JS, isolation from a hostile host stylesheet, axe).
 
 ## How a fragment is made
 

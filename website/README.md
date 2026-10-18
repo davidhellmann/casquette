@@ -33,7 +33,7 @@ What the build does:
 
 It reads only the process environment, never a `.env` file. Values are public once deployed, but keep them out of the repository: set them as repository variables of the deploy.
 
-The custom events Cabin counts are the `data-cabin-event` attributes in `index.html`: *See the demo*, *Open GitHub*, *Copy clone command*, *Copy demo command*, *Copy connect command* and *Copy sync command*. The privacy policy lists the same names; a unit test (`scripts/lib/site-template.test.js`) checks that both agree. When you add an event, add it to the policy too. Keep the names fixed and free of personal data.
+The custom events Cabin counts are the `data-cabin-event` attributes in `index.html`: *See the demo*, *Open GitHub*, *Copy clone command*, *Copy demo command*, *Copy connect command* and *Copy sync command*. The privacy policy lists the same names; a unit test (`scripts/site/lib/site-template.test.js`) checks that both agree. When you add an event, add it to the policy too. Keep the names fixed and free of personal data.
 
 ### In the deploy (#54)
 
@@ -59,5 +59,5 @@ Keep the privacy policy in step with what the site and the demo do: their `local
 
 ## Social image
 
-`og.png` (1200 × 630) shows the real dashboard fragment next to the headline, in the website's dark theme. `npm run og` renders it from `scripts/og/template.html` (run `npm run fragments` first when the app changed). The meta tags in `index.html` point to it with absolute URLs on https://casquette.es/.
+`og.png` (1200 × 630) shows the real dashboard fragment next to the headline, in the website's dark theme. `npm run og` renders it from `scripts/site/og/template.html` (run `npm run fragments` first when the app changed). The meta tags in `index.html` point to it with absolute URLs on https://casquette.es/.
 

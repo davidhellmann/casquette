@@ -11,8 +11,8 @@
   LEGAL PAGES AND ANALYTICS: legal-notice.html and privacy-policy.html are templates filled at deploy
   time by `npm run site:build` (website/README.md), which also injects Cabin when SITE_CABIN_HOST is set.
   The data-cabin-event attributes name the clicks Cabin counts; privacy-policy.html lists them – keep
-  both in step (scripts/lib/site-template.test.js checks it).
-  SOCIAL IMAGE: og.png is rendered by `npm run og` (scripts/og.mjs) from the real dashboard fragment;
+  both in step (scripts/site/lib/site-template.test.js checks it).
+  SOCIAL IMAGE: og.png is rendered by `npm run og` (scripts/site/og.mjs) from the real dashboard fragment;
   social networks need absolute URLs, hence https://casquette.es/ in the meta tags.
 -->
 <html lang="en" class="dark">

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { BRAND_PNGS, WEBSITE_COPIES, brandFiles } from '../scripts/lib/brand-assets.mjs';
+import { BRAND_PNGS, WEBSITE_COPIES, brandFiles } from '../scripts/site/lib/brand-assets.mjs';
 import { CAP, WORDMARK, capPlacement } from './lib/brand.js';
 
 // Refs #27: every brand consumer exists and is generated from the one brand source

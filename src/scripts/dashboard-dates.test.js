@@ -4,8 +4,8 @@ import { athleteTimeline } from '../training/index.js';
 import { decodeDashboard, encodeDashboard } from '../lib/dashboard-payload.js';
 import { dashboardPeriod, PERIODS } from '../dashboard-period/index.js';
 import { evalGoal } from './goals.js';
-import { computeMetrics } from '../../scripts/lib/metrics.mjs';
-import { rideFrontmatter } from '../../scripts/lib/ride-file.mjs';
+import { computeMetrics } from '../../scripts/shared/metrics.mjs';
+import { rideFrontmatter } from '../../scripts/shared/ride-file.mjs';
 import { calendarDay } from '../training/index.js';
 
 const transport = (rides) => decodeDashboard(encodeDashboard({ rides })).rides;

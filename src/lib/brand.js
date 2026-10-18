@@ -2,7 +2,7 @@
  * The Casquette brand – the single source of the logo (#27). The logo is the owner-approved
  * "cap on the c": the word "casquette" set in the Damion font as-is (real text, self-hosted via the
  * Astro Fonts API) plus a pink full stop, with the cap sketch resting tilted on the "c".
- * Consumers: AppMark / AppLogo (sidebar) and scripts/brand.mjs (favicon, app icons, OG image,
+ * Consumers: AppMark / AppLogo (sidebar) and scripts/site/brand.mjs (favicon, app icons, OG image,
  * README header). Rules: DESIGN.md → Brand.
  */
 

@@ -8,10 +8,10 @@ const { scripts } = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 
 
 it('exposes the manual sync entry points', () => {
   expect(scripts).toMatchObject({
-    sync: 'node scripts/strava-sync.mjs',
-    'sync:all': 'node scripts/strava-sync.mjs --wait',
-    'sync:rebuild': 'node scripts/strava-rebuild.mjs',
-    geo: 'node --env-file-if-exists=.env scripts/geo.mjs',
+    sync: 'node scripts/sync/strava-sync.mjs',
+    'sync:all': 'node scripts/sync/strava-sync.mjs --wait',
+    'sync:rebuild': 'node scripts/sync/strava-rebuild.mjs',
+    geo: 'node --env-file-if-exists=.env scripts/sync/geo.mjs',
   });
 });
 
