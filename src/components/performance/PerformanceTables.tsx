@@ -1,7 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { DataTable, dataTableColumns, numeric, numSort, type DataTableColumn } from '@/components/app/DataTable';
 import { EmptyState } from '@/components/app/EmptyState';
-import { BASE } from '@/components/app/nav';
+import { routes } from '@/lib/routes.js';
 import { fmtIso, nf } from '@/scripts/format.js';
 import { t } from '@/i18n/index.js';
 
@@ -55,7 +55,7 @@ function profileColumns(durations: string[], colMax: number[]): DataTableColumn<
   return prof.columns([
     prof.accessor('year', {
       id: 'year', meta: { label: t('perf.year') }, sortFn: 'basic', sortDescFirst: true,
-      cell: (c) => <a href={`${BASE}years/${c.getValue()}`} className="font-medium underline-offset-4 hover:underline">{c.getValue()}</a>,
+      cell: (c) => <a href={routes.year(c.getValue())} className="font-medium underline-offset-4 hover:underline">{c.getValue()}</a>,
     }),
     ...durations.map((label, i) => prof.accessor((y) => v(y.vals[i]?.wkg), {
       id: `d${i}`, ...numSort,
@@ -70,7 +70,7 @@ function profileColumns(durations: string[], colMax: number[]): DataTableColumn<
       cell: (c) => {
         const b = c.row.original.vals[i];
         return b ? (
-          <a href={`${BASE}rides/${b.id}`} title={t('perf.weightTip', { kg: b.kg })} className="underline-offset-4 hover:underline">
+          <a href={routes.ride(b.id)} title={t('perf.weightTip', { kg: b.kg })} className="underline-offset-4 hover:underline">
             <span className="font-semibold">{`${b.w} W`}</span>
             <span className="ml-1.5 text-xs">{nf(b.wkg, 2)}</span>
           </a>

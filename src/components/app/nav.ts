@@ -1,3 +1,4 @@
+import { BASE } from '../../lib/routes.js';
 import { Bike, CalendarDays, Gauge, Map, Mountain, Route, Zap, type LucideIcon } from 'lucide-react';
 
 /** Sidebar navigation: one entry per section, grouped. `key` doubles as the i18n key `nav.<key>`. */
@@ -30,7 +31,7 @@ export const NAV_GROUPS: { key: 'groupTraining' | 'groupExplore'; items: NavItem
 ];
 
 /** Site base URL with a trailing slash (Astro `base`). */
-export const BASE = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+export { BASE };
 export const navHref = (path: string) => BASE + path;
 
 /** Same page, with or without a trailing slash. */

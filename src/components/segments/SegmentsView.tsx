@@ -2,7 +2,7 @@ import * as React from 'react';
 import { ExternalLink } from 'lucide-react';
 import { CardLabel } from '@/components/app/CardLabel';
 import { DataTable, dataTableColumns, numeric, numSort, type DataTableColumn } from '@/components/app/DataTable';
-import { BASE } from '@/components/app/nav';
+import { routes } from '@/lib/routes.js';
 import { Card, CardAction, CardContent, CardHeader } from '@/components/ui/card';
 import { SegmentedToggle } from '@/components/app/SegmentedToggle';
 import { fmtClock, nf } from '@/scripts/format.js';
@@ -53,7 +53,7 @@ const keep: Record<Filter, (r: SegmentRow) => boolean> = {
   virtual: (r) => r.virtual,
 };
 
-const href = (id: string) => `${BASE}segments/${id}`;
+const href = routes.segment;
 
 function SegmentName({ r }: { r: SegmentRow }) {
   const name = r.page ? (
