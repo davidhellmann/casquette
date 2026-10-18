@@ -1,10 +1,11 @@
 ---
 import Base from '../../layouts/Base.astro';
 import { YearsView } from '../../components/years/YearsView';
-import { yearsIndexPayload } from '../../lib/year-payload.js';
+import { getDataset } from '../../lib/data.js';
+import { yearsIndexPayload } from '../../lib/year-payload.ts';
 import { t } from '../../i18n/index.js';
 
-const payload = await yearsIndexPayload();
+const payload = yearsIndexPayload(await getDataset());
 ---
 <Base title={t('years.title')} active="years">
   <YearsView client:load P={payload} />

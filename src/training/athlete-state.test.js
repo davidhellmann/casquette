@@ -37,7 +37,8 @@ describe('athleteTimeline – athlete state on a date', () => {
     const t = athleteTimeline({ athlete: ATHLETE, history: HISTORY });
     expect(t.at('2022-07-15')).toMatchObject({ ftp: 210, weight: 88 });
     expect(t.at('2024-06-01')).toMatchObject({ ftp: 250, weight: 80 });
-    expect(t.at(new Date('2024-05-31T18:00:00Z'))).toMatchObject({ ftp: 210, weight: 88 });
+    // A Date counts by its host-local calendar day (calendar-day.js), so build it from local components.
+    expect(t.at(new Date(2024, 4, 31, 18))).toMatchObject({ ftp: 210, weight: 88 });
   });
 
   it('history applies from the local calendar day, not from UTC midnight', () => {

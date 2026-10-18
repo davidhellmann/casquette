@@ -1,69 +1,20 @@
 ---
-import { BASE } from '../../components/app/nav';
 import Base from '../../layouts/Base.astro';
 import { render } from 'astro:content';
-import { GearDetailView, type GearDetailPayload, type GearRecord } from '../../components/gear/GearDetailView';
-import { rideRows } from '../../components/rides/ride-list.js';
-import { avgOutdoorSpeed, kmPerMonth, kmPerTerrain, kmPerYear } from '../../components/gear/gear-data.js';
-import { loadGear, curveWkg } from '../../lib/data.js';
-import { bestCurve, calendarDay, records } from '../../training/index.js';
-import { gearUrl } from '../../lib/strava-links.js';
-import { t } from '../../i18n/index.js';
+import { GearDetailView } from '../../components/gear/GearDetailView';
+import { getDataset } from '../../lib/data.js';
+import { gearPayload } from '../../lib/gear-payload.ts';
 
 export async function getStaticPaths() {
-  const gear = await loadGear();
-  return gear.map((g: any) => ({ params: { id: g.id }, props: { id: g.id } }));
+  return (await getDataset()).gear.map((g) => ({ params: { id: g.id }, props: { id: g.id } }));
 }
 
 const { id } = Astro.props;
-const all = await loadGear();
-const g: any = all.find((x: any) => x.id === id);
-const base = BASE;
-const Content = g._entry ? (await render(g._entry)).Content : null;
-const rides: any[] = g.rides;
-const c = g.custom || {};
-const purchase = c.purchase_date && !isNaN(Date.parse(c.purchase_date)) ? new Date(c.purchase_date) : null;
-const curve = bestCurve(rides);
-const recs = records(rides);
-const recordValue = { longest: (r: any) => r.distance, climb: (r: any) => r.elev, fastest: (r: any) => r.speed, np: (r: any) => r.np };
-
-const payload: GearDetailPayload = {
-  name: g.name,
-  kind: g.frame_type || t(g.type === 'shoe' ? 'gear.shoe' : 'gear.bicycle'),
-  brandModel: [g.brand, g.model].filter(Boolean).join(' '),
-  retired: !!g.retired,
-  primary: !!g.primary,
-  weight: g.weight ?? null,
-  color: c.color || null,
-  stravaUrl: gearUrl(g.id) || null,
-  description: g.description || null,
-  stats: {
-    km: g.t.km, rides: g.t.n, hours: g.t.h, elev: g.t.elev,
-    avgSpeed: avgOutdoorSpeed(rides),
-    indoorShare: g.t.h ? (g.t.indoorH / g.t.h) * 100 : null,
-    kj: g.t.kj, tss: g.t.tss,
-    first: g.first ? calendarDay(g.first.d) : null,
-    last: g.last ? calendarDay(g.last.d) : null,
-  },
-  purchase: purchase ? calendarDay(purchase) : null,
-  price: c.price_eur ?? null,
-  costPerKm: g.costPerKm,
-  ownedYears: purchase ? (Date.now() - purchase.getTime()) / 86400000 / 365 : null,
-  components: c.components || [],
-  notes: c.notes || null,
-  months: kmPerMonth(rides, new Date()),
-  years: kmPerYear(rides),
-  terrains: kmPerTerrain(rides),
-  curve: Object.fromEntries(Object.entries(curve).map(([k, v]: any) => [k, v.w])),
-  curveWkg: await curveWkg(curve),
-  records: (Object.keys(recordValue) as GearRecord['key'][]).map((key) => {
-    const r: any = recs[key];
-    return { key, ride: r ? { href: `${base}rides/${r.id}`, name: r.name, date: calendarDay(r.d), value: recordValue[key](r) } : null };
-  }),
-  rides: rideRows(rides),
-  currentYear: new Date().getFullYear(),
-};
+const data = await getDataset();
+const payload = gearPayload(data, { id });
+const entry = data.entry('gear', id);
+const Content = entry ? (await render(entry)).Content : null;
 ---
-<Base title={g.name} active="gear">
+<Base title={payload.name} active="gear">
   <GearDetailView client:load P={payload}>{Content && <Content />}</GearDetailView>
 </Base>

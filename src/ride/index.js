@@ -1,6 +1,6 @@
 /**
  * Ride module: frontmatter + athlete state on the ride date → final ride.
- * Pure, without Astro, file system or clock. Build I/O lives in lib/data.js.
+ * Pure, without Astro, file system or clock. Build I/O lives in lib/data.js (build dataset: lib/build-dataset.js).
  * Rules and contracts: docs/ride.md.
  */
 import { DEFAULT_RIDE_NAME } from './defaults.js';
@@ -8,6 +8,9 @@ import { calendarDate, countsInStats, isIndoor, rideLoad, zoneIdx } from '../tra
 import { distributionTiz } from './distribution.js';
 
 export { tizTotal } from './tiz-total.js';
+
+const num = (v) => (v == null || v === '' ? null : Number(v));
+const list = (v) => (Array.isArray(v) ? v : []);
 
 function classifications(w, hr, re, h, zones) {
   const power = w == null ? null : { zone: zoneIdx(w, zones.power_zones) + 1, source: 'power' };
@@ -65,6 +68,7 @@ export function processRide(a, athleteState) {
     year: d.getFullYear(), month: d.getMonth(), indoor: isIndoor(a), stats: countsInStats(a.sport_type || 'Ride'),
     gear_id: a.gear_id || null, gear_name: a.gear_name || null, device: a.device_name || null, commute: !!a.commute,
     distance: a.distance || 0, moving_time: a.moving_time || 0, elapsed_time: a.elapsed_time || 0, elev: a.total_elevation_gain || 0,
+    elev_low: num(a.elev_low), elev_high: num(a.elev_high), rpe: a.perceived_exertion ?? null,
     speed: a.average_speed || 0, max_speed: a.max_speed || 0, w, np, max_watts: a.max_watts ?? null, kj: a.kilojoules ?? null,
     hr, hr_max: a.max_heartrate ?? null, cad: a.average_cadence ?? null, temp: a.average_temp ?? null,
     re, kcal: a.calories ?? (a.kilojoules ? Math.round(a.kilojoules) : null),
@@ -76,7 +80,7 @@ export function processRide(a, athleteState) {
     dec: m.decoupling_pct ?? null, best: m.power_curve || null,
     ...timeInZones(m, athleteState),
     polyline: a.summary_polyline || null, streams: !!a.streams, h,
-    segs: Array.isArray(a.segment_efforts) ? a.segment_efforts : [],
+    segs: list(a.segment_efforts), laps: list(a.laps), splits: list(a.splits_metric),
     geo: a.geo && Array.isArray(a.geo.places) ? a.geo : null,
   };
 }

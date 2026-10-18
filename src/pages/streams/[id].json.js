@@ -3,13 +3,13 @@
  * Only generates files while the demo data is active; with real data there are no paths here
  * and public/streams/ is served as before.
  */
-import { demoStreamIds, readStreams } from '../../lib/data.js';
+import { getDataset } from '../../lib/data.js';
 
-export function getStaticPaths() {
-  return demoStreamIds().map((id) => ({ params: { id } }));
+export async function getStaticPaths() {
+  return (await getDataset()).streamIds().map((id) => ({ params: { id } }));
 }
 
-export function GET({ params }) {
-  const stream = readStreams(params.id);
+export async function GET({ params }) {
+  const stream = (await getDataset()).streams(params.id);
   return new Response(JSON.stringify(stream), { status: stream ? 200 : 404, headers: { 'Content-Type': 'application/json' } });
 }

@@ -4,11 +4,12 @@
  */
 import { fmtDur, nf, trunc, fmtWeekdayDate, fmtMonthShort } from '../../scripts/format.js';
 import { t } from '../../i18n/index.js';
+import { routes } from '../../lib/routes.js';
 
 const hm = (key, x) => t('dash.heat.' + key, x);
 
 /** One entry per cell (week by week, Monday first); null for days still to come. */
-export function calendarDays(H, { base }) {
+export function calendarDays(H) {
   return H.cells.map(({ d, rideDay, future, dim, level }) => {
     if (future) return null;
     const title = fmtWeekdayDate(d);
@@ -17,7 +18,7 @@ export function calendarDays(H, { base }) {
       level, dim, title,
       detail: hm('tip', { rides: t('common.rides', { n: nf(rideDay.n) }), dur: fmtDur(rideDay.sec), load: nf(rideDay.load) }),
       notes: rideDay.names.map((n) => trunc(n, 40)),
-      href: `${base}rides/${rideDay.id}`,
+      href: routes.ride(rideDay.id),
     };
   });
 }

@@ -18,6 +18,8 @@ afterEach(() => fs.rmSync(root, { recursive: true, force: true }));
 
 describe('athlete history', () => {
   const tz = process.env.TZ;
+  // Noon of 1 May on the local clock: the same calendar day in every time zone.
+  beforeEach(() => { now = new Date(2024, 4, 1, 12).getTime(); });
   afterEach(() => { if (tz === undefined) delete process.env.TZ; else process.env.TZ = tz; });
 
   it('appends FTP and weight only when they change', () => {

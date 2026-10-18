@@ -1,6 +1,6 @@
 // The demo dataset (demo/, GLOSSARY "Demo data") as a build sees it, for the tooling around the demo
 // build: screenshots, UI fragments, the demo build check and the e2e tests. Read-only; the generator
-// (demo-data.mjs) writes it, src/lib/data.js is the app's own reader.
+// (demo-data.mjs) writes it, src/lib/build-dataset.js is the app's own reader.
 import fs from 'node:fs';
 import path from 'node:path';
 import { DEMO_DIR } from '../../../src/lib/data-source.js';
@@ -41,7 +41,7 @@ function files(dir, ext, recursive = false) {
 
 /**
  * Reads the demo dataset below `root` as a build on `today` sees it: ride dates moved forward by the
- * demo clock exactly like src/lib/data.js does (src/lib/demo-clock.js).
+ * demo clock exactly like the build dataset does (src/lib/build-dataset.js, src/lib/demo-clock.js).
  * @returns {{ dir: string, meta: object, shift: number, rides: object[], gear: string[], streams: string[] }}
  *   the dataset folder, demo/data/meta.json, the shift in days, the rides (frontmatter scalars and
  *   segment ids, sorted by file), the bike ids and the ids of the rides with chart streams

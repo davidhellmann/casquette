@@ -8,8 +8,9 @@ import { nf } from '@/scripts/format.js';
 import { t } from '@/i18n/index.js';
 import { YearsChart } from './YearsChart';
 import { useIslandReady } from '@/lib/island-ready';
+import { routes } from '@/lib/routes.js';
 
-/** One year on /years (src/lib/year-payload.js). */
+/** One year on /years (src/lib/year-payload.ts). */
 export interface YearSummary {
   year: number;
   current: boolean;
@@ -24,7 +25,6 @@ export interface YearSummary {
 }
 
 export interface YearsPayload {
-  base: string;
   /** Newest first. */
   years: YearSummary[];
   rides: number;
@@ -46,11 +46,11 @@ function Delta({ pct }: { pct: number }) {
 }
 
 /** A year as a card: total kilometres, rides / hours / elevation, the months as bars and its share of the best year. */
-function YearCard({ y, base, maxKm, months }: { y: YearSummary; base: string; maxKm: number; months: string[] }) {
+function YearCard({ y, maxKm, months }: { y: YearSummary; maxKm: number; months: string[] }) {
   const mx = Math.max(1, ...y.months);
   return (
     <Card className="gap-4 px-5 transition-colors hover:bg-accent" data-slot="year-card">
-      <a href={`${base}years/${y.year}`} className="grid gap-4 rounded-md outline-offset-4 focus-visible:outline-2 focus-visible:outline-ring">
+      <a href={routes.year(y.year)} className="grid gap-4 rounded-md outline-offset-4 focus-visible:outline-2 focus-visible:outline-ring">
         <div className="flex items-start justify-between gap-2">
           <span className={cn('font-mono text-3xl font-semibold tracking-tight tabular-nums', y.current && 'text-brand-surface-foreground')}>{y.year}</span>
           {y.current ? <Badge variant="secondary">{t('years.running')}</Badge> : y.delta != null && <Delta pct={y.delta} />}
@@ -104,13 +104,13 @@ export function YearsView({ P }: { P: YearsPayload }) {
       {P.years.length > 1 && (
         <div data-testid="years-chart">
           <ChartCard title={t('years.all')} description={t('years.allSub')}>
-            <YearsChart years={P.years} base={P.base} />
+            <YearsChart years={P.years} />
           </ChartCard>
         </div>
       )}
       <h2 className="sr-only">{t('years.cards')}</h2>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" data-testid="year-cards">
-        {P.years.map((y) => <YearCard key={y.year} y={y} base={P.base} maxKm={maxKm} months={P.months} />)}
+        {P.years.map((y) => <YearCard key={y.year} y={y} maxKm={maxKm} months={P.months} />)}
       </div>
     </div>
   );

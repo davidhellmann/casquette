@@ -44,7 +44,7 @@ No clock, DOM, I/O, hidden state or mutation of the inputs.
   the calendar from `trainingCalendar` (measure: load), both in the training module and
   shared with the year review. Garage (`statsDistance`) like the
   bike pages (`kmTotal`), cost/km and ranking exclusively from synced
-  stat rides. Raw Strava distance is no substitute; `loadGear.stravaKm` names
+  stat rides. Raw Strava distance is no substitute; the build dataset's gear `stravaKm` names
   it separately (for the unchanged shoe display).
 
 The React dashboard (`src/components/dashboard/`, island `DashboardView`) renders these results:

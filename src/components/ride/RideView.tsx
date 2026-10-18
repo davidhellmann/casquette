@@ -23,7 +23,7 @@ import { DecouplingScale } from './DecouplingScale';
 type Zones = { min: number | null; max: number | null }[];
 interface Link { href: string; name: string }
 
-/** Build payload of /rides/<id> (src/pages/rides/[id].astro). Locale-dependent texts are formatted at build time. */
+/** Build payload of /rides/<id> (src/lib/ride-payload.ts). Locale-dependent texts are formatted at build time. */
 export interface RidePayload {
   id: string;
   name: string;
@@ -50,8 +50,8 @@ export interface RidePayload {
     temp: number | null; kg: number;
   };
   map: {
-    /** URL of the streams (/streams/<id>.json), null without streams – only its presence is read; they load via chart-streams. */
-    stream: string | null;
+    /** The ride has chart streams (they load via chart-streams by the ride id). */
+    streams: boolean;
     /** Route from the summary polyline – only when the streams have no GPS. */
     points: LatLng[] | null;
     /** Stream that colours the route, with its zones. */
@@ -229,13 +229,13 @@ function Section({ title, sub, children }: { title: string; sub?: string; childr
 /** Ride detail (new UI): header with prev/next, route map, key data, streams, zones, power curve, analysis, tables. */
 export function RideView({ R }: { R: RidePayload }) {
   useIslandReady();
-  const stream = useChartStreams(R.map.stream ? R.id : null);
+  const stream = useChartStreams(R.map.streams ? R.id : null);
   const mapRef = React.useRef<RideMapHandle>(null);
   const latlng: LatLng[] | null = stream?.latlng ?? null;
   const points = latlng ?? R.map.points;
   const values = latlng && R.map.key ? stream[R.map.key] ?? null : null;
   const routeZones = values ? R.map.zones : null;
-  const routeExpected = !!(R.map.points || (R.map.stream && stream === undefined));
+  const routeExpected = !!(R.map.points || (R.map.streams && stream === undefined));
   const onHover = React.useCallback((i: number | null) => {
     mapRef.current?.mark(i != null && latlng ? latlng[i] ?? null : null);
   }, [latlng]);

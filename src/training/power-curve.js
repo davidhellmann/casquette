@@ -3,6 +3,7 @@
 /**
  * Best curve per duration (seconds → { w, id }) from the rides' power curves (`{ id, best: { [sec]: watts } }`).
  * Rides without a power curve and empty values don't count; on a tie the ride passed first wins.
+ * @returns {Record<string, { w: number, id: string }>}
  */
 export function bestCurve(rides) {
   const best = {};

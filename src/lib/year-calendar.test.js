@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { trainingCalendar } from '../training/index.js';
 import { yearCalendar } from './year-calendar.js';
+import { routes } from './routes.js';
 
 // Days, levels and streaks are tested on trainingCalendar (src/training/training-calendar.test.js);
 // this covers what the year review draws from it.
@@ -10,7 +11,7 @@ const rides = [
   ride(1, new Date(2025, 0, 1, 9), 10),
   ride(3, new Date(2025, 5, 2, 8), 100),
 ];
-const calendar = (today) => yearCalendar(trainingCalendar(rides, { from: new Date(2025, 0, 1), to: new Date(2025, 11, 31), today, measure: 'km' }), 2025, { base: '/casquette/' });
+const calendar = (today) => yearCalendar(trainingCalendar(rides, { from: new Date(2025, 0, 1), to: new Date(2025, 11, 31), today, measure: 'km' }), 2025);
 const at = (C, d) => C.days[Math.round((d - new Date(2024, 11, 30)) / 86400000)];
 
 describe('yearCalendar', () => {
@@ -25,7 +26,7 @@ describe('yearCalendar', () => {
 
   it('describes a ride day: kilometres, rides and names in order; it opens the most recent ride', () => {
     expect(at(C, new Date(2025, 0, 1))).toEqual({
-      level: 1, title: 'Wed, 01/01/2025', detail: '2 rides · 40.0 km', notes: ['Ride 1', 'Evening spin'], href: '/casquette/rides/2',
+      level: 1, title: 'Wed, 01/01/2025', detail: '2 rides · 40.0 km', notes: ['Ride 1', 'Evening spin'], href: routes.ride(2),
     });
     expect(at(C, new Date(2025, 0, 2))).toEqual({ level: 0, title: 'Thu, 02/01/2025', notes: ['Rest day'] });
   });
@@ -36,7 +37,7 @@ describe('yearCalendar', () => {
     expect(C.months[11]).toEqual({ week: 48, label: 'Dec' });
   });
 
-  it('leaves the days after today empty in the running year', () => {
+  it('leaves the days after the calendar end empty in the running year', () => {
     const now = calendar(new Date(2025, 5, 2, 12));
     expect(at(now, new Date(2025, 5, 2))).not.toBeNull();
     expect(at(now, new Date(2025, 5, 3))).toBeNull();

@@ -1,63 +1,48 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { computeMetrics } from '../../scripts/shared/metrics.mjs';
+import { createBuildDataset, memorySource } from './build-dataset.js';
+import { encodeDashboard, decodeDashboard } from './dashboard-payload.js';
+import { performancePayload } from './performance-payload.ts';
+import { dashboardPeriod } from '../dashboard-period/index.js';
+import { fitnessChartData } from '../components/dashboard/fitness-data.js';
+import { periodCurve } from '../components/dashboard/progress-data.js';
+import { rideAnalysis } from '../components/dashboard/ride-analysis-data.js';
+import { timeInZones } from '../components/dashboard/intensity-data.js';
+import { powerProfile } from '../components/dashboard/overview-data.js';
+import { nutrition } from '../components/dashboard/nutrition-data.js';
+import { longTermFitnessData } from '../components/performance/performance-data.js';
 
-// Replace only I/O; run the real normalisation, build payload, browser data and card data functions.
-const fixture = vi.hoisted(() => ({ entries: [], history: [] }));
-vi.mock('astro:content', () => ({ getCollection: async () => fixture.entries }));
-vi.mock('node:fs', () => ({ default: { existsSync: () => false, readFileSync: (path) => {
-  if (path.endsWith('athlete.json')) return JSON.stringify({ zones: { ftp: 200 }, profile: { weight: 75 } });
-  if (path.endsWith('fitness-history.json')) return JSON.stringify(fixture.history);
-  throw new Error('Unexpected file read in test');
-} } }));
-
-const entry = (id, overrides = {}) => ({ data: {
+// An in-memory data source; the real build dataset, build payloads, browser data and card data functions.
+const entry = (id, overrides = {}) => ({
   id, sport_type: 'Ride', start_date_local: '2024-05-01T12:00:00Z',
   moving_time: 3600, device_watts: true, average_watts: 200,
   suffer_score: 42, metrics: {}, ...overrides,
-} });
+});
 
-async function consumers(entries, history = [], now = new Date('2024-05-03T12:00:00')) {
-  vi.resetModules();
-  fixture.entries = entries;
-  fixture.history = history;
-  vi.useFakeTimers();
-  vi.setSystemTime(now);
-  const { loadRides, loadAthlete, athleteToday } = await import('./data.js');
-  const rides = await loadRides();
+async function consumers(rides, history = [], now = new Date('2024-05-03T12:00:00')) {
+  const data = await createBuildDataset(memorySource({ athlete: { zones: { ftp: 200 }, profile: { weight: 75 } }, history, rides }), { now });
   // The real build payload, so producer and browser consumer share one contract.
-  const { encodeDashboard, decodeDashboard } = await import('./dashboard-payload.js');
-  const source = decodeDashboard(encodeDashboard({ rides, athlete: loadAthlete(), athleteState: athleteToday() }));
+  const source = decodeDashboard(encodeDashboard({ rides: data.rides, athlete: data.athlete, athleteState: data.athleteToday }));
   // The React dashboard: same payload, same period (30 days, power), same clock
-  const { dashboardPeriod } = await import('../dashboard-period/index.js');
   const D = dashboardPeriod(source.rides, { days: 30, basis: 'power', now, gear: source.athlete.gear, athleteState: source.athlete.athleteState });
   const { zones: { ftp }, weight: kg } = source.athlete.athleteState;
-  const { fitnessChartData } = await import('../components/dashboard/fitness-data.js');
   const rows = fitnessChartData(D);
   const pmc = { data: { datasets: [
     { label: 'Fitness (CTL)', data: rows.map((r) => r.ctl) },
     { label: 'Fatigue (ATL)', data: rows.map((r) => r.atl) },
   ] } };
-  const { periodCurve } = await import('../components/dashboard/progress-data.js');
-  const { rideAnalysis } = await import('../components/dashboard/ride-analysis-data.js');
-  const { timeInZones } = await import('../components/dashboard/intensity-data.js');
-  const { powerProfile } = await import('../components/dashboard/overview-data.js');
-  const { nutrition } = await import('../components/dashboard/nutrition-data.js');
   const curve = periodCurve(D, { ftp, kg });
   const analysis = D.rides.length ? rideAnalysis(D, D.rides[0].id, { basis: 'power' }) : null;
-  const { performanceData } = await import('./performance.js');
-  const performance = await performanceData();
+  const performance = performancePayload(data);
   // Long-term fitness chart of the React performance page: the rows it draws
-  const { longTermFitnessData } = await import('../components/performance/performance-data.js');
   const ltf = longTermFitnessData(performance.ctl);
   const performanceChart = { data: { datasets: [
     { label: 'Fitness (CTL)', data: ltf.map((r) => r.ctl) },
     { label: 'Fatigue (ATL)', data: ltf.map((r) => r.atl) },
   ] } };
-  return { pmc, curve, performance, performanceChart, rides, analysis,
+  return { pmc, curve, performance, performanceChart, rides: data.rides, analysis,
     exact: timeInZones(D, 'power'), profile: powerProfile(D, { ftp, kg }), food: nutrition(D, kg) };
 }
-
-afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
 
 describe('training values on dashboard and performance', () => {
   it('renders ride analysis and ride page values identically for two athlete states, without browser recomputation', async () => {
@@ -67,7 +52,7 @@ describe('training values on dashboard and performance', () => {
         start_date_local: `${date}T12:00:00`, average_heartrate: 100,
         metrics: { np: 200, ftp_used: 250, time_in_power_zones: [600, 3000] },
       })], history);
-      // loadRides returns exactly the r that rides/[id].astro also uses for the RideView payload.
+      // The dataset's rides are exactly the r the ride page payload (ride-payload.ts) uses.
       expect(rides[0]).toMatchObject({ if_: date.endsWith('01') ? 1 : 2 / 3, tss, clsP: { zone }, ef: 2 });
       expect(analysis.chips).toContainEqual({ label: 'IF · TSS', value: `${ifText} · ${tss}` });
       expect(analysis.zoneLabel).toBe(`Z${zone}`);
@@ -120,7 +105,8 @@ describe('training values on dashboard and performance', () => {
     ], [], new Date('2023-12-31T11:45:00Z'));
     expect(performance.ctl.at(-1)).toMatchObject({ date: '2024-01-01' });
     expect(performance.ctl.at(-1).ctl).toBeCloseTo(50 / 42);
-    expect(performance.current.key).toBe('2024-01');
+    expect(performance.months.at(-1)).toMatchObject({ key: '2024-01', eftp: 190 });
+    expect(performance.current).toMatchObject({ eftp: 190 });
     for (const label of ['Fitness (CTL)', 'Fatigue (ATL)']) {
       expect(pmc.data.datasets.find(d => d.label === label).data.at(-1))
         .toBe(performanceChart.data.datasets.find(d => d.label === label).data.at(-1));
@@ -144,7 +130,8 @@ describe('training values on dashboard and performance', () => {
     ]);
     expect(performance.ctl.at(-1).ctl).toBeCloseTo(200 / 42 * (41 / 42) ** 2, 12);
     expect(pmc.data.datasets.find((d) => d.label === 'Fitness (CTL)').data.at(-1)).toBe(4.5);
-    expect(performance.allTime[5]).toEqual({ w: 800, id: 'velomobile' });
+    expect(performance.curves.all[5]).toBe(800);
+    expect(performance.profile[0].vals[0]).toMatchObject({ w: 800, id: 'velomobile' });
     expect(curve.rows.map((r) => r.curveAll)).toEqual([800]);
   });
 
@@ -155,7 +142,8 @@ describe('training values on dashboard and performance', () => {
     ]);
     expect(performance.months.find((m) => m.key === '2024-01')).toMatchObject({ eftp: 380, best20: 400 });
     expect(performance.months.find((m) => m.key === '2024-04')).toMatchObject({ eftp: null, best20: null });
-    expect(performance.current).toMatchObject({ key: '2024-05', eftp: 240, best20: 250 });
+    expect(performance.months.at(-1)).toMatchObject({ key: '2024-05', eftp: 240, best20: 250 });
+    expect(performance.current).toMatchObject({ eftp: 240 });
   });
 
   it('uses the same best curve including rides without a power curve and without e-bikes', async () => {
@@ -165,8 +153,9 @@ describe('training values on dashboard and performance', () => {
       entry('no-curve'),
       entry('ebike', { sport_type: 'EBikeRide', metrics: { np: 1000, power_curve: { 5: 9999, 1200: 9999 } } }),
     ]);
-    expect(performance.allTime).toEqual({ 5: { w: 900, id: 'a' }, 1200: { w: 250, id: 'b' }, 3600: { w: 230, id: 'b' } });
+    expect(performance.curves.all).toEqual({ 5: 900, 1200: 250, 3600: 230 });
+    expect(performance.profile[0].vals.map((v) => v?.id ?? null)).toEqual(['a', null, null, 'b', 'b']);
     expect(curve.rows.map((r) => r.curveAll)).toEqual([900, 250, 230]);
-    expect(performance.current).toMatchObject({ eftp: 238, best20: 250 });
+    expect(performance.months.at(-1)).toMatchObject({ eftp: 238, best20: 250 });
   });
 });

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { calendarDays, calendarMonths, calendarStats } from './calendar-data.js';
+import { routes } from '../../lib/routes.js';
 
 // A hand-made D.heatmap (shape from src/dashboard-period/history.js): one ride day, one rest day, one future day.
 const ride = { load: 87.4, sec: 8100, n: 2, names: ['Morning Ride', 'A very long ride name that keeps going and going on'], id: 42 };
@@ -15,20 +16,20 @@ const H = {
 
 describe('calendarDays', () => {
   it('describes a ride day like the tooltip: date, rides · duration · load, names; it opens the ride', () => {
-    expect(calendarDays(H, { base: '/casquette/' })[0]).toEqual({
+    expect(calendarDays(H)[0]).toEqual({
       level: 3,
       dim: false,
       title: 'Mon, 03/03/2025',
       detail: '2 rides · 2:15 h · load 87',
       notes: ['Morning Ride', 'A very long ride name that keeps going …'],
-      href: '/casquette/rides/42',
+      href: routes.ride(42),
     });
   });
   it('marks a day without rides as a rest day', () => {
-    expect(calendarDays(H, { base: '/' })[1]).toEqual({ level: 0, dim: true, title: 'Tue, 04/03/2025', notes: ['Rest day'] });
+    expect(calendarDays(H)[1]).toEqual({ level: 0, dim: true, title: 'Tue, 04/03/2025', notes: ['Rest day'] });
   });
   it('leaves future days empty', () => {
-    expect(calendarDays(H, { base: '/' })[2]).toBeNull();
+    expect(calendarDays(H)[2]).toBeNull();
   });
 });
 

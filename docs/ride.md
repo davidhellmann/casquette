@@ -5,8 +5,11 @@ planned English names are listed in `docs/adr/0001-english-domain-language.md`.
 
 `src/ride/index.js` is the pure entry point of the ride module: `processRide(frontmatter, athleteState)`.
 The caller passes `athleteTimeline(...).at(frontmatter.start_date_local)` from #4.
-`src/lib/data.js::normalize` loads this state centrally and delegates; all build pages
-use the same ride. Astro/FS/streams/clock are not dependencies of the ride module.
+The build dataset (`src/lib/build-dataset.js`, see "Build dataset and page payloads" below) loads
+this state centrally and delegates, once per ride; all build pages use the same ride.
+Astro/FS/streams/clock are not dependencies of the ride module. Besides the metrics the ride
+carries what its ride page shows from the frontmatter: `elev_low`/`elev_high`, `rpe`
+(perceived exertion), `laps`, `splits` (metric splits) and `segs` (segment efforts).
 
 **Date ≠ instant:** `start` keeps `start_date` as Unix milliseconds (including
 sub-seconds); only this actual start decides whether a ride lies in the future.
@@ -43,7 +46,7 @@ bounds in % of FTP starting at 0, rounded to watts like Coggan. An invalid or un
 the build with the field named. "Today" is the state at build time.
 W/kg of a ride or of a power best uses the weight on the date of origin, not a flat yearly or
 current weight; if the originating ride is missing, W/kg stays unknown. The build loads the athlete
-and the FTP/weight history once, centrally, in `src/lib/data.js`.
+and the FTP/weight history once, centrally, in the build dataset (`src/lib/build-dataset.js`).
 
 ## Deliberate consolidation
 
@@ -238,7 +241,8 @@ stream, Markdown, cache and rename boundaries, including resume.
 `src/lib/dashboard-payload.js` is the one seam between the build and the dashboard / ride log
 islands (`#dash-data`): `encodeDashboard` on the build side, `decodeDashboard` on the island side,
 each the other's inverse, so the round trip is lossless by construction (tested only through these
-two functions). The build pages pass the loaded rides, athlete, today's athlete state and goals;
+two functions). The build pages pass the build dataset's rides (every ride: the islands admit rides by the
+browser's clock), athlete, today's athlete state and goals;
 `use-dashboard.ts` reads the element and runs the dashboard period.
 Encoding selects only the required ride fields,
 without renaming or computation. No segments/polylines, geo only with place names.
@@ -268,3 +272,34 @@ The stream charts colour power and heart rate by the zones on the ride date (lik
 `evalGoal` reads the flat fields including `d` and excludes `stats: false` itself.
 `dashboardFitness` remains the existing adapter for further consumers/regression;
 the dashboard period module passes the final `load` directly to the same `fitnessSeries` series.
+
+## Build dataset and page payloads
+
+`src/lib/build-dataset.js::createBuildDataset(source, { now })` is the one place the build reads its
+data from (GLOSSARY "Build dataset"). `source` is a data source adapter: `fileSource()` in
+`src/lib/data.js` reads the synced or the demo data (`selectDataSource`, `astro:content`, the JSON
+files in the data folder, chart streams); `memorySource({...})` serves tests with the same shapes,
+validated by the content schemas. `now` is the build clock, read once by `getDataset()` in
+`src/lib/data.js` (cached for all pages); no other build module reads the clock.
+
+The dataset owns the demo date shift, the athlete timeline (`athleteAt(date)`, `athleteToday`,
+`history`), every ride through the ride module (`rides`, newest first), gear with its totals, goals,
+`curveWkg(best)` and the **build calendar** `calendar = { now, today, end, rides, statRides }`
+(`rideCalendar`): `rides`/`statRides` are the admitted rides – actual start not in the future –
+and `end` is the calendar end. Every build view that counts rides uses the build calendar:
+sidebar recent rides, years, year reviews, bikes, segments, performance and the bests on the ride
+page. Every ride, admitted or not, still gets its ride page and its route on the map, and the
+dashboard payload carries every ride because the islands admit rides again by the browser's clock.
+Calendar views end at the calendar end (year review calendar, gear months, performance months); the
+running year is the year of the calendar end and compares year to date up to it.
+
+Each page has one payload module of the form `(dataset, params) → payload`, typed against its
+island's payload type (TypeScript, `src/lib/*-payload.ts`): `ride-payload.ts` (`RidePayload`),
+`gear-payload.ts` (`GearPayload`, `GearDetailPayload`), `segment-payload.ts` (`SegmentsPayload`,
+`SegmentPayload`), `performance-payload.ts` (`PerformancePayload`), `year-payload.ts` (`YearsPayload`,
+`YearPayload`) and `map-payload.ts` (`MapViewProps` plus the `#map-data` JSON). The dashboard and the
+ride log encode the dataset with `encodeDashboard`. The `.astro` pages only call the builder and
+render; internal links come from `src/lib/routes.js`. Payload tests run over the in-memory dataset
+(`src/lib/dataset-fixture.js`). TypeScript is not a dependency and the build does not type-check;
+to check the payload modules against the island types, install it without saving
+(`npm i --no-save typescript`) and run `npx tsc --noEmit -p .`.

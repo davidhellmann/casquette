@@ -4,12 +4,12 @@ import { t } from '@/i18n/index.js';
 import { calendarDays, calendarMonths, calendarStats } from './calendar-data.js';
 
 /** Training calendar of the last 52 weeks (colour = training load) – independent of the period. */
-export function CalendarCard({ D, base }: { D: any; base: string }) {
+export function CalendarCard({ D }: { D: any }) {
   const H = D.heatmap;
   return (
     <ChartCard title={t('dash.sec.calendar')} description={t('dash.card.heatmapSub')}>
       <TrainingCalendar
-        days={calendarDays(H, { base })}
+        days={calendarDays(H)}
         weeks={H.cells.length / 7}
         months={calendarMonths(H)}
         weekdays={t('common.weekdaysShort')}

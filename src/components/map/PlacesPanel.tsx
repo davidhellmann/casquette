@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { fmtIso, nf } from '@/scripts/format.js';
 import { LOCALE, t } from '@/i18n/index.js';
+import { routes } from '@/lib/routes.js';
 import type { Route } from './RouteMap';
 
 export interface Geo { country: string; region: string; place: number | null; spot: Set<string> | null }
@@ -31,7 +32,6 @@ export interface PlacesPanelProps {
   rides: Route[];
   limit: number;
   onMore: () => void;
-  base: string;
 }
 
 const regionNames = (() => { try { return new Intl.DisplayNames([LOCALE], { type: 'region' }); } catch { return null; } })();
@@ -59,7 +59,7 @@ function ShareRow({ share, onClick, children, sub }: { share: number; onClick: (
 const Empty = ({ children }: { children: React.ReactNode }) => <p className="px-2 py-2 text-sm text-muted-foreground">{children}</p>;
 
 /** Places browser (country → region → place) and the rides on the map. Used in the side panel and the mobile sheet. */
-export function PlacesPanel({ P, browser, G, onGeo, q, onQ, tab, onTab, rides, limit, onMore, base }: PlacesPanelProps) {
+export function PlacesPanel({ P, browser, G, onGeo, q, onQ, tab, onTab, rides, limit, onMore }: PlacesPanelProps) {
   const chips: { key: string; label: string; clear: Partial<Geo> }[] = [];
   if (G.spot) chips.push({ key: 'spot', label: t('map.spot'), clear: {} });
   if (G.country) chips.push({ key: 'country', label: countryName(G.country), clear: { country: '', region: '', place: null } });
@@ -133,7 +133,7 @@ export function PlacesPanel({ P, browser, G, onGeo, q, onQ, tab, onTab, rides, l
             <ul>
               {rides.slice(0, limit).map((r) => (
                 <li key={r.i}>
-                  <a href={`${base}rides/${r.i}`} className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50">
+                  <a href={routes.ride(r.i)} className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50">
                     <span className="truncate font-medium">{r.n}</span>
                     <span className={small}>{nf(r.k, 1)} km</span>
                     <span className="truncate text-xs text-muted-foreground">{where(r)}</span>

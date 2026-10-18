@@ -1,11 +1,11 @@
 ---
-import { BASE } from '../components/app/nav';
 import '../styles/app.css';
 import { Font } from 'astro:assets';
 import { AppShell } from '../components/app/AppShell';
 import { LANG, pageTitle, t } from '../i18n/index.js';
 import { fmtDayMonth, nf } from '../scripts/format.js';
-import { isDemo, loadAthlete, loadGear, loadRides, loadStatRides } from '../lib/data.js';
+import { getDataset } from '../lib/data.js';
+import { BASE, routes } from '../lib/routes.js';
 import { legalLinks } from '../lib/legal-links.js';
 import { yearTotals } from '../training/index.js';
 import type { NavSubmenus } from '../components/app/nav';
@@ -35,17 +35,18 @@ const crumbs = depth > 1 && title ? [section, { label: title }] : [section];
 // Hosted demo only: links to the website's legal pages (PUBLIC_LEGAL_URL, website/README.md)
 const legal = legalLinks(import.meta.env.PUBLIC_LEGAL_URL) ?? undefined;
 
-const syncedAt = loadAthlete().synced_at;
+const data = await getDataset();
+const syncedAt = data.athlete.synced_at;
 const lastSync = syncedAt ? fmtDayMonth(new Date(syncedAt), true) : undefined;
 
-// Sidebar submenus: the last 5 rides, the latest 3 years and the active bikes – each with a second line (date, km)
-const years = yearTotals(await loadStatRides());
+// Sidebar submenus: the last 5 rides that already happened (build calendar), the latest 3 years and the
+// active bikes – each with a second line (date, km)
+const years = yearTotals(data.calendar.statRides);
 const km = (v: number) => `${nf(v)} km`;
-const now = new Date();
 const submenus: NavSubmenus = {
-  rides: (await loadRides()).filter((r: any) => r.d <= now).slice(0, 5).map((r: any) => ({ href: `${base}rides/${r.id}`, label: r.name, detail: `${fmtDayMonth(r.d)} · ${km(r.distance / 1000)}` })),
-  years: years.slice(-3).reverse().map(({ year, km: v }) => ({ href: `${base}years/${year}`, label: String(year), detail: km(v) })),
-  gear: (await loadGear()).filter((g: any) => g.type === 'bike' && !g.retired).map((g: any) => ({ href: `${base}gear/${g.id}`, label: g.name, detail: km(g.kmTotal) })),
+  rides: data.calendar.rides.slice(0, 5).map((r) => ({ href: routes.ride(r.id), label: r.name, detail: `${fmtDayMonth(r.d)} · ${km(r.distance / 1000)}` })),
+  years: years.slice(-3).reverse().map(({ year, km: v }) => ({ href: routes.year(year), label: String(year), detail: km(v) })),
+  gear: data.gear.filter((g) => g.type === 'bike' && !g.retired).map((g) => ({ href: routes.gear(g.id), label: g.name, detail: km(g.kmTotal) })),
 };
 ---
 <!doctype html>
@@ -80,7 +81,7 @@ const submenus: NavSubmenus = {
     </script>
   </head>
   <body>
-    <AppShell client:load active={active} crumbs={crumbs} period={period} yearSwitch={yearSwitch && { ...yearSwitch, base }} demoHref={isDemo() ? SETUP_URL : undefined} lastSync={lastSync} legal={legal} submenus={submenus} path={Astro.url.pathname}>
+    <AppShell client:load active={active} crumbs={crumbs} period={period} yearSwitch={yearSwitch} demoHref={data.demo ? SETUP_URL : undefined} lastSync={lastSync} legal={legal} submenus={submenus} path={Astro.url.pathname}>
       <main id="content" class="min-w-0">
         <div class="mx-auto w-full max-w-[1440px] px-4 pt-2 lg:px-7"><slot /></div>
       </main>

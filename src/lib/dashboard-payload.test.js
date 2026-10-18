@@ -23,21 +23,21 @@ const browser = (rides) => decodeDashboard(encodeDashboard({ rides })).rides;
 const wire = (rides) => JSON.parse(encodeDashboard({ rides })).rides;
 
 describe('dashboard payload: round trip build → #dash-data → island', () => {
-  it('carries base, athlete, today\'s athlete state, goals and the stream count, and escapes "<"', () => {
+  it('carries the athlete, today\'s athlete state, goals and the stream count, and escapes "<"', () => {
     const athlete = { profile: { first_name: '<Jane>' }, gear: [{ id: 'b1' }], synced_at: '2024-05-01T10:00:00Z', sync: { list_complete: true }, token: 'never sent' };
     const athleteState = { ftp: 250, weight: 70, zones: { ftp: 250 } };
     const goals = [{ metric: 'distance', period: 'year', target: 5000 }];
     const rides = [make('a', '2024-05-01', { streams: true }), make('b', '2024-05-02')];
-    const text = encodeDashboard({ rides, athlete, athleteState, goals, base: '/sub/' });
+    const text = encodeDashboard({ rides, athlete, athleteState, goals });
     expect(text).not.toContain('<');
     const source = decodeDashboard(text);
-    expect(source).toMatchObject({ base: '/sub/', goals, streamsCount: 1, athlete: { profile: athlete.profile, gear: athlete.gear, synced_at: athlete.synced_at, sync: athlete.sync, athleteState } });
+    expect(source).toMatchObject({ goals, streamsCount: 1, athlete: { profile: athlete.profile, gear: athlete.gear, synced_at: athlete.synced_at, sync: athlete.sync, athleteState } });
     expect(source.athlete).not.toHaveProperty('token');
     expect(source.rides.map((r) => r.id)).toEqual(['b', 'a']);
   });
 
   it('decodes an empty payload to an empty dashboard source', () => {
-    expect(decodeDashboard('')).toEqual({ base: '/', athlete: {}, goals: [], streamsCount: 0, rides: [] });
+    expect(decodeDashboard('')).toEqual({ athlete: {}, goals: [], streamsCount: 0, rides: [] });
   });
 });
 
