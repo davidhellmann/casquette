@@ -13,7 +13,7 @@ export interface CalendarDay {
   notes?: string[];
   /** Click / Enter opens this URL (the day's ride). */
   href?: string;
-  /** Outside the highlighted range – drawn faint. */
+  /** Outside the highlighted period – drawn faint. */
   dim?: boolean;
 }
 

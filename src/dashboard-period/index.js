@@ -10,26 +10,26 @@ const weighted = (rides, key) => {
 };
 const curve = rides => bestCurve(rides.map(r => ({ id: r.id, best: r.best })));
 /** Selectable periods in calendar days; 0 = all time. */
-export const RANGES = [7, 14, 30, 90, 365, 0];
+export const PERIODS = [7, 14, 30, 90, 365, 0];
 /** Zone bases a dashboard period can evaluate. */
 export const BASES = ['power', 'hr'];
 
-/** Final, flat rides + calendar range + classification basis + explicit clock → card data.
+/** Final, flat rides + period + classification basis + explicit clock → card data.
  * No I/O, mutation of inputs, current athlete settings or reclassification of rides.
  */
 export function dashboardPeriod(all, { days: selectedDays, basis, now, gear = [], athleteState }) {
   if (!(now instanceof Date) || !Number.isFinite(+now)) throw new TypeError('now must be a valid Date');
-  if (!RANGES.includes(selectedDays) || !BASES.includes(basis)) throw new RangeError('Invalid dashboard range or basis');
+  if (!PERIODS.includes(selectedDays) || !BASES.includes(basis)) throw new RangeError('Invalid dashboard period or basis');
   const today = startOfDay(now);
   const { available, end: calendarEnd } = rideCalendar(all, now);
   available.sort((a, b) => b.d - a.d);
   const ridesAll = available.filter(r => r.stats);
   const oldest = ridesAll.length ? startOfDay(ridesAll.at(-1).d) : today;
   const days = selectedDays || Math.max(1, daysBetween(oldest, calendarEnd) + 1);
-  const rangeStart = addDays(calendarEnd, 1 - days), prevStart = addDays(rangeStart, -days);
-  const D = { now: new Date(now), today, calendarEnd, oldest, days, rangeStart, prevStart, heatStart: addDays(weekStart(calendarEnd), -364), ridesAll,
-    rides: ridesAll.filter(r => r.d >= rangeStart), log: selectedDays ? available.filter(r => r.d >= rangeStart) : available,
-    prevRides: selectedDays ? ridesAll.filter(r => r.d >= prevStart && r.d < rangeStart) : [],
+  const periodStart = addDays(calendarEnd, 1 - days), prevStart = addDays(periodStart, -days);
+  const D = { now: new Date(now), today, calendarEnd, oldest, days, periodStart, prevStart, heatStart: addDays(weekStart(calendarEnd), -364), ridesAll,
+    rides: ridesAll.filter(r => r.d >= periodStart), log: selectedDays ? available.filter(r => r.d >= periodStart) : available,
+    prevRides: selectedDays ? ridesAll.filter(r => r.d >= prevStart && r.d < periodStart) : [],
     hasPrevious: selectedDays !== 0 };
   const R = D.rides, Pv = D.prevRides, S = { n: R.length, nP: Pv.length };
   for (const [name, key] of Object.entries({ time: 'moving_time', dist: 'distance', elev: 'elev', kcal: 'kcal', pr: 'pr', tss: 'tss' })) {
@@ -37,7 +37,7 @@ export function dashboardPeriod(all, { days: selectedDays, basis, now, gear = []
   }
   S.ach = sum(R, 'ach');
   // Preserve legacy odd-day split: the first half has floor(days / 2) calendar days.
-  const mid = addDays(rangeStart, Math.floor(days / 2));
+  const mid = addDays(periodStart, Math.floor(days / 2));
   const h1 = R.filter(r => r.d < mid), h2 = R.filter(r => r.d >= mid);
   S.avgWkg = weighted(R, 'avg_wkg');
   for (const [key, name] of [['w', 'avgW'], ['hr', 'avgHR']]) {
@@ -52,7 +52,7 @@ export function dashboardPeriod(all, { days: selectedDays, basis, now, gear = []
   S.low = S.pZ1 + S.pZ2; S.z2hWeek = S.zt[2] / 3600 / (days / 7);
   D.fitness = fitnessSeries(ridesAll.map(r => ({ day: rideDate(r), tss: r.load })), { to: calendarDay(calendarEnd) })
     .map(x => ({ ...x, k: x.day, d: new Date(x.day + 'T00:00:00') }));
-  D.pmc = D.fitness.filter(x => x.day >= calendarDay(rangeStart));
+  D.pmc = D.fitness.filter(x => x.day >= calendarDay(periodStart));
   const last = D.pmc.at(-1) || { ctl: 0, atl: 0, tsb: 0 };
   S.ctl = last.ctl; S.atl = last.atl; S.tsb = last.tsb; S.ctlDelta = D.pmc.length ? last.ctl - D.pmc[0].ctl : 0;
   S.curve = curve(R); S.curve1 = curve(h1); S.curve2 = curve(h2); S.curveAll = curve(ridesAll);

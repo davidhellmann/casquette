@@ -2,7 +2,7 @@ import { thin } from '../charts/series.ts';
 
 /**
  * Fitness, fatigue & form chart rows for the dashboard period: one row per day, values rounded to
- * the shown precision. Long ranges are thinned for display only.
+ * the shown precision. Long periods are thinned for display only.
  * @returns {{ day: string, d: Date, ctl: number, atl: number, tsb: number, load: number }[]}
  */
 export function fitnessChartData(D) {

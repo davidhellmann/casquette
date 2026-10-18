@@ -22,7 +22,7 @@ export function cards(D, basis, gear, athleteState) {
   const monthly = days > 400, buckets = [], idx = {};
   const key = d => monthly ? calendarDay(d).slice(0, 7) : calendarDay(weekStart(d));
   const calendarEnd = D.calendarEnd;
-  for (let d = monthly ? new Date(D.rangeStart.getFullYear(), D.rangeStart.getMonth(), 1) : weekStart(D.rangeStart);
+  for (let d = monthly ? new Date(D.periodStart.getFullYear(), D.periodStart.getMonth(), 1) : weekStart(D.periodStart);
     d <= calendarEnd; d = monthly ? new Date(d.getFullYear(), d.getMonth()+1, 1) : addDays(d, 7)) {
     idx[key(d)] = buckets.length; buckets.push({ d, z: Array(6).fill(0), u: 0, total: 0 });
   }
@@ -49,7 +49,7 @@ export function cards(D, basis, gear, athleteState) {
   S.hoursPerWeek = S.time / 3600 / (days / 7); S.tssPerWeek = S.tss / (days / 7); S.kmPerRide = S.n ? S.dist / 1000 / S.n : 0;
   D.sparks = {};
   const spark = (f, avg = false) => {
-    const n = 12, start = +D.rangeStart, width = (+addDays(D.calendarEnd, 1) - start) / n, v = Array(n).fill(0), wt = Array(n).fill(0);
+    const n = 12, start = +D.periodStart, width = (+addDays(D.calendarEnd, 1) - start) / n, v = Array(n).fill(0), wt = Array(n).fill(0);
     for (const r of R) { const x = f(r); if (x == null) continue; const i = Math.min(n-1, Math.max(0, Math.floor((+r.d - start) / width)));
       if (avg) { v[i] += x * r.moving_time; wt[i] += r.moving_time; } else v[i] += +x || 0;
     }
