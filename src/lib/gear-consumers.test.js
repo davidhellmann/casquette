@@ -1,5 +1,5 @@
 import { expect, it, vi } from 'vitest';
-import { dashboardRides, hydrateRides } from '../scripts/dashboard-data.js';
+import { decodeDashboard, encodeDashboard } from './dashboard-payload.js';
 import { dashboardPeriod } from '../dashboard-period/index.js';
 
 const fixtures = vi.hoisted(() => ({
@@ -24,8 +24,8 @@ it('bike pages and dashboard garage use stat ride km for total, cost and ranking
   expect(gear.map(g => g.id)).toEqual(['b2', 'b1', 'b3']);
   expect(gear.find(g => g.id === 'b1')).toMatchObject({ kmTotal: 10, costPerKm: 100, t: { km: 10, n: 1 } });
   expect(gear.find(g => g.id === 'b3')).toMatchObject({ kmTotal: 0, costPerKm: null });
-  const rides = hydrateRides(JSON.parse(JSON.stringify(dashboardRides(await loadRides()))));
-  const d = dashboardPeriod(rides, { days: 30, basis: 'power', now: new Date('2024-06-02T12:00:00Z'), gear: loadAthlete().gear });
+  const source = decodeDashboard(encodeDashboard({ rides: await loadRides(), athlete: loadAthlete() }));
+  const d = dashboardPeriod(source.rides, { days: 30, basis: 'power', now: new Date('2024-06-02T12:00:00Z'), gear: source.athlete.gear });
   expect(d.garage.total).toBe(30000);
   expect(d.garage.max).toBe(20000);
   expect(d.garage.active.map(g => [g.id, g.statsDistance])).toEqual([['b2', 20000], ['b1', 10000]]);
