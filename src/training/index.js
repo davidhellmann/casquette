@@ -10,3 +10,6 @@ export { athleteTimeline, DEFAULT_WEIGHT } from './athlete-state.js';
 export { bestCurve } from './power-curve.js';
 export { rideCalendar } from './ride-calendar.js';
 export { rideLoad, fitnessSeries, CTL_DAYS, ATL_DAYS } from './fitness.js';
+export { calendarDate, calendarDay, rideDate, startOfDay, addDays, weekStart, dayOrdinal, ordinalDay, daysBetween, isoWeek, yearDayIndex, sameDayLastYear } from './calendar-day.js';
+export { records, RECORD_KINDS } from './records.js';
+export { trainingCalendar, yearTotals } from './training-calendar.js';

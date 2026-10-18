@@ -1,14 +1,11 @@
 /** Fitness (CTL) and fatigue (ATL): exponentially weighted load per day. Pure, no I/O. */
+import { dayOrdinal, ordinalDay } from './calendar-day.js';
 
 export const CTL_DAYS = 42;
 export const ATL_DAYS = 7;
 
 /** Load of a ride: TSS, otherwise Relative Effort, otherwise 0. */
 export const rideLoad = (r) => r.tss ?? r.re ?? 0;
-
-const DAY_MS = 86400000;
-const toUtc = (day) => Date.parse(day + 'T00:00:00Z');
-const toDay = (ms) => new Date(ms).toISOString().slice(0, 10);
 
 /**
  * Daily series of fitness/fatigue. `rides`: `{ day: 'YYYY-MM-DD', tss?, re? }` in any order.
@@ -25,8 +22,8 @@ export function fitnessSeries(rides, { from, to }) {
   if (!start) return [];
   const out = [];
   let ctl = 0, atl = 0;
-  for (let t = toUtc(start), end = toUtc(to); t <= end; t += DAY_MS) {
-    const day = toDay(t);
+  for (let n = dayOrdinal(start), end = dayOrdinal(to); n <= end; n++) {
+    const day = ordinalDay(n);
     // summed in ascending order → same result regardless of ride order
     const load = (perDay.get(day) || []).sort((a, b) => a - b).reduce((s, l) => s + l, 0);
     const tsb = ctl - atl;
