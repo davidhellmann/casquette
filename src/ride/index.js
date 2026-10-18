@@ -3,22 +3,22 @@
  * Pure, without Astro, file system or clock. Build I/O lives in lib/data.js.
  * Rules and contracts: docs/ride.md.
  */
-import { t } from '../i18n/index.js';
+import { DEFAULT_RIDE_NAME } from './defaults.js';
 import { countsInStats, rideLoad, zoneIdx } from '../training/index.js';
 import { calendarDate } from '../training/calendar-day.js';
 import { distributionTiz } from './distribution.js';
 
 function classifications(w, hr, re, h, zones) {
-  const power = w == null ? null : { zone: zoneIdx(w, zones.power_zones) + 1, source: 'power', src: t('classification.power'), val: Math.round(w) + ' W' };
-  const heart = hr == null ? null : { zone: zoneIdx(hr, zones.heart_rate_zones) + 1, source: 'hr', src: t('classification.hr'), val: Math.round(hr) + ' bpm' };
+  const power = w == null ? null : { zone: zoneIdx(w, zones.power_zones) + 1, source: 'power' };
+  const heart = hr == null ? null : { zone: zoneIdx(hr, zones.heart_rate_zones) + 1, source: 'hr' };
   let estimate = null;
   // Existing dashboard heuristic: effort 0 or duration 0 yields no effort estimate.
   if (re > 0 && h > 0) {
     const eph = re / h;
     const zone = eph < 35 ? 1 : eph < 70 ? 2 : eph < 110 ? 3 : 4;
-    estimate = { zone, source: 'effort', src: t('classification.effort'), val: '≈ Z' + zone };
+    estimate = { zone, source: 'effort' };
   }
-  const unknown = { zone: null, source: 'none', src: '–', val: '–' };
+  const unknown = { zone: null, source: 'none' };
   return { clsP: power || heart || estimate || unknown, clsH: heart || power || estimate || unknown };
 }
 
@@ -34,18 +34,12 @@ function timeInZones(m, athleteState) {
     tizP: rebuilt ?? m.time_in_power_zones ?? null,
     tizH: hrRebuilt ?? m.time_in_hr_zones ?? null,
     tizBasis: {
-      power: rebuilt ? {
-        source: 'distribution', ftp: athleteState.ftp, zones: athleteState.zones.power_zones, exact: true,
-        label: t('zones.basisFtpAtDate', { ftp: athleteState.ftp }),
-      } : {
-        source: m.time_in_power_zones ? 'legacy' : 'none', ftp, zones: legacy?.zones ?? null, exact: false,
-        label: t('zones.basisLegacy', { ftp: ftp != null ? t('zones.basisSyncFtp', { ftp }) : t('zones.basisSyncFtpUnknown') }),
-      },
-      hr: hrRebuilt ? {
-        source: 'distribution', zones: athleteState.zones.heart_rate_zones, exact: true, label: t('zones.basisHrAtDate'),
-      } : {
-        source: hrZones ? 'sync' : 'legacy', zones: hrZones, exact: false, label: t(hrZones ? 'zones.basisHrStored' : 'zones.basisHrUnknown'),
-      },
+      power: rebuilt
+        ? { source: 'distribution', ftp: athleteState.ftp, zones: athleteState.zones.power_zones, exact: true }
+        : { source: m.time_in_power_zones ? 'legacy' : 'none', ftp, zones: legacy?.zones ?? null, exact: false },
+      hr: hrRebuilt
+        ? { source: 'distribution', zones: athleteState.zones.heart_rate_zones, exact: true }
+        : { source: hrZones ? 'sync' : 'legacy', zones: hrZones, exact: false },
     },
   };
 }
@@ -66,7 +60,7 @@ export function processRide(a, athleteState) {
   const ef = np != null && hr > 0 ? Math.round(np / hr * 1000) / 1000 : null;
   const re = a.suffer_score ?? null;
   return {
-    id: String(a.id), name: a.name || t('ride.crumb'), sport_type: a.sport_type || 'Ride', start_local: a.start_date_local, start, d,
+    id: String(a.id), name: a.name || DEFAULT_RIDE_NAME, sport_type: a.sport_type || 'Ride', start_local: a.start_date_local, start, d,
     year: d.getFullYear(), month: d.getMonth(), indoor: !!a.trainer || a.sport_type === 'VirtualRide', stats: countsInStats(a.sport_type || 'Ride'),
     gear_id: a.gear_id || null, gear_name: a.gear_name || null, device: a.device_name || null, commute: !!a.commute,
     distance: a.distance || 0, moving_time: a.moving_time || 0, elapsed_time: a.elapsed_time || 0, elev: a.total_elevation_gain || 0,

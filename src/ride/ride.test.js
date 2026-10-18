@@ -45,7 +45,7 @@ describe('Ride – public, pure processing', () => {
   it('makes the HR/power fallback and the effort estimate explicit', () => {
     expect(process({ has_heartrate: false })).toMatchObject({ hr: null, ef: null, clsH: { source: 'power' } });
     expect(process({ device_watts: false, has_heartrate: false, metrics: {} })).toMatchObject({
-      clsP: { source: 'effort', zone: 3, src: 'estimated' }, clsH: { source: 'effort', zone: 3 }, load: 90,
+      clsP: { source: 'effort', zone: 3 }, clsH: { source: 'effort', zone: 3 }, load: 90,
     });
     expect(process({ device_watts: false, has_heartrate: false, metrics: {}, suffer_score: null })).toMatchObject({
       clsP: { source: 'none', zone: null }, clsH: { source: 'none', zone: null }, load: 0,
@@ -89,8 +89,7 @@ describe('Ride – public, pure processing', () => {
     expect(r).toMatchObject({ ftp: 200, tizP: [60, 120], tizH: [100, 80],
       tizBasis: { power: { ftp: 400, zones: null }, hr: { zones: null } },
     });
-    expect(r.tizBasis.power.label).toContain('Sync FTP 400 W');
-    expect(r.tizBasis.power.label).toContain('boundaries not stored');
+    expect(r.tizBasis.power).toEqual({ source: 'legacy', ftp: 400, zones: null, exact: false });
     expect(process({ metrics: { time_in_power_zones: [100] } }).tizBasis.power).toMatchObject({ ftp: null, zones: null });
   });
 
@@ -99,6 +98,13 @@ describe('Ride – public, pure processing', () => {
     const r = process({ metrics: { time_in_hr_zones: [100, 80], time_in_hr_zones_basis: { source: 'sync', zones } } });
     expect(r.tizH).toEqual([100, 80]);
     expect(r.tizBasis.hr).toMatchObject({ source: 'sync', zones, exact: false });
-    expect(r.tizBasis.hr.label).toMatch(/stored at sync/i);
+    expect(r.tizBasis.hr).not.toHaveProperty('label');
+  });
+
+  it('returns codes only – no localised text – and names a ride without a name "Ride"', () => {
+    const r = process({ name: '' });
+    expect(r.name).toBe('Ride');
+    for (const key of ['clsP', 'clsH']) expect(Object.keys(r[key]).sort()).toEqual(['source', 'zone']);
+    for (const kind of ['power', 'hr']) expect(r.tizBasis[kind]).not.toHaveProperty('label');
   });
 });

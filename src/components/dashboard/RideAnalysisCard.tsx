@@ -12,45 +12,33 @@ import { SERIES } from '@/components/charts/series';
 import { SeriesLegend, TooltipBox } from '@/components/charts/chart-parts';
 import { nf } from '@/scripts/format.js';
 import { t } from '@/i18n/index.js';
-import { rideAnalysis, streamRows } from './ride-analysis-data.js';
+import { analysisStreams, rideAnalysis } from './ride-analysis-data.js';
 import { WithTip } from '@/components/app/KeyFigures';
 import { BasisToggle, type Basis } from './parts';
-
-const cache = new Map<string, unknown>();
-/** A ride's streams (second by second), fetched once per page. */
-function useStreams(id: string | null, base: string) {
-  const [streams, setStreams] = React.useState<{ id: string; data: unknown } | null>(null);
-  React.useEffect(() => {
-    if (!id) return;
-    if (cache.has(id)) { setStreams({ id, data: cache.get(id) }); return; }
-    let live = true;
-    fetch(`${base}streams/${id}.json`).then((r) => (r.ok ? r.json() : { error: true })).catch(() => ({ error: true }))
-      .then((data) => { cache.set(id, data); if (live) setStreams({ id, data }); });
-    return () => { live = false; };
-  }, [id, base]);
-  return streams && streams.id === id ? streams.data : undefined;
-}
+import { useChartStreams } from '@/components/app/use-chart-streams';
+import { DecouplingScale } from '@/components/ride/DecouplingScale';
 
 function StreamChart({ streams }: { streams: unknown }) {
   if (streams === undefined) return <Skeleton className="h-[300px] rounded-md" />;
-  const S = streamRows(streams);
+  const S = analysisStreams(streams);
   if ('empty' in S) return <EmptyState className="h-[300px]">{S.empty}</EmptyState>;
   const config = {
     watts: { label: t('metric.power'), color: SERIES.streamPower.color },
     hr: { label: t('metric.heartRate'), color: SERIES.streamHeartRate.color },
-    cadence: { label: t('metric.cadence'), color: SERIES.streamCadence.color },
-    altitude: { label: t('metric.altitude'), color: SERIES.streamElevation.color },
+    cad: { label: t('metric.cadence'), color: SERIES.streamCadence.color },
+    alt: { label: t('metric.altitude'), color: SERIES.streamElevation.color },
   } satisfies ChartConfig;
-  const unit = { watts: ' W', hr: ' bpm', cadence: ' rpm', altitude: ' m' } as const;
+  const unit = { watts: ' W', hr: ' bpm', cad: ' rpm', alt: ' m' } as const;
   const keys = (Object.keys(config) as (keyof typeof config)[]).filter((k) => S.has[k]);
-  type Row = (typeof S.rows)[number];
+  type Row = { t: number } & Partial<Record<keyof typeof config, number | null>>;
+  const minute = (s: number) => Math.round(s / 60);
   const Tip = ({ active, payload }: { active?: boolean; payload?: { payload: Row }[] }) => {
     const r = active && payload?.[0]?.payload;
-    return r ? <TooltipBox title={t('dash.chart.minute', { m: r.minute })} lines={keys.map((k) => ({ label: config[k].label, color: config[k].color, value: r[k] != null ? `${Math.round(r[k]!)}${unit[k]}` : '–' }))} /> : null;
+    return r ? <TooltipBox title={t('dash.chart.minute', { m: minute(r.t) })} lines={keys.map((k) => ({ label: config[k].label, color: config[k].color, value: r[k] != null ? `${Math.round(r[k]!)}${unit[k]}` : '–' }))} /> : null;
   };
   return (
     <>
-      <SeriesLegend items={keys.filter((k) => k !== 'cadence').map((k) => ({ label: config[k].label, color: config[k].color, kind: k === 'altitude' ? 'bar' as const : 'line' as const }))} />
+      <SeriesLegend items={keys.filter((k) => k !== 'cad').map((k) => ({ label: config[k].label, color: config[k].color, kind: k === 'alt' ? 'bar' as const : 'line' as const }))} />
       <ChartContainer config={config} className="aspect-auto h-[300px] w-full">
         <ComposedChart data={S.rows} margin={{ top: 8, right: 0, bottom: 0, left: -8 }}>
           <defs>
@@ -60,17 +48,17 @@ function StreamChart({ streams }: { streams: unknown }) {
             </linearGradient>
           </defs>
           <CartesianGrid vertical={false} stroke="var(--grid)" />
-          <XAxis dataKey="minute" tickLine={false} axisLine={false} minTickGap={32} tickMargin={8} tickFormatter={(m) => `${m}′`} />
+          <XAxis dataKey="t" tickLine={false} axisLine={false} minTickGap={32} tickMargin={8} tickFormatter={(s) => `${minute(s)}′`} />
           <YAxis yAxisId="w" hide={!S.has.watts} tickLine={false} axisLine={false} width={40} domain={[0, 'auto']} tickFormatter={(v) => nf(v)} />
           <YAxis yAxisId="hr" hide={!S.has.hr} orientation="right" tickLine={false} axisLine={false} width={34} domain={['auto', 'auto']} tickFormatter={(v) => nf(v)} />
           {/* Hidden scales still take their width in the layout – 0 keeps the power axis in place */}
           <YAxis yAxisId="alt" hide width={0} domain={['dataMin', 'auto']} />
           <YAxis yAxisId="cad" hide width={0} />
           <ChartTooltip cursor={{ stroke: 'var(--border)' }} content={<Tip />} />
-          {S.has.altitude && <Area yAxisId="alt" dataKey="altitude" type={SERIES.streamElevation.curve} stroke="var(--color-altitude)" strokeOpacity={0.6} strokeWidth={1} fill="var(--color-altitude)" fillOpacity={0.14} dot={false} activeDot={false} isAnimationActive={false} />}
+          {S.has.alt && <Area yAxisId="alt" dataKey="alt" type={SERIES.streamElevation.curve} stroke="var(--color-alt)" strokeOpacity={0.6} strokeWidth={1} fill="var(--color-alt)" fillOpacity={0.14} dot={false} activeDot={false} isAnimationActive={false} />}
           {S.has.watts && <Area yAxisId="w" dataKey="watts" type={SERIES.streamPower.curve} stroke="var(--color-watts)" strokeWidth={1.5} fill="url(#fill-stream-power)" dot={false} activeDot={{ r: 3 }} isAnimationActive={false} />}
           {S.has.hr && <Line yAxisId="hr" dataKey="hr" type={SERIES.streamHeartRate.curve} stroke="var(--color-hr)" strokeWidth={1.75} dot={false} activeDot={{ r: 3 }} isAnimationActive={false} />}
-          {S.has.cadence && <Line yAxisId="cad" dataKey="cadence" stroke="none" dot={false} activeDot={false} isAnimationActive={false} legendType="none" />}
+          {S.has.cad && <Line yAxisId="cad" dataKey="cad" stroke="none" dot={false} activeDot={false} isAnimationActive={false} legendType="none" />}
         </ComposedChart>
       </ChartContainer>
     </>
@@ -84,9 +72,9 @@ const mini = 'mb-2 flex items-center justify-between gap-2 font-mono text-[10.5p
  * time in zone, aerobic decoupling and what to eat. `id` / `onSelect` – the selection lives in the
  * dashboard, so the fuelling matrix can highlight the ride's cell.
  */
-export function RideAnalysisCard({ D, id, onSelect, basis, base }: { D: any; id: string | null; onSelect: (id: string) => void; basis: Basis; base: string }) {
-  const A = id ? rideAnalysis(D, id, { basis, base }) : null;
-  const streams = useStreams(A ? A.id : null, base);
+export function RideAnalysisCard({ D, id, onSelect, basis }: { D: any; id: string | null; onSelect: (id: string) => void; basis: Basis }) {
+  const A = id ? rideAnalysis(D, id, { basis }) : null;
+  const streams = useChartStreams(A ? A.id : null);
   const [tab, setTab] = React.useState<Basis>('power');
   if (!A) {
     return (
@@ -165,9 +153,9 @@ export function RideAnalysisCard({ D, id, onSelect, basis, base }: { D: any; id:
                   </span>
                 </p>
                 <div className="relative mt-2 h-1.5 rounded-full" style={{ background: 'linear-gradient(90deg, var(--positive), var(--warning) 50%, var(--negative))' }} aria-hidden="true">
-                  <span className="absolute -top-1 -bottom-1 w-1 -translate-x-1/2 rounded-full bg-foreground ring-2 ring-card" style={{ left: `${A.decoupling.share!.toFixed(1)}%` }} />
+                  <span className="absolute -top-1 -bottom-1 w-1 -translate-x-1/2 rounded-full bg-foreground ring-2 ring-card" style={{ left: `${A.decoupling.share.toFixed(1)}%` }} />
                 </div>
-                <div className="mt-1 flex justify-between font-mono text-[10px] text-muted-foreground" aria-hidden="true"><span>0 %</span><span>5</span><span>10</span><span>15 %+</span></div>
+                <DecouplingScale className="mt-1" />
               </>
             )}
           </div>

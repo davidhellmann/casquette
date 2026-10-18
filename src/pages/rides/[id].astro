@@ -9,6 +9,7 @@ import { curveLabel, fmtLongDate, fmtTime } from '../../scripts/format.js';
 import { fuel, bestCurve } from '../../training/index.js';
 import { t } from '../../i18n/index.js';
 import { activityUrl, segmentUrl } from '../../lib/strava-links.js';
+import { rideClassification, tizBasisLabel } from '../../components/ride/ride-presentation.js';
 
 export async function getStaticPaths() {
   const entries = (await getCollection('rides')).sort((a, b) => String(b.data.start_date_local).localeCompare(String(a.data.start_date_local)));
@@ -47,7 +48,7 @@ const R: RidePayload = {
   indoor: r.indoor,
   inStats: r.stats,
   when: `${fmtLongDate(r.d)} · ${t('common.clock', { t: fmtTime(r.d) })}`,
-  zone: r.clsP.zone ? { zone: r.clsP.zone, title: `${r.clsP.src}: ${r.clsP.val}`, estimated: r.clsP.source === 'effort' } : null,
+  zone: r.clsP.zone ? { zone: r.clsP.zone, title: rideClassification(r).title, estimated: r.clsP.source === 'effort' } : null,
   gear: gear ? { name: gear.name, href: `${base}gear/${gear.id}` } : null,
   device: a.device_name || null,
   prs: r.pr,
@@ -74,8 +75,8 @@ const R: RidePayload = {
   },
   streamZones: { watts: Z.power_zones, hr: Z.heart_rate_zones },
   tiz: {
-    power: { seconds: r.tizP, zones: r.tizBasis.power.zones, label: r.tizBasis.power.label },
-    hr: { seconds: r.tizH, zones: r.tizBasis.hr.zones, label: r.tizBasis.hr.label },
+    power: { seconds: r.tizP, zones: r.tizBasis.power.zones, label: tizBasisLabel('power', r.tizBasis.power) },
+    hr: { seconds: r.tizH, zones: r.tizBasis.hr.zones, label: tizBasisLabel('hr', r.tizBasis.hr) },
   },
   year: r.year,
   ftp: Z.ftp,
