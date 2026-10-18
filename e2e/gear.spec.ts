@@ -4,7 +4,7 @@ import { expect, test, type Page } from './fixtures';
 
 // Demo dataset: four bikes – one retired (Steel Classic), Carbon Endurance is the primary bike.
 const BIKES = ['Carbon Endurance', 'Gravel All-Road', 'Indoor Trainer', 'Steel Classic'];
-const CHARTS = ['gear-month-chart', 'gear-type-chart', 'gear-year-chart', 'gear-curve-chart'];
+const CHARTS = ['gear-month-chart', 'gear-terrain-chart', 'gear-year-chart', 'gear-curve-chart'];
 
 async function bikeUrls(page: Page) {
   await page.goto('/gear/');

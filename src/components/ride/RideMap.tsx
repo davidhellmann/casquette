@@ -1,7 +1,8 @@
 import * as React from 'react';
 import { t } from '@/i18n/index.js';
 import { useLeaflet, withColors } from '@/components/map/use-leaflet';
-import { rollingMean, zoneRuns } from './ride-data.js';
+import { rollingMean } from '@/lib/chart-streams.js';
+import { zoneRuns } from './ride-data.js';
 
 export type LatLng = [number, number];
 

@@ -6,7 +6,8 @@ import { SERIES, niceTicks, zoneColor, type SeriesKey } from '@/components/chart
 import { zoneIdx } from '@/training/index.js';
 import { fmtClock, fmtHm, nf } from '@/scripts/format.js';
 import { t } from '@/i18n/index.js';
-import { STREAM_SERIES, streamRows, zoneBands } from './ride-data.js';
+import { STREAM_SERIES, streamRows } from '@/lib/chart-streams.js';
+import { zoneBands } from './ride-data.js';
 
 type Key = 'watts' | 'hr' | 'cad' | 'kmh' | 'alt';
 type Row = { i: number; t: number; km: number | null } & Partial<Record<Key, number | null>>;

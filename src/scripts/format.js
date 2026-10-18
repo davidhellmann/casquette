@@ -1,6 +1,6 @@
 /** Display: numbers, dates, durations, escaping in the UI locale – runs in the browser and during the Astro build. Domain rules, including calendar-day arithmetic, live in src/training/. */
 import { LOCALE } from '../i18n/index.js';
-import { calendarDate } from '../training/calendar-day.js';
+import { calendarDate } from '../training/index.js';
 const pad = (n) => String(n).padStart(2, '0');
 export const nf = (v, dec = 0) => (v == null || isNaN(v) ? '–' : Number(v).toLocaleString(LOCALE, { minimumFractionDigits: dec, maximumFractionDigits: dec }));
 export const fmtDur = (s) => { const tm = Math.round((s || 0) / 60), h = Math.floor(tm / 60), m = tm % 60; return h ? `${h}:${pad(m)} h` : `${m} min`; };

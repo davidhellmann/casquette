@@ -22,15 +22,14 @@ async function consumers(entries, history = [], now = new Date('2024-05-03T12:00
   fixture.history = history;
   vi.useFakeTimers();
   vi.setSystemTime(now);
-  const { loadRides } = await import('./data.js');
+  const { loadRides, loadAthlete, athleteToday } = await import('./data.js');
   const rides = await loadRides();
   // The real build payload, so producer and browser consumer share one contract.
-  const { dashboardPayload } = await import('./dashboard-payload.js');
-  const payload = await dashboardPayload();
+  const { encodeDashboard, decodeDashboard } = await import('./dashboard-payload.js');
+  const source = decodeDashboard(encodeDashboard({ rides, athlete: loadAthlete(), athleteState: athleteToday() }));
   // The React dashboard: same payload, same period (30 days, power), same clock
-  const { computeDashboard, dashboardSource } = await import('../components/dashboard/dashboard-data.js');
-  const source = dashboardSource(JSON.parse(payload));
-  const D = computeDashboard(source, { days: 30, basis: 'power', now });
+  const { dashboardPeriod } = await import('../dashboard-period/index.js');
+  const D = dashboardPeriod(source.rides, { days: 30, basis: 'power', now, gear: source.athlete.gear, athleteState: source.athlete.athleteState });
   const { zones: { ftp }, weight: kg } = source.athlete.athleteState;
   const { fitnessChartData } = await import('../components/dashboard/fitness-data.js');
   const rows = fitnessChartData(D);

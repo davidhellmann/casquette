@@ -1,12 +1,14 @@
 import { expect, it } from 'vitest';
 import { processRide } from '../ride/index.js';
 import { athleteTimeline } from '../training/index.js';
-import { dashboardRides, hydrateRides } from './dashboard-data.js';
+import { decodeDashboard, encodeDashboard } from '../lib/dashboard-payload.js';
 import { dashboardPeriod, RANGES } from '../dashboard-period/index.js';
 import { evalGoal } from './goals.js';
 import { computeMetrics } from '../../scripts/lib/metrics.mjs';
 import { frontmatter } from '../../scripts/lib/store.mjs';
 import { calendarDay } from '../training/index.js';
+
+const transport = (rides) => decodeDashboard(encodeDashboard({ rides })).rides;
 
 it.each([
   ['2024-06-02', '2024-06-03'], // Sunday → Monday
@@ -26,7 +28,7 @@ it.each([
   // Future instant has a plausible local day; must not leak into ANY consumer, including goals.
   const future = processRide({ ...a, id: 'future', start_date: new Date(+now + 1).toISOString(), metrics }, athleteState);
   const ebike = processRide({ ...a, id: 'ebike', sport_type: 'EBikeRide', start_date_local: '2025-01-01T00:00:00', metrics }, athleteState);
-  const all = hydrateRides(JSON.parse(JSON.stringify(dashboardRides([ride, future, ebike]))));
+  const all = transport([ride, future, ebike]);
   for (const days of RANGES) for (const basis of ['power', 'hr']) {
     const d = dashboardPeriod(all, { days, basis, now, athleteState, gear: [{ id: 'bike', type: 'bike' }] });
     expect(d.rides.map(r => r.id)).toEqual(['done']);
@@ -72,10 +74,10 @@ it('goals respect the local new year/new week, not future actual starts', () => 
   const now = new Date('2023-12-31T11:45:00Z');
   const athleteState = athleteTimeline().at('2024-01-01');
   const base = { start_date_local: '2024-01-01T00:30:00+14:00', distance: 10000, moving_time: 1800 };
-  const all = hydrateRides(JSON.parse(JSON.stringify(dashboardRides([
+  const all = transport([
     processRide({ ...base, id: 'done', start_date: '2023-12-31T10:30:00Z' }, athleteState),
     processRide({ ...base, id: 'future', start_date: '2023-12-31T11:45:00.001Z' }, athleteState),
-  ]))));
+  ]);
   for (const period of ['week', 'month', 'year']) {
     expect(evalGoal({ period, metric: 'distance', target: 10 }, all, now)).toMatchObject({ value: 10, done: true });
   }
@@ -92,7 +94,7 @@ it.each([
   const athleteState = athleteTimeline({ history: [{ date: '2024-06-01', ftp: 200, weight: 100 }, { date: '2024-06-02', ftp: 300, weight: 60 }] }).at(local);
   const ride = processRide(a, athleteState);
   const future = processRide({ ...a, id: 'future', start_date: new Date(+new Date(clock) + 1).toISOString(), start_date_local: '2024-06-01T00:01:00-12:00' }, athleteState);
-  const transported = hydrateRides(JSON.parse(JSON.stringify(dashboardRides([ride, future]))));
+  const transported = transport([ride, future]);
   for (const all of [[ride, future], transported]) {
     const d = dashboardPeriod(all, { days: 14, basis: 'power', now: new Date(clock) });
     expect(d.log.map(r => r.id)).toEqual(['past']);

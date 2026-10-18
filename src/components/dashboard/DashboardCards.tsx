@@ -11,6 +11,7 @@ import { FuelingMatrixCard } from './FuelingCard';
 import { FormCard, LoadCard, PolarizationCard, ProfileCard } from './OverviewCards';
 import { EfficiencyCard, PeriodCurveCard } from './ProgressCards';
 import { RideAnalysisCard } from './RideAnalysisCard';
+import { routes } from '@/lib/routes.js';
 import { historySince } from './history-data.js';
 import { footer } from './nutrition-data.js';
 import { Section, type Basis } from './parts';
@@ -55,8 +56,8 @@ export function DashboardCards({ D, source, basis }: { D: any; source: any; basi
           <PeriodCurveCard D={D} zones={zones} kg={kg} />
         </div>
       </Section>
-      <Section title={s('analysis')} sub={<RichText html={s('analysisSub', { href: `${base}rides` })} />}>
-        <RideAnalysisCard D={D} id={selected} onSelect={setPicked} basis={basis} base={base} />
+      <Section title={s('analysis')} sub={<RichText html={s('analysisSub', { href: routes.rides() })} />}>
+        <RideAnalysisCard D={D} id={selected} onSelect={setPicked} basis={basis} />
       </Section>
       {D.history.multiYear && (
         <Section title={s('history')} sub={historySince(D)}>

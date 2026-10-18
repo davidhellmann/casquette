@@ -81,7 +81,7 @@
   --zone-6: #9b1c1c;
   --zone-7: #7048e8;
 
-  /* Categories (bikes, ride types, earlier years): pink first, then navy, slate, berry, rose and grey –
+  /* Categories (bikes, terrains, earlier years): pink first, then navy, slate, berry, rose and grey –
      several things side by side that still read grey and pink. Kept apart from the zone colours. */
   --category-1: var(--brand);
   --category-2: #34446e;

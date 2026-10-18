@@ -63,8 +63,11 @@ special case of the build normalisation. Duration 0 still yields TSS 0 when NP i
 HR is ignored when `has_heartrate: false`. EF then also becomes unknown instead of
 showing contradictory stored values. VI, decoupling and curves remain sync values.
 
-Zones classify **avg power**, not NP. Both results carry `source`
-(`power`, `hr`, `effort`, `none`) plus `src`/`val` for display. Effort estimate:
+Zones classify **avg power**, not NP. Both results carry only codes: `zone` and `source`
+(`power`, `hr`, `effort`, `none`); `tizBasis` likewise carries its `source` and no label. The ride
+module has no localised text: `src/components/ride/ride-presentation.js` turns these codes into
+display text (`rideClassification`, `tizBasisLabel`) for the ride page, the dashboard and the ride
+lists. A ride without a name is called `DEFAULT_RIDE_NAME` ("Ride", as in the sync). Effort estimate:
 positive Relative Effort / positive hours; <35 → Z1, <70 → Z2, <110 → Z3, else Z4.
 0 effort stays unclassified without measurements (existing dashboard rule).
 Power and HR zones are those of the athlete state on the ride date, as documented above. E-bikes remain rides, `stats: false` keeps protecting
@@ -215,18 +218,23 @@ stream, Markdown, cache and rename boundaries, including resume.
 
 ## Dashboard and goals (Refs #6)
 
-`src/scripts/dashboard-data.js::dashboardRides` selects only the required ride fields,
+`src/lib/dashboard-payload.js` is the one seam between the build and the dashboard / ride log
+islands (`#dash-data`): `encodeDashboard` on the build side, `decodeDashboard` on the island side,
+each the other's inverse, so the round trip is lossless by construction (tested only through these
+two functions). The build pages pass the loaded rides, athlete, today's athlete state and goals;
+`use-dashboard.ts` reads the element and runs the dashboard period.
+Encoding selects only the required ride fields,
 without renaming or computation. No segments/polylines, geo only with place names.
-`clsP`/`clsH` contain `zone` and `source`; `dashboard-display.js` formats display
+`clsP`/`clsH` contain `zone` and `source`; `src/components/ride/ride-presentation.js` formats display
 text from them. Identical classifications are transferred only once; the exact
-default classification `{zone: null, source: 'none'}` is omitted and hydrated.
+default classification `{zone: null, source: 'none'}` is omitted and restored.
 `tizBasis` is transferred only for the basis with an existing histogram; unknown boundaries
-stay null, known sync boundaries/labels are preserved. Unknown scalar values
-are omitted from the JSON and restored to null by `hydrateRides` (0 stays 0).
+stay null, known sync boundaries are preserved; its label comes from its `source`. Unknown scalar values
+are omitted from the JSON and restored to null by decoding (0 stays 0).
 Transport defaults (`stats: true`, `indoor: false`, `pr/ach: 0`, `sport_type: Ride`)
 are restored losslessly as well. `avg_wkg` comes ready-made from the ride module;
 `kg` is only needed and sent for rides with a power curve.
-`hydrateRides` hydrates `d` once and restores `h` losslessly as `moving_time / 3600`
+Decoding restores `d` once and `h` losslessly as `moving_time / 3600`
 (unit conversion only, no recomputed training metric). That way the
 duration is not transferred twice; the actual start and historical accuracy stay
 fully intact. IF/TSS/EF/load and zones are not recomputed.
@@ -234,7 +242,7 @@ Sorting/period selection and all card aggregates
 live in the pure dashboard period module (Refs #8, `docs/dashboard-period.md`).
 The stream count appears once as `streamsCount` in the payload instead of a flag per ride.
 `rideChips` formats IF/TSS/EF and the metrics FTP; it does not recompute them.
-`dashboardTiz` reads the final `tizBasis`: #7/#51 raw distributions with date-specific
+`rideTimeInZones` reads the final `tizBasis`: #7/#51 raw distributions with date-specific
 boundaries/`exact: true`, legacy with `exact: false` and without invented boundaries, and
 stored HR sync boundaries. Raw distributions themselves are not sent.
 TIZ totals and zone_time goals read the final histograms through `tizTotal`; these

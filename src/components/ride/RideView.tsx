@@ -9,7 +9,6 @@ import { ChartCard } from '@/components/app/ChartCard';
 import { EmptyState } from '@/components/app/EmptyState';
 import { ZoneBadge } from '@/components/rides/ride-columns';
 import { fmtClock, fmtDur, nf } from '@/scripts/format.js';
-import { DECOUPLING_LIMITS, decouplingStatus } from '@/training/index.js';
 import { t } from '@/i18n/index.js';
 import { RideMap, type LatLng, type RideMapHandle } from './RideMap';
 import { StreamCharts, type StreamZones } from './StreamCharts';
@@ -17,6 +16,9 @@ import { TimeInZones } from '@/components/charts/ZoneBars';
 import { RideCurveChart, type RideCurveProps } from './RideCurveChart';
 import { LapsTable, SegmentsTable, SplitsTable, type Lap, type SegmentEffort, type Split } from './RideTables';
 import { useIslandReady } from '@/lib/island-ready';
+import { useChartStreams } from '@/components/app/use-chart-streams';
+import { rideDecoupling, toneBg, zoneBg } from './ride-presentation.js';
+import { DecouplingScale } from './DecouplingScale';
 
 type Zones = { min: number | null; max: number | null }[];
 interface Link { href: string; name: string }
@@ -48,7 +50,7 @@ export interface RidePayload {
     temp: number | null; kg: number;
   };
   map: {
-    /** URL of the streams (/streams/<id>.json), null without streams. */
+    /** URL of the streams (/streams/<id>.json), null without streams – only its presence is read; they load via chart-streams. */
     stream: string | null;
     /** Route from the summary polyline – only when the streams have no GPS. */
     points: LatLng[] | null;
@@ -67,9 +69,6 @@ export interface RidePayload {
   segments: SegmentEffort[];
   splits: Split[];
 }
-
-// Literal class names, so Tailwind generates them
-const ZONE_BG = ['bg-zone-1', 'bg-zone-2', 'bg-zone-3', 'bg-zone-4', 'bg-zone-5', 'bg-zone-6', 'bg-zone-7'];
 
 function Pager({ older, newer }: Pick<RidePayload, 'older' | 'newer'>) {
   const item = (link: Link | null, label: string, aria: string, dir: 'older' | 'newer') => {
@@ -164,14 +163,9 @@ function keyData(R: RidePayload): StatItem[] {
   return items;
 }
 
-// Decoupling status from the domain rule (src/training decouplingStatus); the bar runs to 1.5 × the drift limit
-const DEC_BAR: Record<string, string> = { stable: 'bg-positive', moderate: 'bg-warning', drift: 'bg-negative' };
-const DEC_MAX = DECOUPLING_LIMITS.moderate * 1.5;
-
 function Analysis({ R }: { R: RidePayload }) {
   const a = R.analysis;
-  const status = decouplingStatus(a.dec);
-  const dec = status === 'unknown' ? null : { key: `decoupling.${status}`, bar: DEC_BAR[status] };
+  const dec = rideDecoupling(a.dec);
   return (
     <Card className="min-w-0" data-testid="ride-analysis">
       <CardHeader><CardLabel>{t('ride.analysis')}</CardLabel></CardHeader>
@@ -187,13 +181,13 @@ function Analysis({ R }: { R: RidePayload }) {
           {dec ? (
             <>
               <p className="flex flex-wrap items-baseline gap-x-2 text-sm">
-                <span className="font-mono text-lg font-semibold tabular-nums">{a.dec! >= 0 ? '+' : ''}{nf(a.dec, 1)} %</span>
-                <span className="text-muted-foreground">{t(dec.key)}</span>
+                <span className="font-mono text-lg font-semibold tabular-nums">{dec.value}</span>
+                <span className="text-muted-foreground">{dec.label}</span>
               </p>
               <div className="h-2 overflow-hidden rounded-full bg-muted" aria-hidden="true">
-                <div className={cn('h-full rounded-full', dec.bar)} style={{ width: `${Math.max(0, Math.min(100, (a.dec! / DEC_MAX) * 100))}%` }} />
+                <div className={cn('h-full rounded-full', toneBg(dec.tone))} style={{ width: `${dec.share}%` }} />
               </div>
-              <div className="flex justify-between font-mono text-[10px] text-muted-foreground" aria-hidden="true"><span>0 %</span><span>{DECOUPLING_LIMITS.stable}</span><span>{DECOUPLING_LIMITS.moderate}</span><span>{DEC_MAX} %+</span></div>
+              <DecouplingScale />
             </>
           ) : <p className="text-xs text-muted-foreground">{t('decoupling.onlyLongShort')}</p>}
         </div>
@@ -212,24 +206,12 @@ function MapLegend({ zones }: { zones: number }) {
   return (
     <ul className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
       {Array.from({ length: zones }, (_, i) => (
-        <li key={i} className="flex items-center gap-1"><span className={cn('size-2 rounded-[2px]', ZONE_BG[i])} aria-hidden="true" />Z{i + 1}</li>
+        <li key={i} className="flex items-center gap-1"><span className={cn('size-2 rounded-[2px]', zoneBg(i + 1))} aria-hidden="true" />Z{i + 1}</li>
       ))}
       <li className="flex items-center gap-1"><span className="size-2 rounded-full bg-positive" aria-hidden="true" />{t('common.start')}</li>
       <li className="flex items-center gap-1"><span className="size-2 rounded-full bg-negative" aria-hidden="true" />{t('common.finish')}</li>
     </ul>
   );
-}
-
-/** Fetches the ride's streams once (/streams/<id>.json). undefined = loading, null = none. */
-function useStream(url: string | null) {
-  const [stream, setStream] = React.useState<any>(url ? undefined : null);
-  React.useEffect(() => {
-    if (!url) return;
-    let gone = false;
-    fetch(url).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((s) => { if (!gone) setStream(s); });
-    return () => { gone = true; };
-  }, [url]);
-  return stream;
 }
 
 function Section({ title, sub, children }: { title: string; sub?: string; children: React.ReactNode }) {
@@ -247,7 +229,7 @@ function Section({ title, sub, children }: { title: string; sub?: string; childr
 /** Ride detail (new UI): header with prev/next, route map, key data, streams, zones, power curve, analysis, tables. */
 export function RideView({ R }: { R: RidePayload }) {
   useIslandReady();
-  const stream = useStream(R.map.stream);
+  const stream = useChartStreams(R.map.stream ? R.id : null);
   const mapRef = React.useRef<RideMapHandle>(null);
   const latlng: LatLng[] | null = stream?.latlng ?? null;
   const points = latlng ?? R.map.points;

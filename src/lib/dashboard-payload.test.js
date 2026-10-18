@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { processRide } from '../ride/index.js';
 import { athleteTimeline } from '../training/index.js';
-import { dashboardRides, hydrateRides } from './dashboard-data.js';
-import { evalGoal } from './goals.js';
-import { classificationText, dashboardTiz, rideChips } from './dashboard-display.js';
+import { decodeDashboard, encodeDashboard } from './dashboard-payload.js';
+import { evalGoal } from '../scripts/goals.js';
+import { rideChips, rideClassification, rideTimeInZones } from '../components/ride/ride-presentation.js';
 
 const timeline = athleteTimeline({ history: [
   { date: '2023-01-01', ftp: 200, weight: 100 },
@@ -17,7 +17,29 @@ const make = (id, date, overrides = {}) => {
     summary_polyline: 'not-for-dashboard', segment_efforts: [{ id: 1 }], ...overrides };
   return processRide(a, timeline.at(a.start_date_local));
 };
-const browser = (rides) => hydrateRides(JSON.parse(JSON.stringify(dashboardRides(rides))));
+/** The round trip build → #dash-data → island. */
+const browser = (rides) => decodeDashboard(encodeDashboard({ rides })).rides;
+/** The rides as they travel in #dash-data. */
+const wire = (rides) => JSON.parse(encodeDashboard({ rides })).rides;
+
+describe('dashboard payload: round trip build → #dash-data → island', () => {
+  it('carries base, athlete, today\'s athlete state, goals and the stream count, and escapes "<"', () => {
+    const athlete = { profile: { first_name: '<Jane>' }, gear: [{ id: 'b1' }], synced_at: '2024-05-01T10:00:00Z', sync: { list_complete: true }, token: 'never sent' };
+    const athleteState = { ftp: 250, weight: 70, zones: { ftp: 250 } };
+    const goals = [{ metric: 'distance', period: 'year', target: 5000 }];
+    const rides = [make('a', '2024-05-01', { streams: true }), make('b', '2024-05-02')];
+    const text = encodeDashboard({ rides, athlete, athleteState, goals, base: '/sub/' });
+    expect(text).not.toContain('<');
+    const source = decodeDashboard(text);
+    expect(source).toMatchObject({ base: '/sub/', goals, streamsCount: 1, athlete: { profile: athlete.profile, gear: athlete.gear, synced_at: athlete.synced_at, sync: athlete.sync, athleteState } });
+    expect(source.athlete).not.toHaveProperty('token');
+    expect(source.rides.map((r) => r.id)).toEqual(['b', 'a']);
+  });
+
+  it('decodes an empty payload to an empty dashboard source', () => {
+    expect(decodeDashboard('')).toEqual({ base: '/', athlete: {}, goals: [], streamsCount: 0, rides: [] });
+  });
+});
 
 describe('flat ride in the dashboard and in goals', () => {
   it('keeps the ride page\'s historical metrics across two FTP states and hydrates only the date', () => {
@@ -26,12 +48,12 @@ describe('flat ride in the dashboard and in goals', () => {
     for (const original of rides) {
       const r = transported.find((r) => r.id === original.id);
       for (const key of ['if_', 'tss', 'ef', 'load', 'ftp', 'kg', 'avg_wkg']) expect(r[key]).toEqual(original[key]);
-      for (const key of ['clsP', 'clsH']) {
-        expect(original[key]).toMatchObject(r[key]);
-        expect(classificationText(r, r[key])).toEqual({ src: original[key].src, val: original[key].val });
+      for (const [key, basis] of [['clsP', 'power'], ['clsH', 'hr']]) {
+        expect(r[key]).toEqual(original[key]);
+        expect(rideClassification(r, basis)).toEqual(rideClassification(original, basis));
       }
       expect(rideChips(r)).toEqual(rideChips(original));
-      expect(dashboardTiz(r, 'power')).toEqual(dashboardTiz(original, 'power'));
+      expect(rideTimeInZones(r, 'power')).toEqual(rideTimeInZones(original, 'power'));
       expect(r.d).toEqual(original.d);
       expect(r).not.toHaveProperty('summary');
       expect(r).not.toHaveProperty('perf');
@@ -77,14 +99,15 @@ describe('flat ride in the dashboard and in goals', () => {
   it('shows missing metrics differently from 0 and never lays ride zones over sync histograms', () => {
     const [zero] = browser([make('zero', '2024-05-01', { metrics: { np: 0 } })]);
     const [unknown] = browser([make('unknown', '2024-05-01', { metrics: {} })]);
-    expect(Object.fromEntries(rideChips(zero))).toMatchObject({ 'IF · TSS': '0.00 · 0', EF: '0.000' });
-    expect(Object.fromEntries(rideChips(unknown))).toMatchObject({ 'IF · TSS': '– · –', EF: '–' });
+    const chips = (r) => Object.fromEntries(rideChips(r).map((c) => [c.label, c.value]));
+    expect(chips(zero)).toMatchObject({ 'IF · TSS': '0.00 · 0', EF: '0.000' });
+    expect(chips(unknown)).toMatchObject({ 'IF · TSS': '– · –', EF: '–' });
     const [legacy] = browser([make('legacy', '2023-05-01')]);
-    expect(dashboardTiz(legacy, 'power')).toMatchObject({ label: 'Legacy · Sync FTP 250 W · boundaries not stored' });
-    expect(dashboardTiz(legacy, 'power').rows.every((r) => r.range === 'Boundaries unknown')).toBe(true);
+    expect(rideTimeInZones(legacy, 'power')).toMatchObject({ label: 'Legacy · Sync FTP 250 W · boundaries not stored' });
+    expect(rideTimeInZones(legacy, 'power').rows.every((r) => r.range === 'Boundaries unknown')).toBe(true);
     const known = make('known', '2023-05-01');
-    known.tizBasis.power = { ftp: 250, zones: [{ min: 0, max: 99 }, { min: 100, max: 160 }], label: 'Stored Strava zones' };
-    expect(dashboardTiz(browser([known])[0], 'power')).toMatchObject({ label: 'Stored Strava zones', rows: [{ range: '≤ 99 W' }, { range: '100–160 W' }] });
+    known.tizBasis.power = { source: 'distribution', ftp: 250, zones: [{ min: 0, max: 99 }, { min: 100, max: 160 }], exact: true };
+    expect(rideTimeInZones(browser([known])[0], 'power')).toMatchObject({ label: expect.stringContaining('FTP on ride date 250 W'), rows: [{ range: '≤ 99 W' }, { range: '100–160 W' }] });
   });
 
   it('takes #7 TIZ from the raw power distribution with the historical athlete state and stored HR boundaries', () => {
@@ -95,8 +118,8 @@ describe('flat ride in the dashboard and in goals', () => {
     for (const r of transported) {
       const original = rides.find((x) => x.id === r.id);
       expect(r.tizBasis.power).toMatchObject({ exact: true, source: 'distribution', ftp: original.ftp, zones: original.zones.power_zones });
-      expect(dashboardTiz(r, 'power')).toEqual(dashboardTiz(original, 'power'));
-      expect(dashboardTiz(r, 'hr')).toEqual(dashboardTiz(original, 'hr'));
+      expect(rideTimeInZones(r, 'power')).toEqual(rideTimeInZones(original, 'power'));
+      expect(rideTimeInZones(r, 'hr')).toEqual(rideTimeInZones(original, 'hr'));
       expect(r).not.toHaveProperty('power_distribution');
     }
     expect(transported.map((r) => r.tizP)).toEqual([[0, 3600, 0, 0, 0, 0, 0], [0, 0, 0, 3600, 0, 0, 0]]);
@@ -106,32 +129,32 @@ describe('flat ride in the dashboard and in goals', () => {
 
   it.each([0, 1, 1.5, 3599, 3600, 12345])('transports moving time in seconds only, hours stay exact (%s)', (seconds) => {
     const original = make('duration', '2024-05-01', { moving_time: seconds });
-    expect(dashboardRides([original])[0]).not.toHaveProperty('h');
+    expect(wire([original])[0]).not.toHaveProperty('h');
     expect(browser([original])[0].h).toBe(original.h);
   });
 
   it('sends TIZ provenance only for histograms that actually exist', () => {
     const original = make('hr-tiz', '2024-05-01', { metrics: { time_in_hr_zones: [3600] } });
-    const [payload] = dashboardRides([original]);
+    const [payload] = wire([original]);
     expect(payload.tizBasis).not.toHaveProperty('power');
-    expect(dashboardTiz(browser([original])[0], 'hr')).toEqual(dashboardTiz(original, 'hr'));
+    expect(rideTimeInZones(browser([original])[0], 'hr')).toEqual(rideTimeInZones(original, 'hr'));
     expect(browser([original])[0].tizP).toBeNull();
   });
 
   it('omits only the exact unknown default classification', () => {
     const original = make('unknown', '2024-05-01', { device_watts: false, has_heartrate: false, metrics: {} });
-    expect(dashboardRides([original])[0]).not.toHaveProperty('clsP');
+    expect(wire([original])[0]).not.toHaveProperty('clsP');
     expect(browser([original])[0]).toMatchObject({ clsP: { zone: null, source: 'none' }, clsH: { zone: null, source: 'none' } });
   });
 
   it('transports identical classifications once and hydrates them losslessly', () => {
     const original = make('hr-only', '2024-05-01', { device_watts: false, metrics: {} });
-    const [payload] = dashboardRides([original]);
+    const [payload] = wire([original]);
     expect(payload).not.toHaveProperty('clsH');
     const [roundtrip] = browser([original]);
     expect(roundtrip.clsH).toEqual(roundtrip.clsP);
-    expect(classificationText(roundtrip, roundtrip.clsH)).toEqual(classificationText(original, original.clsH));
-    expect(dashboardRides([make('both', '2024-05-01')])[0]).toHaveProperty('clsH');
+    expect(rideClassification(roundtrip, 'hr')).toEqual(rideClassification(original, 'hr'));
+    expect(wire([make('both', '2024-05-01')])[0]).toHaveProperty('clsH');
   });
 
   it('keeps place names for search without coordinates or other geo metadata', () => {

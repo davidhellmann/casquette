@@ -26,14 +26,14 @@ export function kmPerMonth(rides, now, n = 24) {
   });
 }
 
-/** Ride type of a ride on a bike: indoor, gravel, MTB or road/outdoor. */
-export const rideType = (r) => (r.indoor ? 'indoor' : r.sport_type === 'GravelRide' ? 'gravel' : r.sport_type === 'MountainBikeRide' ? 'mtb' : 'road');
+/** Terrain of a ride (GLOSSARY): indoor, gravel, MTB or road/outdoor. */
+export const terrain = (r) => (r.indoor ? 'indoor' : r.sport_type === 'GravelRide' ? 'gravel' : r.sport_type === 'MountainBikeRide' ? 'mtb' : 'road');
 
-/** Kilometres per ride type (only types with distance), largest first, rounded. */
-export function kmPerType(rides) {
+/** Kilometres per terrain (only terrains with distance), largest first, rounded. */
+export function kmPerTerrain(rides) {
   const by = {};
-  for (const r of rides) by[rideType(r)] = (by[rideType(r)] || 0) + (r.distance || 0) / 1000;
-  return Object.entries(by).map(([type, km]) => ({ type, km: Math.round(km) })).filter((x) => x.km > 0).sort((a, b) => b.km - a.km);
+  for (const r of rides) by[terrain(r)] = (by[terrain(r)] || 0) + (r.distance || 0) / 1000;
+  return Object.entries(by).map(([key, km]) => ({ terrain: key, km: Math.round(km) })).filter((x) => x.km > 0).sort((a, b) => b.km - a.km);
 }
 
 /**

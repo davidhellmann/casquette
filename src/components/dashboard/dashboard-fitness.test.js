@@ -1,5 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { computeDashboard, dashboardSource } from './dashboard-data.js';
+import { decodeDashboard } from '../../lib/dashboard-payload.js';
+import { dashboardPeriod } from '../../dashboard-period/index.js';
 import { fitnessChartData } from './fitness-data.js';
 import { performanceData } from '../../lib/performance.js';
 import { loadStatRides } from '../../lib/data.js';
@@ -22,7 +23,7 @@ it('returns exactly the same CTL/ATL today on the dashboard and on /performance,
   loadStatRides.mockResolvedValue(rides);
   // The dashboard payload: the same flat rides, newest first; load is already computed.
   const payload = rides.slice().reverse().map(({ d, year, ...r }) => r);
-  const D = computeDashboard(dashboardSource({ rides: payload }), { days: 90, basis: 'power', now });
+  const D = dashboardPeriod(decodeDashboard(JSON.stringify({ rides: payload })).rides, { days: 90, basis: 'power', now });
   const dashboard = D.fitness.at(-1);
   const performance = await performanceData();
   const today = performance.ctl.at(-1);

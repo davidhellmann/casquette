@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isRide, countsInStats } from './index.js';
+import { isRide, countsInStats, eBikeKind } from './index.js';
 
 // All Strava cycling sport types (sport_type) – see GLOSSARY.md "Ride" / "Stat ride".
 const HUMAN_POWERED = ['Ride', 'VirtualRide', 'GravelRide', 'MountainBikeRide', 'Velomobile', 'Handcycle'];
@@ -27,5 +27,15 @@ describe('countsInStats – stat ride (pages)', () => {
   });
   it('every stat ride is a ride', () => {
     for (const t of [...HUMAN_POWERED, ...E_BIKES, ...NOT_RIDES]) if (countsInStats(t)) expect(isRide(t)).toBe(true);
+  });
+});
+
+describe('eBikeKind – e-bike ride (display)', () => {
+  it('tells e-MTB from other e-bike rides', () => {
+    expect(eBikeKind('EMountainBikeRide')).toBe('emtb');
+    expect(eBikeKind('EBikeRide')).toBe('ebike');
+  });
+  it('is null for stat rides and other sports', () => {
+    for (const t of [...HUMAN_POWERED, ...NOT_RIDES]) expect(eBikeKind(t), String(t)).toBeNull();
   });
 });

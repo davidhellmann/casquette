@@ -1,14 +1,15 @@
 import * as React from 'react';
 import { PERIOD_EVENT, readPeriod } from '@/lib/period-store.js';
-import { computeDashboard, dashboardSource } from './dashboard-data.js';
+import { decodeDashboard } from '@/lib/dashboard-payload.js';
+import { dashboardPeriod } from '@/dashboard-period/index.js';
 
-type Source = ReturnType<typeof dashboardSource>;
+type Source = ReturnType<typeof decodeDashboard>;
 type Period = { days: number; basis: 'power' | 'hr' };
 
 let cached: Source | null = null;
-/** The build payload in #dash-data, parsed and hydrated once per page. */
+/** The build payload in #dash-data (src/lib/dashboard-payload.js), decoded once per page. */
 function readSource(): Source {
-  if (!cached) cached = dashboardSource(JSON.parse(document.getElementById('dash-data')?.textContent || '{}'));
+  if (!cached) cached = decodeDashboard(document.getElementById('dash-data')?.textContent || '{}');
   return cached;
 }
 
@@ -26,6 +27,8 @@ export function useDashboard() {
   }, []);
   return React.useMemo(() => {
     if (!state || !state.source.rides.length) return state && { ...state, D: null };
-    return { ...state, D: computeDashboard(state.source, { ...state.period, now: new Date() }) };
+    const { source, period } = state;
+    const D = dashboardPeriod(source.rides, { ...period, now: new Date(), gear: source.athlete.gear || [], athleteState: source.athlete.athleteState });
+    return { ...state, D };
   }, [state]);
 }

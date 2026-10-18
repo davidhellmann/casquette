@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { bestCurve } from '../training/index.js';
-import { dashboardRides, hydrateRides } from '../scripts/dashboard-data.js';
+import { decodeDashboard, encodeDashboard } from './dashboard-payload.js';
+
+const wire = (rides) => JSON.parse(encodeDashboard({ rides })).rides;
 
 const fixtures = vi.hoisted(() => ({ athlete: {}, history: [], rides: [], zones: null }));
 vi.mock('node:fs', () => ({ default: {
@@ -34,8 +36,9 @@ beforeEach(() => {
 
 describe('Athlete state – central build integration with synthetic data', () => {
   it('hands the athlete state to the dashboard payload and the year page as athleteState', async () => {
-    const payload = JSON.parse(await (await import('./dashboard-payload.js')).dashboardPayload());
-    expect(payload.athlete.athleteState).toMatchObject({ ftp: 300, weight: 60, zones: { ftp: 300 } });
+    const { athleteToday, loadAthlete, loadRides } = await import('./data.js');
+    const source = decodeDashboard(encodeDashboard({ rides: await loadRides(), athlete: loadAthlete(), athleteState: athleteToday() }));
+    expect(source.athlete.athleteState).toMatchObject({ ftp: 300, weight: 60, zones: { ftp: 300 } });
     const year = await (await import('./years.js')).yearData(2021);
     expect(year.athleteState).toMatchObject({ ftp: 200, weight: 100, zones: { ftp: 200 } });
   });
@@ -53,7 +56,7 @@ describe('Athlete state – central build integration with synthetic data', () =
     const year = await (await import('./years.js')).yearData(2021);
     expect(year.rides[0]).toEqual(old);
     expect(year.highlights.hardest).toEqual(old);
-    expect(hydrateRides(dashboardRides([old]))[0]).toMatchObject({ ftp: 200, kg: 100, w: 200, np: 200,
+    expect(decodeDashboard(encodeDashboard({ rides: [old] })).rides[0]).toMatchObject({ ftp: 200, kg: 100, w: 200, np: 200,
       hr: 100, hr_max: null, cad: null, best: { 60: 400, 1200: 250 }, tss: 100,
       if_: 1, ef: 2, clsP: { zone: 4, source: 'power' }, clsH: { source: 'hr' },
       tizBasis: { power: { ftp: 300, zones: null } },
@@ -116,7 +119,7 @@ describe('Athlete state – central build integration with synthetic data', () =
 
   it('passes the historical athlete state of each ride to the dashboard', async () => {
     const { normalize } = await import('./data.js');
-    expect(dashboardRides([normalize(fixtures.rides[0].data)])[0]).toMatchObject({ ftp: 200, kg: 100 });
+    expect(wire([normalize(fixtures.rides[0].data)])[0]).toMatchObject({ ftp: 200, kg: 100 });
   });
 
   it('uses the effort\'s body weight for the segment best, not the latest ride\'s', async () => {

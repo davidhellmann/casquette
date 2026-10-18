@@ -7,7 +7,8 @@ import { KpiCard } from '@/components/app/KpiCard';
 import { CalendarLegend, CalendarStats, TrainingCalendar, type CalendarDay } from '@/components/charts/TrainingCalendar';
 import type { SeriesKey } from '@/components/charts/series';
 import { PowerCurveChart } from '@/components/performance/PowerCurveChart';
-import { rideColumns, rideGrouping, rideSearchText, rideTiles, type RideRow } from '@/components/rides/ride-columns';
+import type { RideColumnId, RideRow } from '@/components/rides/ride-columns';
+import { RideList } from '@/components/rides/RideList';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { nf } from '@/scripts/format.js';
 import { t } from '@/i18n/index.js';
@@ -52,7 +53,6 @@ interface YearKpi {
 }
 
 type Curves = Record<'all' | 'd90' | 'ly', Record<string, number | null>>;
-type RidePayload = Omit<RideRow, 'date'> & { date: string };
 
 /** Build payload of /years/<year> (src/lib/year-payload.js). */
 export interface YearPayload {
@@ -74,30 +74,20 @@ export interface YearPayload {
   curves: Curves;
   curveWkg: Curves;
   bikes: YearBike[];
-  /** Newest first. */
-  rides: RidePayload[];
+  /** Newest first (rideRows in src/components/rides/ride-list.js). */
+  rides: RideRow[];
 }
 
 const yt = (key: string, p?: Record<string, unknown>) => t(`year.${key}`, p);
-const getRowId = (r: RideRow) => r.id;
-const rowHref = (r: RideRow) => r.href;
 const getMonthId = (m: YearMonth) => String(m.m);
-const TOP_COLUMNS = rideColumns({ longDate: false, only: ['date', 'name', 'km', 'time', 'elev', 'np', 'tss'] });
-const ALL_COLUMNS = rideColumns({ longDate: false, only: ['date', 'name', 'km', 'time', 'elev', 'w', 'np', 'hr', 'tss'] });
-const GROUPING = rideGrouping();
-const TILES = rideTiles();
-const BY_KM = [{ id: 'km', desc: true }];
-const BY_DATE = [{ id: 'date', desc: true }];
-const sum = (rows: RideRow[], f: (r: RideRow) => number) => rows.reduce((s, r) => s + f(r), 0);
-const summary = (rows: RideRow[]) => t('log.summary', {
-  rides: t('common.rides', { n: nf(rows.length) }), km: nf(sum(rows, (r) => r.km)), h: nf(sum(rows, (r) => r.time) / 3600, 1), elev: nf(sum(rows, (r) => r.elev)),
-});
+const TOP_COLUMNS: RideColumnId[] = ['date', 'name', 'km', 'time', 'elev', 'np', 'tss'];
+const ALL_COLUMNS: RideColumnId[] = ['date', 'name', 'km', 'time', 'elev', 'w', 'np', 'hr', 'tss'];
 
 /** Year review (new UI): key figures, months, calendar, intensity, power curve, highlights and rides of one year. */
 export function YearView({ P }: { P: YearPayload }) {
   useIslandReady();
   const { year } = P;
-  const rides = React.useMemo(() => P.rides.map((r): RideRow => ({ ...r, date: new Date(r.date) })), [P.rides]);
+  const rides = P.rides;
   const top10 = React.useMemo(() => rides.slice().sort((a, b) => b.km - a.km).slice(0, 10), [rides]);
   const months = React.useMemo(() => monthColumns(Math.max(1, ...P.months.map((m) => m.km))), [P.months]);
   const half = 'grid lg:col-span-6 xl:col-span-7';
@@ -190,26 +180,19 @@ export function YearView({ P }: { P: YearPayload }) {
         </section>
 
         <ChartCard title={yt('top10')} description={yt('top10Sub')}>
-          <DataTable label={yt('top10')} columns={TOP_COLUMNS} data={top10} getRowId={getRowId} rowHref={rowHref} initialSorting={BY_KM} pageSize={false} tiles={TILES} empty={t('common.noRides')} />
+          <RideList label={yt('top10')} rides={top10} columns={TOP_COLUMNS} sort="km" pageSize={false} group={null} empty={t('common.noRides')} />
         </ChartCard>
 
         <ChartCard title={yt('allRides')} description={yt('allRidesSub', { rides: t('common.rides', { n: nf(rides.length) }), y: year })}>
-          <DataTable
+          <RideList
             label={yt('allRides')}
+            rides={rides}
             columns={ALL_COLUMNS}
-            data={rides}
-            getRowId={getRowId}
-            rowHref={rowHref}
-            initialSorting={BY_DATE}
-            searchText={rideSearchText}
-            searchLabel={t('log.searchLabel')}
-            searchPlaceholder={t('log.search')}
+            search
             pageSize={10}
-            grouping={GROUPING}
-            tiles={TILES}
             storageId="year-rides"
             empty={t('common.noRidesFound')}
-            summary={summary}
+            summary
           />
         </ChartCard>
       </div>
