@@ -11,3 +11,6 @@ export const isRide = (t) => /Ride$/.test(t || '') || t === 'Velomobile' || t ==
 
 /** Stat ride: a human-powered ride, i.e. no e-bike – decides what totals, goals, load, power curves and records count. */
 export const countsInStats = (t) => isRide(t) && !isEBike(t);
+
+/** Kind of e-bike ride for display: 'emtb' (e-MTB), 'ebike' (any other e-bike type) or null for a stat ride. */
+export const eBikeKind = (t) => (!isEBike(t) ? null : /Mountain/.test(t) ? 'emtb' : 'ebike');
