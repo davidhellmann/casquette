@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { rideSchema } from './content-schemas.js';
-import { rideFrontmatter } from '../scripts/lib/ride-file.mjs';
+import { rideFrontmatter } from '../scripts/shared/ride-file.mjs';
 
 // Refs #20: an unnamed ride gets the same English fallback name in the sync and in the schema.
 it('names an unnamed ride "Ride" in the content schema and in the sync', () => {

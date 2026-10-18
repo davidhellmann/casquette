@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { computeMetrics } from '../../scripts/lib/metrics.mjs';
+import { computeMetrics } from '../../scripts/shared/metrics.mjs';
 
 // Replace only I/O; run the real normalisation, build payload, browser data and card data functions.
 const fixture = vi.hoisted(() => ({ entries: [], history: [] }));

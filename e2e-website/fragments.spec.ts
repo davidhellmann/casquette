@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { STYLE_PROPS, diffStyles, snapshotStyles } from '../scripts/lib/fragments.mjs';
+import { STYLE_PROPS, diffStyles, snapshotStyles } from '../scripts/site/lib/fragments.mjs';
 
 // Refs #46: the committed UI fragments (website/ui/, `npm run fragments`) render on their own, in light
 // and dark, without app JavaScript – and neither leak into a host page nor take styles from it.

@@ -1,6 +1,6 @@
 import { expect, test } from './fixtures';
-import { DEMO_MARKER, heroRide, readDemoDataset, reviewYear } from '../scripts/lib/demo-dataset.mjs';
-import { SHOTS, planShots } from '../scripts/lib/screenshots.mjs';
+import { DEMO_MARKER, heroRide, readDemoDataset, reviewYear } from '../scripts/site/lib/demo-dataset.mjs';
+import { SHOTS, planShots } from '../scripts/site/lib/screenshots.mjs';
 
 // #41: the README screenshot list (`npm run screenshots`) still matches the markup – every page
 // exists, carries the demo indicator the script's privacy guard needs, and every close-up hook renders.

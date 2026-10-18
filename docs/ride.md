@@ -138,7 +138,7 @@ all FTP-dependent frontmatter values, cannot be met for legacy rides without a r
 A re-fetch is NOT part of the offline rebuild. The explicit command
 `npm run sync -- --backfill-power` fetches time/watt streams for legacy rides without
 a distribution; `--backfill-hr` does the same with time/heart rate streams for rides with stored HR
-TIZ, and both flags together fetch one request per ride (`scripts/lib/backfill.mjs`). Ride storage
+TIZ, and both flags together fetch one request per ride (`scripts/sync/lib/backfill.mjs`). Ride storage
 (`saveDistributions`) replaces only the old TIZ and its basis of each kind
 with the distribution in cache and Markdown, using its existing
 undo journal. Other metrics, location data, ride body and chart streams are kept.
@@ -146,7 +146,7 @@ Successful rides are skipped on resume; without usable measurements
 legacy data is kept. The regular API adapter handles rate limits and retries;
 `--wait` also waits for the daily limit, `--limit=N` caps the number of fetches.
 
-**Offline rebuild:** `npm run sync:rebuild` (`scripts/strava-rebuild.mjs`) imports only ride
+**Offline rebuild:** `npm run sync:rebuild` (`scripts/sync/strava-rebuild.mjs`) imports only ride
 storage, ride file and metrics modules, neither auth/geo nor the env loader.
 `npm run sync -- --rebuild` is an alias that runs the same script before env loading and
 online imports. Summary cache metrics are no longer
@@ -175,14 +175,14 @@ overwrites the newer Strava and place fields: review the result
 
 ## Ride storage (Refs #9)
 
-`scripts/lib/ride-storage.mjs::createRideStorage({ root, gear })` binds the
+`scripts/sync/lib/ride-storage.mjs::createRideStorage({ root, gear })` binds the
 gear names once and offers `read(id)`, `list()` (ride records with a summary, newest first),
 `save(rec, { streams, streamsAt }?)` and `saveDistributions(id, distributions)`.
 Only these write the ride cache/Markdown/chart streams. The ride file itself – path
 `<year>/<ride date>_<id>.md`, frontmatter, ride body rule, the targeted metrics patch and the
-one frontmatter parser – lives in `scripts/lib/ride-file.mjs`, shared by ride storage, the demo
+one frontmatter parser – lives in `scripts/shared/ride-file.mjs`, shared by ride storage, the demo
 generator and the demo readers; `gear-file.mjs` is the separate gear writer.
-The gear names come from athlete storage (`scripts/lib/athlete-storage.mjs`, below):
+The gear names come from athlete storage (`scripts/sync/lib/athlete-storage.mjs`, below):
 `gear().byId` merges athlete gear and gear cache (cache wins); online,
 available names from `/athlete` and the gear query are added to the same live map. The list is
 collected until then so that `--no-detail --no-streams` also gets complete bike
@@ -217,18 +217,19 @@ the cursor only advances after successful ride saves.
 
 ## Athlete storage
 
-`scripts/lib/athlete-storage.mjs::createAthleteStorage({ root, clock })` owns the athlete-side
+`scripts/sync/lib/athlete-storage.mjs::createAthleteStorage({ root, clock })` owns the athlete-side
 files next to ride storage: `src/data/athlete.json` (`writeAthlete`, shape `athleteFile`),
 `src/data/fitness-history.json` (`recordFitness`: appends FTP/weight only when they differ from
 the latest entry, dated with today's local calendar day; shape `historyEntry`),
 `.strava-cache/gear.json` (`gear()`: known gear, 7-day TTL for gear details) and
 `.strava-cache/state.json` (`listCursor()`: newest/oldest listed activity, history paging, list
-complete). The demo generator reuses `athleteFile` and `historyEntry`. `runSync`
-(`scripts/lib/sync.mjs`) is a sequence of steps – athlete, activity list, gear, athlete file and
+complete). The shapes `athleteFile` and `historyEntry` live in `scripts/shared/athlete-file.mjs`,
+reused by the demo generator. `runSync`
+(`scripts/sync/lib/sync.mjs`) is a sequence of steps – athlete, activity list, gear, athlete file and
 history, details and streams, places – with the Strava client, geocoder and clock injected.
 
 Tests use only synthetic caches under `logs/` or the OS temp folder, the shared Strava fake
-(`scripts/lib/strava-fake.mjs`), a local geo fake and the actual `runSync` flow. They compare normal output and rebuild,
+(`scripts/sync/lib/strava-fake.mjs`), a local geo fake and the actual `runSync` flow. They compare normal output and rebuild,
 check the context sources, description/body/date change and injected errors at
 stream, Markdown, cache and rename boundaries, including resume.
 
