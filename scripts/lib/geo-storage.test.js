@@ -12,14 +12,15 @@ const { root, geocodeRides } = vi.hoisted(() => ({
 vi.mock('./env.mjs', async (original) => ({ ...await original(), ROOT: root, loadEnv: () => { throw new Error('No env allowed'); } }));
 vi.mock('./geo.mjs', () => ({ geocodeRides }));
 vi.mock('./strava.mjs', () => { throw new Error('No Strava import allowed'); });
-import { createRideStorage, loadRideStorageContext } from './ride-storage.mjs';
+import { createRideStorage } from './ride-storage.mjs';
+import { createAthleteStorage } from './athlete-storage.mjs';
 import { rebuild } from './rebuild.mjs';
 
 afterAll(() => fs.rmSync(root, { recursive: true, force: true }));
 it('standalone geo saves through the same public ride storage; offline rebuild is byte-identical', async () => {
   fs.mkdirSync(path.join(root, 'src/data'), { recursive: true });
   fs.writeFileSync(path.join(root, 'src/data/athlete.json'), JSON.stringify({ zones: {}, gear: [{ id: 'b7', name: 'Geo bike', type: 'bike' }] }));
-  const store = createRideStorage(loadRideStorageContext());
+  const store = createRideStorage({ gear: createAthleteStorage().gear().byId });
   store.save({ id: '7', summary: { start_date_local: '2024-05-01T12:00:00', gear_id: 'b7' }, detail: { description: 'Description' } });
   await import('../geo.mjs');
   expect(geocodeRides).toHaveBeenCalledOnce();

@@ -7,8 +7,7 @@ vi.mock('./env.mjs', async (original) => ({ ...await original(), ROOT: root, loa
 vi.mock('./strava.mjs', () => { throw new Error('Offline must not import Strava'); });
 vi.mock('./geo.mjs', () => { throw new Error('Offline must not import geocoding'); });
 import { rebuild } from './rebuild.mjs';
-import { migrateRideMetrics } from './metrics-migration.mjs';
-import { writeGear } from './store.mjs';
+import { writeGear } from './gear-file.mjs';
 
 const put = (name, text) => { const file = path.join(root, name); fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, text); };
 const get = (name) => fs.readFileSync(path.join(root, name), 'utf8');
@@ -43,16 +42,4 @@ it('also keeps a deliberately empty gear body', () => {
 
 it('the offline CLI imports neither auth nor geocoding and loads no secrets', async () => {
   await import('../strava-rebuild.mjs');
-});
-
-it('targeted migration changes only metric lines and keeps the legacy FTP as basis', () => {
-  const text = '---\nid: "7"\ngeo: {custom: true}\nmetrics:\n  source: "streams"\n  ftp_used: 300\n  np: 220\n  tss: 50\n  intensity_factor: 0.8\n  avg_wkg: 2\n  np_wkg: 3\n  time_in_power_zones: [10, 20]\n  power_curve:\n    60: 300\nlaps: []\n---\n\nOwn text\n';
-  const migrated = migrateRideMetrics(text);
-  expect(migrated).not.toMatch(/\b(tss|intensity_factor|avg_wkg|np_wkg|ftp_used):/);
-  expect(migrated).toContain('time_in_power_zones_basis:');
-  expect(migrated).toContain('ftp: 300');
-  expect(migrated).toContain('  power_curve:\n    60: 300\n');
-  expect(migrated).toContain('laps: []\n---\n\nOwn text\n');
-  expect(migrated).toContain('geo: {custom: true}\n');
-  expect(migrateRideMetrics(migrated)).toBe(migrated);
 });

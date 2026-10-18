@@ -4,9 +4,9 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { runBackfill } from './backfill.mjs';
 import { createRideStorage } from './ride-storage.mjs';
+import { createStravaFake } from './strava-fake.mjs';
 
 let root;
-class DailyLimitError extends Error {}
 const ride = id => `src/content/rides/2024/2024-05-01_${id}.md`;
 const cache = id => `.strava-cache/activities/${id}.json`;
 const read = file => fs.readFileSync(path.join(root, file), 'utf8');
@@ -21,15 +21,16 @@ const fixture = id => {
   put(ride(id), before(id));
 };
 const streams = { time: { data: [0, 1, 2, 30, 31] }, watts: { data: [50, 0, 201.25, 100, 300] } };
-const run = (get, kinds = ['power']) => runBackfill({ root, get, DailyLimitError, kinds });
+const run = (strava, kinds = ['power']) => runBackfill({ root, strava, kinds });
+const answering = (value) => createStravaFake(() => value);
 beforeEach(() => { root = fs.mkdtempSync(path.join(os.tmpdir(), 'backfill-')); });
 afterEach(() => { vi.restoreAllMocks(); fs.rmSync(root, { recursive: true, force: true }); });
 
 it('adds only the power distribution despite completed streams; keeps unrelated fields and resumes without refetching', async () => {
   fixture('7');
-  const get = vi.fn().mockResolvedValue(streams);
-  expect(await run(get)).toMatchObject({ saved: 1, remaining: 0 });
-  expect(get).toHaveBeenCalledWith('/activities/7/streams', { keys: 'time,watts', key_by_type: true }, { wait: false });
+  const strava = answering(streams);
+  expect(await run(strava)).toMatchObject({ saved: 1, remaining: 0 });
+  expect(strava.calls).toEqual([['/activities/7/streams', { keys: 'time,watts', key_by_type: true }, { wait: false }]]);
   const saved = JSON.parse(read(cache('7')));
   expect(saved.metrics.power_distribution.samples).toEqual([[0, 1], [201.25, 1], [300, 1]]);
   expect(saved.metrics).not.toHaveProperty('ftp_used');
@@ -39,17 +40,18 @@ it('adds only the power distribution despite completed streams; keeps unrelated 
   expect(read(ride('7'))).toContain('  power_curve:\n    60: 300\n  time_in_hr_zones: [1, 2]\n');
   expect(read(ride('7'))).toContain('laps: []\n---\n\nOwn text\n');
   expect(read(ride('7'))).not.toMatch(/time_in_power_zones|ftp:/);
-  expect(await run(get)).toMatchObject({ total: 0, saved: 0 });
-  expect(get).toHaveBeenCalledTimes(1);
+  expect(await run(strava)).toMatchObject({ total: 0, saved: 0 });
+  expect(strava.calls).toHaveLength(1);
 });
 
 it('keeps legacy data when streams are missing and stops resumably at the daily limit', async () => {
   fixture('7'); fixture('8'); fixture('9');
-  const get = vi.fn().mockResolvedValueOnce(streams).mockResolvedValueOnce(null).mockRejectedValueOnce(new DailyLimitError());
-  expect(await run(get)).toMatchObject({ saved: 1, unavailable: ['8'], stopped: true, remaining: 2 });
+  const answers = [streams, null];
+  const strava = createStravaFake(() => { if (!answers.length) throw strava.dailyLimit(); return answers.shift(); });
+  expect(await run(strava)).toMatchObject({ saved: 1, unavailable: ['8'], stopped: true, remaining: 2 });
   expect(read(ride('8'))).toBe(before('8'));
   expect(read(ride('9'))).toBe(before('9'));
-  expect(await run(vi.fn().mockResolvedValue(streams))).toMatchObject({ saved: 2, remaining: 0 });
+  expect(await run(answering(streams))).toMatchObject({ saved: 2, remaining: 0 });
 });
 
 it('rolls back Markdown and cache together on a write failure', async () => {
@@ -61,10 +63,10 @@ it('rolls back Markdown and cache together on a write failure', async () => {
     if (fail && to === path.join(root, cache('7'))) { fail = false; throw new Error('disk fault'); }
     return rename(from, to);
   });
-  expect(await run(vi.fn().mockResolvedValue(streams))).toMatchObject({ saved: 0, failed: ['7'] });
+  expect(await run(answering(streams))).toMatchObject({ saved: 0, failed: ['7'] });
   expect(read(ride('7'))).toBe(before('7'));
   expect(read(cache('7'))).toBe(oldCache);
-  expect(await run(vi.fn().mockResolvedValue(streams))).toMatchObject({ saved: 1 });
+  expect(await run(answering(streams))).toMatchObject({ saved: 1 });
 });
 
 it('refuses unknown Markdown and invalid distributions without writing', () => {
@@ -89,9 +91,9 @@ describe('HR backfill', () => {
 
   it('adds the HR distribution in place of the stored HR time in zones and resumes without refetching', async () => {
     hrOnly('7');
-    const get = vi.fn().mockResolvedValue(hrStreams);
-    expect(await run(get, ['hr'])).toMatchObject({ saved: 1, remaining: 0 });
-    expect(get).toHaveBeenCalledWith('/activities/7/streams', { keys: 'time,heartrate', key_by_type: true }, { wait: false });
+    const strava = answering(hrStreams);
+    expect(await run(strava, ['hr'])).toMatchObject({ saved: 1, remaining: 0 });
+    expect(strava.calls).toEqual([['/activities/7/streams', { keys: 'time,heartrate', key_by_type: true }, { wait: false }]]);
     const saved = JSON.parse(read(cache('7')));
     expect(saved.metrics.hr_distribution.samples).toEqual([[0, 1], [141, 1], [175, 1]]);
     expect(saved.metrics).not.toHaveProperty('time_in_hr_zones');
@@ -101,18 +103,18 @@ describe('HR backfill', () => {
     expect(md).toContain('  hr_curve:\n    60: 170\n');
     expect(md).toContain('  hr_distribution:\n');
     expect(md).toContain('laps: []\n---\n\nOwn text\n');
-    expect(await run(get, ['hr'])).toMatchObject({ total: 0, saved: 0 });
-    expect(get).toHaveBeenCalledTimes(1);
+    expect(await run(strava, ['hr'])).toMatchObject({ total: 0, saved: 0 });
+    expect(strava.calls).toHaveLength(1);
   });
 
   it('fetches power and heart rate in one request when a ride needs both', async () => {
     fixture('7'); hrOnly('8');
     const both = JSON.parse(read(cache('7')));
     put(cache('7'), JSON.stringify({ ...both, metrics: { ...both.metrics, time_in_hr_zones: [1, 2] } }));
-    const get = vi.fn(async (url, { keys }) => keys.includes('watts') ? { ...streams, ...hrStreams, time: streams.time } : hrStreams);
-    expect(await run(get, ['power', 'hr'])).toMatchObject({ total: 2, saved: 2, remaining: 0 });
-    expect(get).toHaveBeenCalledWith('/activities/7/streams', { keys: 'time,watts,heartrate', key_by_type: true }, { wait: false });
-    expect(get).toHaveBeenCalledWith('/activities/8/streams', { keys: 'time,heartrate', key_by_type: true }, { wait: false });
+    const strava = createStravaFake((url, { keys }) => keys.includes('watts') ? { ...streams, ...hrStreams, time: streams.time } : hrStreams);
+    expect(await run(strava, ['power', 'hr'])).toMatchObject({ total: 2, saved: 2, remaining: 0 });
+    expect(strava.calls).toContainEqual(['/activities/7/streams', { keys: 'time,watts,heartrate', key_by_type: true }, { wait: false }]);
+    expect(strava.calls).toContainEqual(['/activities/8/streams', { keys: 'time,heartrate', key_by_type: true }, { wait: false }]);
     const seven = JSON.parse(read(cache('7'))).metrics;
     expect(seven.power_distribution).toBeTruthy();
     expect(seven.hr_distribution).toBeTruthy();
@@ -122,7 +124,7 @@ describe('HR backfill', () => {
   it('keeps the stored HR time in zones when the ride has no usable heart rate samples', async () => {
     hrOnly('7');
     const before = read(ride('7'));
-    expect(await run(vi.fn().mockResolvedValue({ time: { data: [0, 1] } }), ['hr'])).toMatchObject({ saved: 0, unavailable: ['7'], remaining: 1 });
+    expect(await run(answering({ time: { data: [0, 1] } }), ['hr'])).toMatchObject({ saved: 0, unavailable: ['7'], remaining: 1 });
     expect(read(ride('7'))).toBe(before);
   });
 });

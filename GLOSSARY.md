@@ -22,6 +22,10 @@ _Avoid_: counted ride, real ride
 A ride with an e-bike or e-MTB sport type; shown in the ride log and on the map, flagged, but excluded from all stats.
 _Avoid_: assisted ride
 
+**Indoor ride**:
+A ride on a trainer or a virtual ride (Zwift and similar). It has no real route, so it gets no places.
+_Avoid_: trainer ride, virtual ride (each is only one kind)
+
 **Ride date**:
 The local calendar day of a ride, taken from its written local start time, never converted into another time zone.
 _Avoid_: ride day
@@ -307,6 +311,14 @@ _Avoid_: estimate
 **Ride storage**:
 The single place where the sync reads and writes ride files: activity cache, ride Markdown and chart streams, guarded by an undo journal.
 _Avoid_: ride store, repository, writer
+
+**Ride file**:
+The Markdown file of one ride, `<year>/<ride date>_<id>.md`: all of its data in the frontmatter, followed by the ride body. Ride storage writes it; the demo data uses the same format.
+_Avoid_: ride document, ride Markdown
+
+**Athlete storage**:
+The single place where the sync reads and writes the athlete side: athlete file, athlete history, gear cache and the activity list cursor.
+_Avoid_: athlete store, profile cache
 
 **Demo data**:
 The synthetic, seeded dataset in `demo/` (rides, gear, chart streams, athlete, goals, FTP/weight history, zones file) shown while no synced ride exists. A fictional "travelling rider" rides real roads in five cities; the road geometry is cached in `demo/source/routes/` (OpenStreetMap data, ODbL). Real data and demo data are never mixed: one synced ride switches the whole site to real data. Demo dates move forward in whole weeks so the newest demo ride is recent. The sync never touches it. Every page built from it carries the demo marker (`data-demo-note`, the sidebar's demo indicator).

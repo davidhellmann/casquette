@@ -12,13 +12,17 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT, readJSON, writeJSON, sleep, log } from './env.mjs';
 import { decodePolyline } from '../../src/scripts/polyline.js';
+import { isIndoor } from '../../src/training/index.js';
 
-export const GEO_FILE = path.join(ROOT, 'src', 'data', 'geo-cells.json');
-// Former location (gitignored) → move once
-const OLD_GEO_FILE = path.join(ROOT, '.strava-cache', 'geo-cells.json');
-if (!fs.existsSync(GEO_FILE) && fs.existsSync(OLD_GEO_FILE)) {
-  fs.mkdirSync(path.dirname(GEO_FILE), { recursive: true });
-  fs.renameSync(OLD_GEO_FILE, GEO_FILE);
+/** The place cache below `root`; a cache at its former location is moved there on first use. */
+function geoCellsFile(root) {
+  const file = path.join(root, 'src', 'data', 'geo-cells.json');
+  const legacy = path.join(root, '.strava-cache', 'geo-cells.json');
+  if (!fs.existsSync(file) && fs.existsSync(legacy)) {
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.renameSync(legacy, file);
+  }
+  return file;
 }
 const GRID = 0.015;   // degrees (~1.6 km N-S, ~1.1 km E-W in Central Europe)
 const STEP_KM = 1;    // sampling distance along the route
@@ -41,8 +45,8 @@ function km(a, b) {
 const cellKey = (p) => `${Math.round(p[0] / GRID)}:${Math.round(p[1] / GRID)}`;
 const cellCenter = (k) => k.split(':').map((n) => +(Number(n) * GRID).toFixed(5));
 
-/** Outdoor ride with GPS? (Zwift and similar use fictional coordinates.) */
-export const isGeoRide = (s) => !!(s && s.summary_polyline && !s.trainer && !/^Virtual/.test(s.sport_type || s.type || ''));
+/** Outdoor ride with GPS? (Indoor rides – Zwift and similar – use fictional coordinates.) */
+export const isGeoRide = (s) => !!(s && s.summary_polyline && !isIndoor(s));
 
 /** Ordered, unique grid cells along the route (start + every ~1 km + finish). */
 export function routeCells(polyline) {
@@ -106,10 +110,12 @@ export function rideGeo(polyline, cells) {
 /**
  * Resolve missing cells and set `rec.geo`.
  * @param recs       cache records (newest first works best)
+ * @param root       checkout whose place cache (src/data/geo-cells.json) is used
  * @param budgetMs   time limit (0 = unlimited) – the rest follows on the next run
  * @param onRide     callback(rec) for every ride whose geo changed (→ rewrite Markdown)
  */
-export async function geocodeRides(recs, { budgetMs = 0, onRide } = {}) {
+export async function geocodeRides(recs, { root = ROOT, budgetMs = 0, onRide } = {}) {
+  const GEO_FILE = geoCellsFile(root);
   const cells = readJSON(GEO_FILE, {}) || {};
   const rides = recs.filter((r) => isGeoRide(r.summary));
   const todo = [];

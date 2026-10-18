@@ -6,6 +6,7 @@ import path from 'node:path';
 import { DEMO_DIR } from '../../src/lib/data-source.js';
 import { demoDayShift, shiftRideDates } from '../../src/lib/demo-clock.js';
 import { ROOT } from './env.mjs';
+import { splitFrontmatter } from './ride-file.mjs';
 
 /**
  * The attribute the app renders (on the sidebar's demo indicator) only while it shows the demo
@@ -20,10 +21,10 @@ function scalar(raw) {
 
 /**
  * The part of a ride file's frontmatter the tooling needs: the top-level `key: value` scalars and
- * the segment ids of `segment_efforts`. The only frontmatter parsing in this module.
+ * the segment ids of `segment_efforts`. The frontmatter itself is split by the ride file module.
  */
-function rideFrontmatter(text) {
-  const front = text.split('\n---')[0];
+function rideFields(text) {
+  const front = splitFrontmatter(text)?.front ?? '';
   const ride = {};
   for (const [, key, raw] of front.matchAll(/^([a-z_]+): (.+)$/gm)) ride[key] = scalar(raw);
   const segments = [...front.matchAll(/^\s+segment_id: (.+)$/gm)].map((m) => ({ segment_id: String(scalar(m[1])) }));
@@ -51,7 +52,7 @@ export function readDemoDataset({ root = ROOT, today = new Date() } = {}) {
   try { meta = JSON.parse(fs.readFileSync(path.join(dir, 'data', 'meta.json'), 'utf8')); } catch { meta = {}; }
   const shift = demoDayShift(meta.newest_day, today);
   const ridesDir = path.join(dir, 'rides');
-  const rides = files(ridesDir, '.md', true).map((f) => shiftRideDates(rideFrontmatter(fs.readFileSync(path.join(ridesDir, f), 'utf8')), shift));
+  const rides = files(ridesDir, '.md', true).map((f) => shiftRideDates(rideFields(fs.readFileSync(path.join(ridesDir, f), 'utf8')), shift));
   const ids = (sub, ext) => files(path.join(dir, sub), ext).map((f) => f.slice(0, -ext.length));
   return { dir, meta, shift, rides, gear: ids('gear', '.md'), streams: ids('streams', '.json') };
 }

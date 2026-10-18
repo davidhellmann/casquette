@@ -12,14 +12,13 @@ const KINDS = {
  * Re-fetches streams for rides that only have stored time in zones, so they gain a power and/or HR
  * distribution. One request per ride covers all kinds it needs. Uses the normal API adapter and ride
  * storage; each saved ride is a checkpoint.
- * @param {{ kinds?: ('power'|'hr')[] }} options
+ * @param {{ strava: ReturnType<import('./strava.mjs').createStravaClient>, kinds?: ('power'|'hr')[] }} options
  */
-export async function runBackfill({ root = ROOT, get, DailyLimitError, wait = false, limit = 0, kinds = ['power'] }) {
+export async function runBackfill({ root = ROOT, strava, wait = false, limit = 0, kinds = ['power'] }) {
   const storage = createRideStorage({ root });
   const wanted = kinds.map((k) => KINDS[k]);
   const missing = (rec) => wanted.filter((k) => rec.metrics?.[k.legacy] && !rec.metrics[k.field]);
-  const todo = storage.list().filter((r) => r.summary && missing(r).length)
-    .sort((a, b) => String(b.summary.start_date).localeCompare(String(a.summary.start_date)));
+  const todo = storage.list().filter((r) => missing(r).length);
   const what = wanted.map((k) => k.label).join(' and ');
   const result = { total: todo.length, saved: 0, unavailable: [], failed: [], remaining: todo.length, stopped: false };
   log(`Backfill: ${todo.length} rides without a ${what} distribution.`);
@@ -30,7 +29,7 @@ export async function runBackfill({ root = ROOT, get, DailyLimitError, wait = fa
     const needed = missing(rec);
     try {
       const keys = ['time', ...needed.map((k) => k.stream)].join(',');
-      const streams = await get(`/activities/${rec.id}/streams`, { keys, key_by_type: true }, { wait });
+      const streams = await strava.get(`/activities/${rec.id}/streams`, { keys, key_by_type: true }, { wait });
       const found = {};
       for (const k of needed) {
         const distribution = k.distribution(streams?.time?.data, streams?.[k.stream]?.data);
@@ -45,7 +44,7 @@ export async function runBackfill({ root = ROOT, get, DailyLimitError, wait = fa
       result.saved++;
       if (result.saved % 10 === 0) log(`  … ${result.saved}/${todo.length} rides backfilled.`);
     } catch (error) {
-      if (error instanceof DailyLimitError) { result.stopped = true; break; }
+      if (strava.isDailyLimit(error)) { result.stopped = true; break; }
       result.failed.push(rec.id);
       log(`⚠️  Ride ${rec.id}: ${error.message}`);
       // Auth/API failures must not fan out into hundreds of identical requests.

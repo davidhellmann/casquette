@@ -1,6 +1,6 @@
 /**
- * Ride type: which Strava sport types are rides and which count in stats. Pure, no I/O.
- * Terms: GLOSSARY.md "Ride" / "Stat ride".
+ * Ride type: which Strava sport types are rides, which count in stats and which rides are indoor.
+ * Pure, no I/O. Terms: GLOSSARY.md "Ride" / "Stat ride" / "Indoor ride".
  */
 
 /** E-bike types (EBikeRide, EMountainBikeRide, future E…Ride). */
@@ -14,3 +14,5 @@ export const countsInStats = (t) => isRide(t) && !isEBike(t);
 
 /** Kind of e-bike ride for display: 'emtb' (e-MTB), 'ebike' (any other e-bike type) or null for a stat ride. */
 export const eBikeKind = (t) => (!isEBike(t) ? null : /Mountain/.test(t) ? 'emtb' : 'ebike');
+/** Indoor ride: on a trainer or a virtual ride (Zwift and similar) – no real route, so no places. */
+export const isIndoor = (r) => !!r?.trainer || /^Virtual/.test(r?.sport_type || r?.type || '');

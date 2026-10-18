@@ -29,3 +29,6 @@ export function writeJSON(file, data, pretty = true) {
 }
 
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/** The real clock (wall time and waiting); scripts accept a fake one in tests. */
+export const systemClock = { now: () => Date.now(), sleep };

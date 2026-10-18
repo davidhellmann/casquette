@@ -9,12 +9,13 @@
  *   see demo-route-cache.mjs). The generator only reads that cache and never uses the network.
  * - The rider spends a few weeks at a time in each city; every outdoor ride starts and ends at
  *   the rider's base there. Places (`geo:`), segments, time zones and altitude follow the route.
- * - Rides go through the same storage boundary as the sync (computeMetrics, frontmatter,
- *   toYaml, downsampleStreams), so the files match the real schema exactly.
+ * - Rides go through the same ride file module and metrics as the sync (computeMetrics,
+ *   ride-file.mjs, downsampleStreams), so the files match the real schema exactly.
  * - Pure: returns data, writes nothing. `scripts/generate-demo.mjs` writes it to demo/.
  */
 import { computeMetrics, downsampleStreams, normalizedPower, to1Hz } from './metrics.mjs';
-import { frontmatter } from './store.mjs';
+import { rideBody, rideFileName, rideFrontmatter, rideText } from './ride-file.mjs';
+import { athleteFile, historyEntry } from './athlete-storage.mjs';
 import { toYaml } from './yaml.mjs';
 import { cogganZones } from '../../src/training/index.js';
 import { CITIES } from './demo-cities.mjs';
@@ -248,7 +249,7 @@ function fitnessHistory(startMs, endMs) {
   const n = steps.length;
   return steps.map(([ftp, weight], i) => {
     const day = dayStr(startMs + Math.round(((endMs - startMs - 20 * DAY) * i) / (n - 1)) + 3 * DAY);
-    return { id: day, date: day, ftp, weight, source: i % 3 === 1 ? 'strava' : 'manual', note: i === 0 ? 'Starting value' : i % 3 === 1 ? 'Change detected in Strava' : 'FTP test (20 min)' };
+    return historyEntry({ day, ftp, weight, source: i % 3 === 1 ? 'strava' : 'manual', note: i === 0 ? 'Starting value' : i % 3 === 1 ? 'Change detected in Strava' : 'FTP test (20 min)' });
   });
 }
 const standAt = (history, day) => {
@@ -440,7 +441,6 @@ export function generateDemoData({ seed = DEFAULT_SEED, through = DEFAULT_THROUG
     const frac = (utcDay(p.day) - startMs) / span;
     const city = cities[cityAt(utcDay(p.day))];
     const { ftp } = standAt(history, p.day);
-    const zones = { ftp, heart_rate_zones: HR_ZONES, heart_rate_zone_source: 'Manual', power_zones: cogganZones(ftp) };
     const winter = p.kind === 'ride' && p.season < 0.3;
     const indoor = p.kind === 'test' || (winter ? r.chance(0.75) : r.chance(p.season > 0.7 ? 0.04 : 0.2));
     const ebike = !indoor && r.chance(0.07);
@@ -560,8 +560,7 @@ export function generateDemoData({ seed = DEFAULT_SEED, through = DEFAULT_THROUG
       streamsFile: true,
       _sync: { summary: syncedAt, detail: syncedAt, streams: syncedAt },
     };
-    const data = frontmatter(rec, zones, { gear_name: gear?.name });
-    rides.push({ file: `rides/${p.day.slice(0, 4)}/${p.day}_${id}.md`, data, body: rec.detail.description });
+    rides.push({ file: `rides/${rideFileName(rec)}`, data: rideFrontmatter(rec, { gearName: gear?.name }), body: rideBody(rec) });
     streams[id] = downsampleStreams(raw, STREAM_POINTS);
   }
 
@@ -580,13 +579,13 @@ export function generateDemoData({ seed = DEFAULT_SEED, through = DEFAULT_THROUG
   }));
 
   const last = history[history.length - 1];
-  const athlete = {
-    synced_at: syncedAt,
+  const athlete = athleteFile({
+    syncedAt,
     profile: { id: 'demo', first_name: 'Demo', last_name: 'Rider', username: 'demo-rider', city: cities[HOME_CITY].name, state: cities[HOME_CITY].region, country: cities[HOME_CITY].countryName, sex: null, weight: last.weight, ftp: last.ftp, premium: false, created_at: `${dayStr(startMs - 400 * DAY)}T12:00:00Z`, avatar: null },
     zones: { ftp: last.ftp, heart_rate_zones: HR_ZONES, heart_rate_zone_source: 'Manual', power_zones: cogganZones(last.ftp) },
     gear: gearList, stats: null,
-    sync: { list_complete: true, oldest: rides.length ? rides[0].data.start_date : null },
-  };
+    listComplete: true, oldest: rides.length ? rides[0].data.start_date : null,
+  });
   const goals = [
     { id: 'year-km', label: 'Distance per year', period: 'year', metric: 'distance', target: 4500 },
     { id: 'year-elevation', label: 'Elevation per year', period: 'year', metric: 'elevation', target: 45000 },
@@ -631,7 +630,7 @@ function splitsOf(sim) {
 /** Dataset → { 'relative/path': text } below demo/. */
 export function renderDemoFiles(demo) {
   const files = {};
-  for (const x of demo.rides) files[x.file] = `---\n${toYaml(x.data)}---\n${x.body ? `\n${x.body}\n` : ''}`;
+  for (const x of demo.rides) files[x.file] = rideText(x.data, x.body);
   for (const x of demo.gear) files[x.file] = `---\n${toYaml(x.data)}---\n\n${x.body}\n`;
   for (const [id, s] of Object.entries(demo.streams)) if (s) files[`streams/${id}.json`] = JSON.stringify(s);
   for (const [name, value] of Object.entries(demo.data)) files[`data/${name}`] = JSON.stringify(value, null, 2) + '\n';
