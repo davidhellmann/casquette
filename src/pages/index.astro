@@ -2,11 +2,10 @@
 import Base from '../layouts/Base.astro';
 import { DashboardView } from '../components/dashboard/DashboardView';
 import { encodeDashboard } from '../lib/dashboard-payload.js';
-import { athleteToday, loadAthlete, loadRides } from '../lib/data.js';
-import { readPersonalJSON } from '../lib/personal-data.js';
-import { selectDataSource } from '../lib/data-source.js';
-const goals = readPersonalJSON('goals', [], { dir: selectDataSource().dataDir });
-const json = encodeDashboard({ rides: await loadRides(), athlete: loadAthlete(), athleteState: athleteToday(), goals });
+import { getDataset } from '../lib/data.js';
+
+const data = await getDataset();
+const json = encodeDashboard({ rides: data.rides, athlete: data.athlete, athleteState: data.athleteToday, goals: data.goals });
 ---
 <Base active="dashboard" period>
   <DashboardView client:load />

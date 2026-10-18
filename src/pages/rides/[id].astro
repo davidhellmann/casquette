@@ -1,104 +1,24 @@
 ---
-import { BASE } from '../../components/app/nav';
 import Base from '../../layouts/Base.astro';
-import { RideView, type RidePayload } from '../../components/ride/RideView';
-import { getCollection, render } from 'astro:content';
-import { loadStatRides, normalize, curveWkg, readStreams, loadGear } from '../../lib/data.js';
-import { decodePolyline } from '../../scripts/polyline.js';
-import { curveLabel, fmtLongDate, fmtTime } from '../../scripts/format.js';
-import { fuel, bestCurve } from '../../training/index.js';
+import { render } from 'astro:content';
+import { RideView } from '../../components/ride/RideView';
+import { getDataset } from '../../lib/data.js';
+import { ridePayload } from '../../lib/ride-payload.ts';
 import { t } from '../../i18n/index.js';
-import { activityUrl, segmentUrl } from '../../lib/strava-links.js';
-import { rideClassification, tizBasisLabel } from '../../components/ride/ride-presentation.js';
 
 export async function getStaticPaths() {
-  const entries = (await getCollection('rides')).sort((a, b) => String(b.data.start_date_local).localeCompare(String(a.data.start_date_local)));
-  return entries.map((entry, i) => ({
-    params: { id: String(entry.data.id) },
-    props: { entry, newer: i > 0 ? { id: String(entries[i - 1].data.id), name: entries[i - 1].data.name } : null, older: i < entries.length - 1 ? { id: String(entries[i + 1].data.id), name: entries[i + 1].data.name } : null },
-  }));
+  return (await getDataset()).rides.map((r) => ({ params: { id: r.id }, props: { id: r.id } }));
 }
 
-const { entry, newer, older } = Astro.props;
-const a: any = entry.data;
+const { id } = Astro.props;
+const data = await getDataset();
+const R = ridePayload(data, { id });
+const entry = data.entry('rides', id);
 const { Content } = await render(entry);
-const r = normalize(a);
-// The ride module provides the same athlete state for metrics, streams and W/kg.
-const Z = r.zones, KG = r.kg;
-const base = BASE;
-const all = await loadStatRides();
-const allBest = bestCurve(all.filter((x) => x.id !== r.id));
-const yearBest = bestCurve(all.filter((x) => x.year === r.year && x.id !== r.id));
-const watts = (best: Record<string, { w: number }>) => Object.fromEntries(Object.entries(best).map(([k, v]) => [k, v.w]));
-const st = readStreams(r.id);
-const gear = (await loadGear()).find((g: any) => g.id === r.gear_id);
-const hasLatlng = !!(st && st.latlng);
-const points = hasLatlng ? null : decodePolyline(a.summary_polyline);
-const mapKey = hasLatlng ? (st.watts ? 'watts' : st.heart_rate ? 'heart_rate' : null) : null;
-// New power bests (GLOSSARY): all-time bests as of today – compared with every other stat ride, later ones included.
-const newPR = Object.entries(r.best || {}).filter(([k, w]: any) => w && (!allBest[k] || w > allBest[k].w)).map(([k]) => +k);
-const f = fuel(r.moving_time, r.clsP.zone);
-const num = (v: any) => (v == null || v === '' ? null : Number(v));
-const pick = (o: any, keys: string[]) => Object.fromEntries(keys.map((k) => [k, o[k] ?? null]));
-
-const R: RidePayload = {
-  id: r.id,
-  name: r.name,
-  kind: `${t(r.indoor ? 'common.indoor' : 'common.outdoor')} · ${r.sport_type}`,
-  indoor: r.indoor,
-  inStats: r.stats,
-  when: `${fmtLongDate(r.d)} · ${t('common.clock', { t: fmtTime(r.d) })}`,
-  zone: r.clsP.zone ? { zone: r.clsP.zone, title: rideClassification(r).title, estimated: r.clsP.source === 'effort' } : null,
-  gear: gear ? { name: gear.name, href: `${base}gear/${gear.id}` } : null,
-  device: a.device_name || null,
-  prs: r.pr,
-  newBests: newPR.length ? newPR.map(curveLabel).join(', ') : null,
-  strava: activityUrl(r.id),
-  places: (r.geo?.places || []).map((p: any) => ({
-    name: p.name,
-    href: `${base}map?country=${encodeURIComponent(p.country || '')}&place=${encodeURIComponent(p.name)}`,
-    title: [p.region, p.country].filter(Boolean).join(', '),
-  })),
-  older: older ? { href: `${base}rides/${older.id}`, name: older.name } : null,
-  newer: newer ? { href: `${base}rides/${newer.id}`, name: newer.name } : null,
-  stats: {
-    distance: r.distance / 1000, moving: r.moving_time, elapsed: r.elapsed_time, elev: r.elev,
-    elevLow: num(a.elev_low), elevHigh: num(a.elev_high), speed: r.speed * 3.6, maxSpeed: r.max_speed * 3.6,
-    w: r.w, maxW: r.max_watts, np: r.np, hr: r.hr, maxHr: r.hr_max, cad: r.cad, kcal: r.kcal, kj: r.kj,
-    tss: r.tss, ftp: r.ftp, if_: r.if_, re: r.re, temp: r.temp, kg: KG,
-  },
-  map: {
-    stream: st ? `${base}streams/${r.id}.json` : null,
-    points: points && points.filter(Boolean).length > 1 ? points : null,
-    key: mapKey,
-    zones: mapKey === 'watts' ? Z.power_zones : mapKey === 'heart_rate' ? Z.heart_rate_zones : null,
-  },
-  streamZones: { watts: Z.power_zones, hr: Z.heart_rate_zones },
-  tiz: {
-    power: { seconds: r.tizP, zones: r.tizBasis.power.zones, label: tizBasisLabel('power', r.tizBasis.power) },
-    hr: { seconds: r.tizH, zones: r.tizBasis.hr.zones, label: tizBasisLabel('hr', r.tizBasis.hr) },
-  },
-  year: r.year,
-  ftp: Z.ftp,
-  curve: {
-    own: r.best || {},
-    year: watts(yearBest),
-    allTime: watts(allBest),
-    wkg: {
-      own: Object.fromEntries(Object.entries(r.best || {}).map(([k, w]: any) => [k, +(w / KG).toFixed(2)])),
-      year: await curveWkg(yearBest),
-      allTime: await curveWkg(allBest),
-    },
-  },
-  analysis: { if_: r.if_, vi: r.vi, ef: r.ef, rpe: a.perceived_exertion ?? null, dec: r.dec, fuel: { during: f.during, ml: f.ml, after: f.after } },
-  laps: (a.laps || []).length > 1 ? a.laps.map((l: any, i: number) => ({ ...pick(l, ['name', 'distance', 'moving_time', 'average_speed', 'average_watts', 'average_heartrate', 'max_heartrate', 'average_cadence', 'total_elevation_gain']), index: l.lap_index ?? i + 1 })) : [],
-  segments: (a.segment_efforts || []).map((s: any, i: number) => ({ ...pick(s, ['name', 'distance', 'average_grade', 'elapsed_time', 'average_watts', 'average_heartrate', 'pr_rank']), key: `${i}`, href: segmentUrl(s.segment_id) })),
-  splits: (a.splits_metric || []).length > 1 && !r.indoor ? a.splits_metric.map((s: any) => pick(s, ['split', 'moving_time', 'average_speed', 'elevation_difference', 'average_heartrate'])) : [],
-};
-const raw = JSON.stringify(a, null, 2);
+const raw = JSON.stringify(entry.data, null, 2);
 const hasDescription = !!entry.body?.trim();
 ---
-<Base title={r.name} active="rides">
+<Base title={R.name} active="rides">
   <RideView client:load R={R} />
   <section class="grid gap-3 pb-8 lg:grid-cols-2" aria-labelledby="ride-notes">
     <h2 id="ride-notes" class="sr-only">{t('ride.notes')}</h2>

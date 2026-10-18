@@ -2,10 +2,11 @@
 import Base from '../../layouts/Base.astro';
 import { RidesView } from '../../components/rides/RidesView';
 import { encodeDashboard } from '../../lib/dashboard-payload.js';
-import { athleteToday, loadAthlete, loadRides } from '../../lib/data.js';
+import { getDataset } from '../../lib/data.js';
 import { t } from '../../i18n/index.js';
 
-const json = encodeDashboard({ rides: await loadRides(), athlete: loadAthlete(), athleteState: athleteToday() });
+const data = await getDataset();
+const json = encodeDashboard({ rides: data.rides, athlete: data.athlete, athleteState: data.athleteToday });
 ---
 <Base title={t('log.title')} active="rides" period>
   <RidesView client:load />

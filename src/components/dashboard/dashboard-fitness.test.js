@@ -1,32 +1,26 @@
-import { afterEach, expect, it, vi } from 'vitest';
-import { decodeDashboard } from '../../lib/dashboard-payload.js';
+import { expect, it } from 'vitest';
+import { decodeDashboard, encodeDashboard } from '../../lib/dashboard-payload.js';
+import { createBuildDataset, memorySource } from '../../lib/build-dataset.js';
+import { performancePayload } from '../../lib/performance-payload.ts';
 import { dashboardPeriod } from '../../dashboard-period/index.js';
 import { fitnessChartData } from './fitness-data.js';
-import { performanceData } from '../../lib/performance.js';
-import { loadStatRides } from '../../lib/data.js';
-
-vi.mock('../../lib/data.js', () => ({
-  loadStatRides: vi.fn(), loadHistory: () => [], ftpAt: () => 200, weightAt: () => 75,
-}));
-afterEach(() => vi.useRealTimers());
 
 it('returns exactly the same CTL/ATL today on the dashboard and on /performance, even after rest days', async () => {
   const now = new Date(2024, 8, 15, 12);
-  vi.useFakeTimers();
-  vi.setSystemTime(now);
+  // Load from Relative Effort only, a known 0 TSS beside Relative Effort, a TSS, and a late-evening ride
+  const ride = (id, start_date_local, extra) => ({ id, start_date_local, sport_type: 'Ride', moving_time: 3600, ...extra });
   const rides = [
-    { start_local: '2024-08-01T23:30:00', tss: 83.75, re: 200, load: 83.75 },
-    { start_local: '2024-09-02T08:00:00', tss: 0, re: 60, load: 0 },
-    { start_local: '2024-09-02T19:00:00', tss: 44.3, re: 90, load: 44.3 },
-    { start_local: '2024-09-10T12:00:00', tss: null, re: 52, load: 52 },
-  ].map((r, i) => ({ ...r, id: String(i), stats: true, d: new Date(r.start_local), year: 2024 }));
-  loadStatRides.mockResolvedValue(rides);
-  // The dashboard payload: the same flat rides, newest first; load is already computed.
-  const payload = rides.slice().reverse().map(({ d, year, ...r }) => r);
-  const D = dashboardPeriod(decodeDashboard(JSON.stringify({ rides: payload })).rides, { days: 90, basis: 'power', now });
+    ride('0', '2024-08-01T23:30:00', { suffer_score: 200 }),
+    ride('1', '2024-09-02T08:00:00', { suffer_score: 60, device_watts: true, weighted_average_watts: 10 }),
+    ride('2', '2024-09-02T19:00:00', { suffer_score: 90, device_watts: true, weighted_average_watts: 133 }),
+    ride('3', '2024-09-10T12:00:00', { suffer_score: 52 }),
+  ];
+  const data = await createBuildDataset(memorySource({ rides }), { now });
+  expect(data.rides.map((r) => r.load)).toEqual([52, 44, 0, 200]);
+  // The dashboard payload: the same final rides; load is already computed.
+  const D = dashboardPeriod(decodeDashboard(encodeDashboard({ rides: data.rides })).rides, { days: 90, basis: 'power', now });
   const dashboard = D.fitness.at(-1);
-  const performance = await performanceData();
-  const today = performance.ctl.at(-1);
+  const today = performancePayload(data).ctl.at(-1);
   expect(today.date).toBe('2024-09-15');
   expect(dashboard.day).toBe('2024-09-15');
   expect(today.ctl).toBeGreaterThan(0);

@@ -28,8 +28,8 @@ function shiftISO(value, days) {
 /** 'YYYY-MM-DD' moved by `days`. */
 export const shiftDay = (day, days) => shiftISO(day, days);
 
-/** ISO instant (e.g. the last sync) moved by `days`, never later than `now` (a sync cannot lie in the future). */
-export const shiftInstant = (iso, days, now = Date.now()) => (iso ? new Date(Math.min(Date.parse(iso) + days * DAY, now)).toISOString() : iso);
+/** ISO instant (e.g. the last sync) moved by `days`, never later than `now` (ms; a sync cannot lie in the future). */
+export const shiftInstant = (iso, days, now) => (iso ? new Date(Math.min(Date.parse(iso) + days * DAY, now)).toISOString() : iso);
 
 /** Athlete history (fitness-history.json entries) with every `date` moved by `days`. */
 export const shiftHistory = (history, days) =>

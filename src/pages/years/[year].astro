@@ -1,15 +1,16 @@
 ---
 import Base from '../../layouts/Base.astro';
 import { YearView } from '../../components/years/YearView';
+import { getDataset } from '../../lib/data.js';
 import { yearList } from '../../lib/years.js';
-import { yearPayload } from '../../lib/year-payload.js';
+import { yearPayload } from '../../lib/year-payload.ts';
 
 export async function getStaticPaths() {
-  const years = await yearList();
+  const years = yearList(await getDataset());
   return years.map((y) => ({ params: { year: String(y) }, props: { year: y, years } }));
 }
 const { year, years } = Astro.props;
-const payload = await yearPayload(year);
+const payload = yearPayload(await getDataset(), { year });
 ---
 <Base title={`${year}`} active="years" yearSwitch={{ year, years }}>
   <YearView client:load P={payload} />

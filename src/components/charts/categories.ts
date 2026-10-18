@@ -12,7 +12,7 @@ export const categoryColor = (n: number) => CATEGORY_COLORS[((n % CATEGORY_COLOR
 export const NO_BIKE_COLOR = 'var(--muted-foreground)';
 
 /**
- * Bike id → colour, by the bike's position in the full bike list (`loadGear()` order: active bikes
+ * Bike id → colour, by the bike's position in the full bike list (the build dataset's gear order: active bikes
  * first, then by kilometres). Pages build it from all bikes and pass the colours along, so a filtered
  * subset (bikes with routes, bikes with rides) never shifts a bike to another colour.
  */

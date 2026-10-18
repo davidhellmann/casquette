@@ -1,36 +1,13 @@
 ---
-import { BASE } from '../components/app/nav';
 import Base from '../layouts/Base.astro';
 import { MapView } from '../components/map/MapView';
-import { loadRides, loadGear } from '../lib/data.js';
+import { getDataset } from '../lib/data.js';
+import { mapPayload } from '../lib/map-payload.ts';
 import { t } from '../i18n/index.js';
-import { rideDate } from '../training/index.js';
-import { bikeColors } from '../components/charts/categories';
 
-const rides = (await loadRides()).filter((r) => r.polyline && !r.indoor);
-const gear = await loadGear();
-const used = new Set(rides.map((r) => r.gear_id).filter(Boolean));
-const colorOf = bikeColors(gear.filter((g) => g.type === 'bike').map((g) => g.id));
-const bikes = gear.filter((g) => used.has(g.id)).map((g) => ({ id: g.id, name: g.name, color: colorOf[g.id] }));
-const years = Array.from(new Set(rides.map((r) => r.year))).sort((a, b) => b - a);
-const TYPES = t('map.types');
-const types = Array.from(new Set(rides.map((r) => r.sport_type))).map((id) => ({ id, label: TYPES[id] || id }));
-// Places table: each place once as [name, region, country]; rides reference it by index
-const placeIdx = new Map();
-const places = [];
-const pIdx = (p) => {
-  const k = `${p.country}|${p.region}|${p.name}`;
-  if (!placeIdx.has(k)) { placeIdx.set(k, places.length); places.push([p.name, p.region || '', p.country || '']); }
-  return placeIdx.get(k);
-};
-const routes = rides.map((r) => ({
-  i: r.id, n: r.name, d: rideDate(r), y: r.year, g: r.gear_id, k: +(r.distance / 1000).toFixed(1), t: r.sport_type, p: r.polyline,
-  ...(r.geo ? { pl: r.geo.places.map(pIdx) } : {}),
-}));
-const base = BASE;
-const json = JSON.stringify({ base, routes, bikes, places }).replace(/</g, '\\u003c');
+const { props, json } = mapPayload(await getDataset());
 ---
 <Base title={t('map.title')} active="map">
-  <MapView client:load years={years} bikes={bikes} types={types} />
+  <MapView client:load {...props} />
   <script type="application/json" id="map-data" set:html={json}></script>
 </Base>

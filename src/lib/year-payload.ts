@@ -1,9 +1,11 @@
 /**
  * Build payloads of the years overview (/years) and the year review (/years/<year>): plain,
- * serialisable data for the React views in src/components/years/. Server-side (build time).
+ * serialisable data for the React views in src/components/years/, from the build dataset. Build time.
  */
-import { BASE } from '../components/app/nav.ts';
-import { loadStatRides, curveWkg } from './data.js';
+import type { YearPayload } from '../components/years/YearView';
+import type { YearsPayload } from '../components/years/YearsView';
+import type { BuildDataset } from './build-dataset.js';
+import { routes } from './routes.js';
 import { yearData, MONTHS, MONTHS_L, WEEKDAYS } from './years.js';
 import { POWER_ZONE_NAMES, yearTotals } from '../training/index.js';
 import { yearCalendar } from './year-calendar.js';
@@ -11,14 +13,15 @@ import { rideRows } from '../components/rides/ride-list.js';
 import { nf, fmtDateL, fmtTime } from '../scripts/format.js';
 import { t } from '../i18n/index.js';
 
-const pct = (a, b) => (b ? ((a - b) / b) * 100 : null);
-const yt = (key, p) => t('year.' + key, p);
+const pct = (a: number, b: number) => (b ? ((a - b) / b) * 100 : null);
+const yt = (key: string, p?: Record<string, unknown>) => t('year.' + key, p);
+const watts = (best: Record<string, { w: number }>) => Object.fromEntries(Object.entries(best).map(([k, v]) => [k, v.w]));
 
-/** /years: every year with its totals and kilometres per month, newest first. */
-export async function yearsIndexPayload() {
-  const rides = await loadStatRides();
+/** /years: every year with its totals and kilometres per month, newest first. The running year: that of the calendar end. */
+export function yearsIndexPayload(data: BuildDataset): YearsPayload {
+  const rides = data.calendar.statRides;
   const byYear = new Map(yearTotals(rides).map((y) => [y.year, y]));
-  const cy = new Date().getFullYear();
+  const cy = data.calendar.end.getFullYear();
   const list = [...byYear.values()].reverse().map(({ year: y, km, h, n, elev }) => {
     const rs = rides.filter((r) => r.year === y), prevKm = byYear.get(y - 1)?.km;
     return {
@@ -28,23 +31,22 @@ export async function yearsIndexPayload() {
     };
   });
   const best = list.slice().sort((a, b) => b.km - a.km)[0] || null;
-  return { base: BASE, years: list, rides: rides.length, best: best && { year: best.year, km: best.km }, months: MONTHS, monthsLong: MONTHS_L };
+  return { years: list, rides: rides.length, best: best && { year: best.year, km: best.km }, months: MONTHS, monthsLong: MONTHS_L };
 }
 
 /** /years/<year>: key figures, months, calendar, intensity, power curve, bikes, highlights and rides. */
-export async function yearPayload(year) {
-  const Y = await yearData(year);
-  const base = BASE;
+export function yearPayload(data: BuildDataset, { year }: { year: number }): YearPayload {
+  const Y = yearData(data, year);
   const Z = Y.athleteState.zones;
   const { t: tt, tpYtd: tp } = Y;
-  const weeks = Y.isCurrent ? Math.max(1, (Date.now() - new Date(year, 0, 1)) / 604800000) : 52.14;
+  const weeks = Y.isCurrent ? Math.max(1, (+data.calendar.now - +new Date(year, 0, 1)) / 604800000) : 52.14;
   const tip = yt(Y.isCurrent ? 'vsSameDay' : 'vsYear', { y: year - 1 });
   const hasPrev = Y.prev.length > 0;
   const delta = (a, b) => (hasPrev ? pct(a, b) : null);
   const per = (f) => Y.months.map((m) => f(m));
   const activeDays = (rs) => new Set(rs.map((r) => r.d.toDateString())).size;
 
-  const kpis = [
+  const kpis: Omit<YearPayload['kpis'][number], 'tip'>[] = [
     { key: 'km', label: yt('km'), value: tt.km, unit: 'km', pct: delta(tt.km, tp.km), secondary: yt('prevVal', { y: year - 1, v: `${nf(tp.km)} km` }), spark: per((m) => m.t.km), series: 'distance', fromZero: true },
     { key: 'rides', label: yt('rides'), value: tt.n, pct: delta(tt.n, tp.n), secondary: yt('prevVal', { y: year - 1, v: nf(tp.n) }), spark: per((m) => m.t.n), series: 'rides', fromZero: true },
     { key: 'hours', label: yt('hours'), value: tt.h, unit: 'h', pct: delta(tt.h, tp.h), secondary: yt('prevVal', { y: year - 1, v: `${nf(tp.h)} h` }), spark: per((m) => m.t.h), series: 'time', fromZero: true },
@@ -55,7 +57,7 @@ export async function yearPayload(year) {
     { key: 'kj', label: yt('energy'), value: tt.kj, unit: 'kJ', secondary: yt('kaiserschmarrn', { n: nf(tt.kj / 650) }), spark: per((m) => m.t.kj), series: 'power', fromZero: true },
     { key: 'prs', label: t('metric.prs'), value: tt.pr, pct: delta(tt.pr, tp.pr), secondary: yt('prsSub', { ach: nf(tt.ach), kudos: nf(tt.kudos) }), spark: per((m) => m.t.pr), series: 'prs', fromZero: true },
     { key: 'indoor', label: yt('indoorShare'), value: tt.h ? (tt.indoorH / tt.h) * 100 : null, unit: '%', secondary: yt('indoorSub', { h: nf(tt.indoorH, 1) }), series: 'time' },
-  ].map((k) => ({ ...k, tip }));
+  ];
 
   const months = Y.months.map((m) => {
     const { seconds, total } = m.tiz, tiz = total ? seconds : null;
@@ -63,7 +65,7 @@ export async function yearPayload(year) {
       m: m.m, label: MONTHS[m.m], long: MONTHS_L[m.m],
       n: m.t.n, km: m.t.km, h: m.t.h, elev: m.t.elev, tss: m.t.tss, prevKm: m.prevKm, avgW: m.avgW,
       zones: tiz ? tiz.map((s) => (s / total) * 100) : null,
-      longest: m.longest ? { href: `${base}rides/${m.longest.id}`, name: m.longest.name, km: m.longest.distance / 1000 } : null,
+      longest: m.longest ? { href: routes.ride(m.longest.id), name: m.longest.name, km: m.longest.distance / 1000 } : null,
       best: !!(Y.bestMonth && Y.bestMonth.m === m.m && m.t.km > 0),
     };
   });
@@ -84,7 +86,7 @@ export async function yearPayload(year) {
 
   const H = Y.highlights;
   const time = fmtTime;
-  const hl = (key, label, r, v) => ({ key, label, value: r ? v(r) : '–', ride: r ? { href: `${base}rides/${r.id}`, name: r.name } : null });
+  const hl = (key, label, r, v) => ({ key, label, value: r ? v(r) : '–', ride: r ? { href: routes.ride(r.id), name: r.name } : null });
   const highlights = [
     hl('longest', yt('hl.longest'), H.longest, (r) => `${nf(r.distance / 1000, 1)} km`),
     hl('climb', yt('hl.climb'), H.climb, (r) => `${nf(r.elev)} ${t('units.elev')}`),
@@ -96,10 +98,9 @@ export async function yearPayload(year) {
     hl('last', yt(Y.isCurrent ? 'hl.last' : 'hl.lastOfYear'), H.last, (r) => fmtDateL(r.d)),
   ];
 
-  const watts = (best) => Object.fromEntries(Object.entries(best).map(([k, v]) => [k, v.w]));
   return {
-    year, isCurrent: Y.isCurrent, base, kpis, months, glance, highlights,
-    calendar: yearCalendar(Y.calendar, year, { base }),
+    year, isCurrent: Y.isCurrent, kpis: kpis.map((k) => ({ ...k, tip })), months, glance, highlights,
+    calendar: yearCalendar(Y.calendar, year),
     calendarStats: [
       { value: nf(Y.activeDays), label: yt('activeDays').toLowerCase() },
       { value: nf(Y.streak), label: yt('streakDays') },
@@ -110,8 +111,8 @@ export async function yearPayload(year) {
     tizNote: Y.tiz.total && Y.tiz.mixed ? t('zones.legacyNote') : null,
     zoneNames: POWER_ZONE_NAMES.slice(0, Z.power_zones.length),
     curves: { all: watts(Y.curveAll), d90: watts(Y.curve), ly: watts(Y.curvePrev) },
-    curveWkg: { all: await curveWkg(Y.curveAll), d90: await curveWkg(Y.curve), ly: await curveWkg(Y.curvePrev) },
-    bikes: Y.bikes.map((b) => ({ href: `${base}gear/${b.id}`, name: b.name, km: b.km, n: b.n })),
+    curveWkg: { all: data.curveWkg(Y.curveAll), d90: data.curveWkg(Y.curve), ly: data.curveWkg(Y.curvePrev) },
+    bikes: Y.bikes.map((b) => ({ href: routes.gear(b.id), name: b.name, km: b.km, n: b.n })),
     rides: rideRows(Y.rides),
   };
 }

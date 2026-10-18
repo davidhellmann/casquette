@@ -274,6 +274,16 @@ _Avoid_: fleet
 A Strava segment ridden at least twice, with its efforts across rides.
 _Avoid_: climb, section
 
+### Build
+
+**Build dataset**:
+Everything one build shows, read once from one data source (synced data or demo data, through an adapter) at one build clock: the athlete with athlete history and goals, every ride, gear with its totals and the build calendar. Pages and their payloads read only from it.
+_Avoid_: data layer, store, loader
+
+**Build calendar**:
+Today at build time, the calendar end and the admitted rides – those whose actual start is not in the future. Every build view that counts rides uses it; ride pages and the map still show every ride, and the dashboard repeats the admission with the browser's clock.
+_Avoid_: build date, now (for the calendar end)
+
 ### Sync
 
 **Sync**:

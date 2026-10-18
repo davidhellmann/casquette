@@ -251,7 +251,7 @@ Design system: [`DESIGN.md`](DESIGN.md) · Domain terms: [`GLOSSARY.md`](GLOSSAR
 npm test
 ```
 
-Tests live next to the code (`*.test.js`) under `src/` and `scripts/`.
+Tests live next to the code (`*.test.js`) under `src/` and `scripts/`. The build reads all its data through one build dataset (`src/lib/build-dataset.js`, [`docs/ride.md`](docs/ride.md#build-dataset-and-page-payloads)); tests give it an in-memory data source and a fixed clock instead of files.
 
 ```bash
 npm run test:e2e

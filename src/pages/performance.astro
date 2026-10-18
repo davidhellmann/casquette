@@ -1,34 +1,11 @@
 ---
 import Base from '../layouts/Base.astro';
-import { PerformanceView, type PerformancePayload } from '../components/performance/PerformanceView';
-import { performanceData, PROFILE_DURS } from '../lib/performance.js';
-import { athleteToday, curveWkg } from '../lib/data.js';
-import { calendarDay } from '../training/index.js';
+import { PerformanceView } from '../components/performance/PerformanceView';
+import { getDataset } from '../lib/data.js';
+import { performancePayload } from '../lib/performance-payload.ts';
 import { t } from '../i18n/index.js';
 
-const P = await performanceData();
-const allTimeWkg = await curveWkg(P.allTime);
-const { ftp, weight: kg } = athleteToday();
-const watts = (best: Record<string, { w: number }>) => Object.fromEntries(Object.entries(best).map(([k, v]) => [k, v.w]));
-const month = (m: any) => ({ key: m.key, eftp: m.eftp, best20: m.best20, ftp: m.ftp, weight: m.weight, wkg: m.wkg });
-
-const payload: PerformancePayload = {
-  ftp, kg,
-  current: P.current ? { eftp: P.current.eftp, wkg: P.current.wkg } : null,
-  peak: P.peak ? { key: P.peak.key, eftp: P.peak.eftp, wkg: P.peak.wkg } : null,
-  peakCtl: P.peakCtl ? { date: P.peakCtl.date, ctl: P.peakCtl.ctl } : null,
-  bests: PROFILE_DURS.slice(0, 4).map(([s, label]) => ({ label: String(label), w: P.allTime[s]?.w ?? null, wkg: P.allTime[s] ? allTimeWkg[s] : null })),
-  months: P.months.map(month),
-  ctl: P.ctl,
-  curves: { all: watts(P.allTime), d90: watts(P.last90), ly: watts(P.lastYear) },
-  curveWkg: { all: allTimeWkg, d90: await curveWkg(P.last90), ly: await curveWkg(P.lastYear) },
-  lastYear: new Date().getFullYear() - 1,
-  history: P.history.slice().reverse().map((h: any) => ({ date: calendarDay(h.d), ftp: h.ftp ?? null, weight: h.weight ?? null, source: h.source || null, note: h.note || null })),
-  profile: P.profile,
-  durations: PROFILE_DURS.map(([, label]) => String(label)),
-  years: P.months.length ? Math.round(P.months.length / 12) : 0,
-  rides: P.rideCount,
-};
+const payload = performancePayload(await getDataset());
 ---
 <Base title={t('perf.title')} active="performance">
   <PerformanceView client:load P={payload} />

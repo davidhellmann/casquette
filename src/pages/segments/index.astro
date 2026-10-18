@@ -1,23 +1,11 @@
 ---
 import Base from '../../layouts/Base.astro';
-import { SegmentsView, type SegmentsPayload } from '../../components/segments/SegmentsView';
-import { loadSegments } from '../../lib/segments.js';
-import { segmentUrl } from '../../lib/strava-links.js';
+import { SegmentsView } from '../../components/segments/SegmentsView';
+import { getDataset } from '../../lib/data.js';
+import { segmentsIndexPayload } from '../../lib/segment-payload.ts';
 import { t } from '../../i18n/index.js';
 
-const segs = await loadSegments();
-const fav = segs[0];
-const payload: SegmentsPayload = {
-  climbs: segs.filter((g) => g.isClimb).length,
-  attempts: segs.reduce((s, g) => s + g.n, 0),
-  prs: segs.reduce((s, g) => s + g.prs, 0),
-  fav: fav ? { id: fav.id, name: fav.name, n: fav.n, page: fav.n >= 2 } : null,
-  rows: segs.map((g) => ({
-    id: g.id, name: g.name, city: g.city || '', km: g.distance / 1000, grade: g.grade ?? undefined, attempts: g.n,
-    best: g.best?.elapsed ?? undefined, bestW: g.best?.w ?? undefined, bestOn: g.best?.date ?? undefined, last: g.last?.date ?? undefined,
-    lastDelta: g.n >= 2 ? g.lastDelta ?? undefined : undefined, climb: g.isClimb, virtual: g.indoor, page: g.n >= 2, strava: segmentUrl(g.id),
-  })),
-};
+const payload = segmentsIndexPayload(await getDataset());
 ---
 <Base title={t('segments.title')} active="segments">
   <SegmentsView client:load P={payload} />

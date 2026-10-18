@@ -11,6 +11,8 @@ export const rideLoad = (r) => r.tss ?? r.re ?? 0;
  * Daily series of fitness/fatigue. `rides`: `{ day: 'YYYY-MM-DD', tss?, re? }` in any order.
  * From `from` (default: earliest ride date) to `to` (inclusive, e.g. today) – one entry per calendar day
  * `{ day, load, ctl, atl, tsb }`; `tsb` = form = CTL − ATL of the previous day. Rides outside the period don't count.
+ * @param {{ day: string, tss?: number|null, re?: number|null }[]} rides
+ * @param {{ from?: string, to: string }} period
  */
 export function fitnessSeries(rides, { from, to }) {
   const perDay = new Map();
