@@ -120,8 +120,15 @@ supported. Without an old FTP, it stays unknown too. `tizBasis.power`
 flags legacy/missing boundaries; never label them with current/historical boundaries.
 `exact: false` means unknown historical validity, not an approximation we computed.
 No estimation from charts, no deletion of TIZ.
-Yearly totals may mix legacy and historically computed zones; never show shared
-watt boundaries. The ride UI uses the existing `tizBasis` fields from #5.
+**TIZ totals** over several rides (dashboard period, year review and its months, zone_time
+goals) come from one rule, `tizTotal(rides, basis)` in `src/ride/tiz-total.js` (exported by the
+ride module): seconds per zone (7 power / 5 HR), the rides counted, their `tizBasis`, the rides
+per source (`distribution`, `legacy`, `sync`), the legacy count (legacy or unknown boundaries),
+`mixed` when the rides don't share one known set of boundaries, the shared `zones` otherwise,
+and `exact` only when every ride's TIZ comes from a distribution. Totals may mix legacy and
+historically computed zones; they never show shared watt boundaries when `mixed`. The
+dashboard notes it on the time-in-zone card, the year review under its yearly time in zone
+(`zones.legacyNote`). The ride UI uses the existing `tizBasis` fields from #5.
 
 **Open ticket criterion:** historical power TIZ, and with it the complete removal of
 all FTP-dependent frontmatter values, cannot be met for legacy rides without a re-fetch.
@@ -230,7 +237,7 @@ The stream count appears once as `streamsCount` in the payload instead of a flag
 `dashboardTiz` reads the final `tizBasis`: #7/#51 raw distributions with date-specific
 boundaries/`exact: true`, legacy with `exact: false` and without invented boundaries, and
 stored HR sync boundaries. Raw distributions themselves are not sent.
-TIZ totals and zone_time goals read the final histograms; these
+TIZ totals and zone_time goals read the final histograms through `tizTotal`; these
 may have different boundaries. The display points this out explicitly.
 The stream charts colour power and heart rate by the zones on the ride date (like the route map), never today's.
 `evalGoal` reads the flat fields including `d` and excludes `stats: false` itself.
