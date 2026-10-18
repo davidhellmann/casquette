@@ -26,17 +26,23 @@ No clock, DOM, I/O, hidden state or mutation of the inputs.
   start hours, indoor/outdoor, ordered plot rides, curve durations and historical
   W/kg of the respective best's origin. `bestCurve` stays the shared rule.
 - `tiz`/`rideTiz`: totals, Z2 shares and preserved sources/boundaries, no recomputation
-  from current zones. Different or unknown boundaries → no shared
+  from current zones, from the ride module's `tizTotal(rides, basis)` (also used by the year
+  review and zone_time goals). Different or unknown boundaries → `mixed`, no shared
   boundary. `exact` only with exclusively explicitly exact sources; legacy stays
   unverified as before. **#7 legacy exactness is still open.**
-- `dailyNeeds`, `ftpRecommendation`, `decoupling`: ready-made daily needs and
-  recommendation codes from pure training rules (existing thresholds .9/1.03 and 5/10).
+- `dailyNeeds`, `ftpRecommendation`, `decoupling`: ready-made daily needs (category,
+  factors per kg and, with a known weight, amounts – the whole rule lives in the training
+  module's `dailyNeeds(dailyHours, weight)`) and recommendation codes from pure training
+  rules (existing thresholds .9/1.03 and 5/10).
   The renderer only picks text/colour and rounds for display; meter/SVG geometry
   stays there.
-- `records`, `nutrition`, `fueling`: record rides, daily needs factors,
-  carb/fluid totals and recommendations per ride; `fuel`/`fuelCell` are shared.
+- `records`, `nutrition`, `fueling`: record rides from the training module's `records`
+  (shared with the year review and the bike page), carb/fluid totals and recommendations
+  per ride; `fuel`/`fuelCell` are shared.
 - `history`, `heatmap`, `gearKm`, `garage`: years/YTD/cumulative, all-time,
-  calendar cells/quantiles/streaks and gear totals. Garage (`statsDistance`) like the
+  calendar cells/quantiles/streaks and gear totals. Year totals come from `yearTotals`,
+  the calendar from `trainingCalendar` (measure: load), both in the training module and
+  shared with the year review. Garage (`statsDistance`) like the
   bike pages (`kmTotal`), cost/km and ranking exclusively from synced
   stat rides. Raw Strava distance is no substitute; `loadGear.stravaKm` names
   it separately (for the unchanged shoe display).
@@ -73,11 +79,17 @@ Goals still delegate to `evalGoal`, now with the same explicit clock.
   No previous period. Empty stats: one calendar day, defined 0/null results.
   E-bikes change neither the denominator nor the start of history; the all-time ride log
   also keeps older e-bike rides. Finite periods show them in the normal window.
-- Calendar distances and day-of-year indices use date components instead of
-  elapsed 24-hour blocks. So DST no longer shifts cumulative kilometres
-  or YTD bounds. Tests cover both clock changes and the leap day.
-  The existing year comparison stays ordinal (day 1 … 366, reference year 2024),
-  not same-month/same-day between leap and normal years.
+- Calendar distances and positions in the year use date components instead of
+  elapsed 24-hour blocks (`src/training/calendar-day.js`, the one calendar-day module).
+  So DST no longer shifts cumulative kilometres or YTD bounds. Tests cover both clock
+  changes and the leap day.
+- Years compare **by date**, not by day number: the year to date is compared with the
+  previous year up to the same date (`sameDayLastYear`), and the cumulative chart places
+  every ride on its month and day of a leap reference year (2024, 366 positions). In a
+  common year 1 March is the same position as in a leap year; 29 February compares with
+  28 February of a common year. The year review uses the same rule. This replaces the
+  former ordinal comparison, which compared 1 March of a common year with 29 February of
+  a leap year.
 - Halves keep the previous split: first half `floor(days / 2)` full
   calendar days, second half the rest. All time also has halves, just no previous period.
   The EF trend compares, as before, the first/last third of the available EF rides.
@@ -88,8 +100,11 @@ Goals still delegate to `evalGoal`, now with the same explicit clock.
   fallbacks from the ride module unchanged. Z1–2 easy, Z4+ hard; HR can, as before,
   carry higher zones through the power fallback. No repeated FTP classification.
 - Records stay positive bests; NP only from 20 minutes, outdoor speed only from
-  30 minutes. On a tie, the more recent ride wins (stable order).
+  30 minutes. On a tie, the more recent ride (later actual start) wins, whatever the
+  input order.
   The 52-week heatmap still spans 53 calendar weeks and the previous /52 denominator.
+  Its levels are the quartiles of the positive day loads; a ride day with load 0 is
+  level 1. Rides of a day are listed in chronological order; the cell opens the first.
 
 ## Regression and evidence
 

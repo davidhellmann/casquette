@@ -1,4 +1,4 @@
-import { calendarDate } from '../training/calendar-day.js';
+import { calendarDate } from '../training/index.js';
 
 /** Slim field selection – no renaming, no domain calculation. */
 const FIELDS = ['id', 'name', 'sport_type', 'start_local', 'start', 'indoor', 'stats', 'gear_id',

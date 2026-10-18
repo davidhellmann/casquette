@@ -4,7 +4,7 @@ import Base from '../../layouts/Base.astro';
 import { GearView, type GearPayload } from '../../components/gear/GearView';
 import { kmPerBikeAndYear, kmPerYear } from '../../components/gear/gear-data.js';
 import { loadGear } from '../../lib/data.js';
-import { dkey } from '../../scripts/format.js';
+import { calendarDay } from '../../training/index.js';
 import { t } from '../../i18n/index.js';
 import { bikeColors } from '../../components/charts/categories';
 
@@ -28,7 +28,7 @@ const payload: GearPayload = {
     hours: b.t.h,
     elev: b.t.elev,
     years: kmPerYear(b.rides),
-    lastRide: b.last ? dkey(b.last.d) : null,
+    lastRide: b.last ? calendarDay(b.last.d) : null,
     costPerKm: b.costPerKm,
   })),
   shoes: shoes.map((s: any) => ({ id: s.id, name: s.name, sub: [s.brand, s.model].filter(Boolean).join(' · '), retired: !!s.retired, km: s.stravaKm })),

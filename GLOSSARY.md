@@ -102,6 +102,10 @@ _Avoid_: mode, metric type
 Seconds spent per zone, from a ride's power or HR distribution with the zones on the ride date, otherwise as stored at sync.
 _Avoid_: zone time, zone histogram
 
+**TIZ total**:
+The TIZ of a set of rides summed per basis, with the rides per source, the legacy count and whether their zone boundaries are mixed; mixed totals have no shared boundaries.
+_Avoid_: zone totals, exact TIZ
+
 **Legacy TIZ**:
 TIZ stored at sync before distributions existed: power TIZ with unknown zone boundaries, HR TIZ with the HR zones of the sync day. It is never shown as historically corrected and the zones file does not apply to it.
 _Avoid_: old zones, estimated TIZ
@@ -165,7 +169,7 @@ _Avoid_: PR (that is Strava's per-segment achievement), new record
 _Avoid_: predicted FTP
 
 **Records**:
-The positive bests across stat rides (longest, highest, fastest …); ties go to the more recent ride.
+The positive bests across stat rides: longest distance and time, most climbing, fastest outdoor ride (from 30 minutes), best NP (from 20 minutes), highest load, most PRs, highest max HR. Ties go to the more recent ride (later actual start).
 _Avoid_: PRs (that is Strava's per-segment achievement)
 
 ### Recommendations
@@ -215,6 +219,18 @@ _Avoid_: end date, today
 **Calendar day**:
 A local wall-clock date, never converted into another time zone.
 _Avoid_: UTC day
+
+**Year to date**:
+A year's stat rides up to a calendar day, compared with the previous year up to the same date (same month and day; 29 February compares with 28 February).
+_Avoid_: same day number, YTD ordinal
+
+**Training calendar**:
+Stat rides laid out per calendar day in whole weeks, each ride day with a level 1–4 by the quartiles of its load (dashboard, last 52 weeks) or kilometres (year review).
+_Avoid_: activity calendar (`heatmap` is only the dashboard's code name for it)
+
+**Streak**:
+Consecutive calendar days with a stat ride (longest and current) or consecutive weeks with one.
+_Avoid_: run, chain
 
 **Form status**:
 The fitness/fatigue/form verdict shown for today.

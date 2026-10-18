@@ -1,57 +1,37 @@
-import { addDays, dkey, mondayOf } from '../scripts/format.js';
-// Calendar ordinal, not elapsed local hours: stable across 23/25-hour DST days.
-const doy = d => (Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - Date.UTC(d.getFullYear(), 0, 1)) / 86400000;
+import { calendarDay, records, sameDayLastYear, trainingCalendar, yearDayIndex, yearTotals } from '../training/index.js';
 
 export function history(D, selectedDays) {
-  const R = D.ridesAll, cy = D.calendarEnd.getFullYear(), td = doy(D.calendarEnd), by = {};
-  let meters = 0, h = 0, elev = 0, longest = null;
-  for (const r of R) {
-    const y = r.d.getFullYear(), o = by[y] ||= { y, km: 0, h: 0, n: 0, elev: 0 };
-    o.km += (r.distance || 0) / 1000; o.h += r.h; o.n++; o.elev += r.elev || 0;
-    meters += r.distance || 0; h += r.h; elev += r.elev || 0;
-    if ((r.distance || 0) > (longest?.distance || 0)) longest = r;
-  }
-  const years = Object.values(by).sort((a,b) => a.y-b.y);
-  const ytd = y => R.filter(r => r.d.getFullYear() === y && doy(r.d) <= td).reduce((s,r) => s + (r.distance || 0),0) / 1000;
-  const ytdNow = ytd(cy), ytdPrev = ytd(cy-1);
+  const R = D.ridesAll, end = D.calendarEnd, cy = end.getFullYear(), td = yearDayIndex(end);
+  let meters = 0, h = 0, elev = 0;
+  for (const r of R) { meters += r.distance || 0; h += r.h; elev += r.elev || 0; }
+  const years = yearTotals(R).map(({ year, ...totals }) => ({ y: year, ...totals }));
+  // Year to date, compared with the previous year up to the same date (see sameDayLastYear).
+  const km = rides => rides.reduce((s,r) => s + (r.distance || 0),0) / 1000;
+  const ytdNow = km(R.filter(r => r.d.getFullYear() === cy));
+  const lastYearCut = calendarDay(sameDayLastYear(end));
+  const ytdPrev = km(R.filter(r => r.d.getFullYear() === cy - 1 && calendarDay(r.d) <= lastYearCut));
+  // Cumulative kilometres on a leap reference year (labels), each ride on its month and day.
   const cumulative = years.slice(-6).reverse().map(({y}) => {
     const daily = Array(366).fill(0);
-    for (const r of R) if (r.d.getFullYear() === y) daily[doy(r.d)] += (r.distance || 0) / 1000;
+    for (const r of R) if (r.d.getFullYear() === y) daily[yearDayIndex(r.d)] += (r.distance || 0) / 1000;
     let acc = 0;
     return { y, data: daily.map((v,i) => { acc += v; return y === cy && i > td ? null : Math.round(acc); }) };
   });
-  D.history = { years, km: meters / 1000, h, elev, longest, best: years.slice().sort((a,b) => b.km-a.km)[0] ?? null,
+  D.history = { years, km: meters / 1000, h, elev, longest: records(R).longest, best: years.slice().sort((a,b) => b.km-a.km)[0] ?? null,
     cy, multiYear: !!R.length && D.oldest.getFullYear() < cy, cumulative,
     labels: Array.from({length:366}, (_,i) => new Date(2024,0,1+i)), ytdNow, ytdPrev,
     ytdDelta: ytdPrev ? (ytdNow-ytdPrev)/ytdPrev*100 : null };
 
-  const start = D.heatStart, end = D.calendarEnd, day = {};
-  for (const r of R) {
-    if (r.d < start) continue;
-    const o = day[dkey(r.d)] ||= { load: 0, sec: 0, n: 0, names: [], id: r.id };
-    o.load += r.load || 0; o.sec += r.moving_time || 0; o.n++;
-    if (o.names.length < 3) o.names.push(r.name);
-  }
-  const vals = Object.values(day).map(o=>o.load).filter(v=>v>0).sort((a,b)=>a-b);
-  const q = p => vals.length ? vals[Math.floor((vals.length-1)*p)] : 0;
-  const q1 = q(.25), q2 = q(.5), q3 = q(.75), level = v => v <= q1 ? 1 : v <= q2 ? 2 : v <= q3 ? 3 : 4;
-  const cells = [], months = []; let lastM = -1;
-  for (let w = 0; w < 53; w++) {
-    const wd = addDays(start, w*7);
+  const C = trainingCalendar(R, { from: D.heatStart, to: end, measure: 'load' });
+  const day = Object.fromEntries(Object.entries(C.days).map(([key, o]) =>
+    [key, { load: o.value, sec: o.sec, n: o.n, names: o.rides.slice(0, 3).map(r => r.name), id: o.rides[0].id }]));
+  const cells = C.cells.map(({ d, week, key, level, future }) => ({ d, week, rideDay: day[key], future,
+    dim: selectedDays !== 0 && D.days < 365 && d < D.rangeStart, level }));
+  const months = []; let lastM = -1;
+  for (let w = 0; w < C.weeks; w++) {
+    const wd = cells[w * 7].d;
     if (wd.getMonth() !== lastM) { if (w < 51) months.push({ week: w, d: wd }); lastM = wd.getMonth(); }
-    for (let i = 0; i < 7; i++) {
-      const dt = addDays(wd,i), o = day[dkey(dt)];
-      cells.push({ d:dt, week:w, rideDay:o, future:dt>end, dim:selectedDays !== 0 && D.days < 365 && dt<D.rangeStart, level:o ? level(o.load || 1) : 0 });
-    }
   }
-  const set = new Set(Object.keys(day)); let longestRun = 0, run = 0;
-  for (let d = new Date(start); d <= end; d = addDays(d,1)) { if (set.has(dkey(d))) { run++; longestRun = Math.max(longestRun,run); } else run=0; }
-  let current=0, d = new Date(end);
-  if (!set.has(dkey(d))) d=addDays(d,-1);
-  while (set.has(dkey(d))) { current++; d=addDays(d,-1); }
-  const rw = new Set(R.map(r=>dkey(mondayOf(r.d)))); let weeks=0, w=mondayOf(end);
-  if (!rw.has(dkey(w))) w=addDays(w,-7);
-  while (rw.has(dkey(w))) { weeks++; w=addDays(w,-7); }
-  D.heatmap = { day, cells, months, activeDays:set.size, longest:longestRun, current, weeks,
-    hoursPerWeek:Object.values(day).reduce((s,o)=>s+o.sec,0)/3600/52 };
+  D.heatmap = { day, cells, months, activeDays: C.activeDays, longest: C.longestStreak, current: C.currentStreak, weeks: C.weekStreak,
+    hoursPerWeek: Object.values(day).reduce((s,o)=>s+o.sec,0)/3600/52 };
 }

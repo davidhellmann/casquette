@@ -4,9 +4,10 @@
  * Rules and contracts: docs/ride.md.
  */
 import { t } from '../i18n/index.js';
-import { countsInStats, rideLoad, zoneIdx } from '../training/index.js';
-import { calendarDate } from '../training/calendar-day.js';
+import { calendarDate, countsInStats, rideLoad, zoneIdx } from '../training/index.js';
 import { distributionTiz } from './distribution.js';
+
+export { tizTotal } from './tiz-total.js';
 
 function classifications(w, hr, re, h, zones) {
   const power = w == null ? null : { zone: zoneIdx(w, zones.power_zones) + 1, source: 'power', src: t('classification.power'), val: Math.round(w) + ' W' };

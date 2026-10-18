@@ -1,5 +1,6 @@
 /** Aggregate segments from the segment efforts of all rides (server-side). */
 import { loadStatRides } from './data.js';
+import { rideDate } from '../training/index.js';
 
 let _segs;
 export async function loadSegments() {
@@ -16,7 +17,7 @@ export async function loadSegments() {
         map.set(id, g);
       }
       g.efforts.push({
-        ride: r.id, rideName: r.name, d: r.d, date: r.start_local.slice(0, 10), year: r.year,
+        ride: r.id, rideName: r.name, d: r.d, date: rideDate(r), year: r.year,
         elapsed: s.elapsed_time, moving: s.moving_time,
         w: s.device_watts === false ? null : s.average_watts ?? null,
         kg: r.kg, // body weight on the ride date (athlete state) – for W/kg
@@ -33,11 +34,8 @@ export async function loadSegments() {
     const last = e[e.length - 1] || null, first = e[0] || null;
     const times = e.map((x) => x.elapsed).sort((a, b) => a - b);
     const median = times.length ? times[Math.floor(times.length / 2)] : null;
-    // running best time (PR progression)
-    let run = Infinity;
-    const prog = e.map((x) => (run = Math.min(run, x.elapsed)));
     return {
-      ...g, efforts: e, n: e.length, best, last, first, median, prog,
+      ...g, efforts: e, n: e.length, best, last, first, median,
       bestSpeed: best && best.elapsed ? (g.distance / best.elapsed) * 3.6 : null,
       bestW: bestWE ? bestWE.w : null,
       bestWkg: bestWE ? bestWE.w / bestWE.kg : null, // with the body weight on the date of this effort

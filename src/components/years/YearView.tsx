@@ -67,6 +67,8 @@ export interface YearPayload {
   calendarStats: { value: string; label: string }[];
   /** Seconds per power zone over the year (legacy/historical zones, no common boundaries). */
   tizP: number[] | null;
+  /** Shown when the year's rides don't share one set of zone boundaries (legacy or changed zones). */
+  tizNote: string | null;
   zoneNames: string[];
   /** This year as `d90`, the year before as `ly`. */
   curves: Curves;
@@ -160,6 +162,7 @@ export function YearView({ P }: { P: YearPayload }) {
           </div>
           <div className={rest}>
             <ChartCard title={yt('tizYear')} description={yt('tizYearSub')}>
+              {P.tizNote && <p className="mb-3 text-xs text-muted-foreground">{P.tizNote}</p>}
               <TimeInZones seconds={P.tizP} zones={null} kind="power" />
             </ChartCard>
           </div>

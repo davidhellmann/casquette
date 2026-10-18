@@ -6,7 +6,7 @@ import { dashboardPeriod, RANGES } from '../dashboard-period/index.js';
 import { evalGoal } from './goals.js';
 import { computeMetrics } from '../../scripts/lib/metrics.mjs';
 import { frontmatter } from '../../scripts/lib/store.mjs';
-import { dkey } from './format.js';
+import { calendarDay } from '../training/index.js';
 
 it.each([
   ['2024-06-02', '2024-06-03'], // Sunday → Monday
@@ -43,7 +43,7 @@ it.each([
     const cells = d.heatmap.cells.filter(c => c.rideDay);
     expect(cells).toHaveLength(1);
     expect(cells[0]).toMatchObject({ future: false, rideDay: { n: 1, load: 50 } });
-    expect(dkey(cells[0].d)).toBe(localDay);
+    expect(calendarDay(cells[0].d)).toBe(localDay);
     expect(d.heatmap).toMatchObject({ activeDays: 1, longest: 1, current: 1, weeks: 1 });
     expect(d.weekly.buckets.reduce((s, b) => s + b.total, 0)).toBe(.5);
     expect(d.sparks.tss.reduce((s, v) => s + v, 0)).toBe(50);

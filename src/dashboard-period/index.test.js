@@ -25,7 +25,7 @@ describe('Dashboard period: public interface', () => {
   });
   it('returns finished records, fueling, rhythm, EF smoothing and historical power curve W/kg', () => {
     const D = calculate();
-    expect(D.records.distance.id).toBe('recent');
+    expect(D.records.longest.id).toBe('recent');
     expect(D.records.np.id).toBe('recent');
     expect(D.nutrition).toEqual(legacyCards.power.nutrition);
     expect(withoutDateSerialization(D.load)).toMatchObject(withoutDateSerialization(legacyCards.power.load));
@@ -81,7 +81,7 @@ describe('Dashboard period: public interface', () => {
       expect(D.curves.seconds).toEqual([]);
       expect(D.nutrition).toMatchObject({ fuel:0,fluid:0,dailyHours:0 });
       expect(D.tiz.power).toMatchObject({ total:0,z2Percent:0,exact:false,zones:null });
-      expect(D.records.distance).toBeNull();
+      expect(D.records.longest).toBeNull();
       expect(D.heatmap.activeDays).toBe(0);
     }
     const D = calculate([ride('past','2023-01-01')]);
@@ -113,13 +113,26 @@ describe('Dashboard period: public interface', () => {
     expect(D.history.cumulative[0].data[end === '2024-04-07' ? 84 : 294]).toBe(30);
     expect(D.pmc).toHaveLength(14);
   });
-  it('keeps the leap day and the ordinal year comparison including day 366', () => {
+  it('keeps the leap day and day 366 in the cumulative year', () => {
     const D = calculate([ride('feb28','2024-02-28'),ride('feb29','2024-02-29'),ride('mar01','2024-03-01')], { days:0, now:new Date('2024-03-01T18:00:00') });
     expect(D.days).toBe(3);
     expect(D.history.cumulative[0].data.slice(58,62)).toEqual([30,60,90,null]);
     expect(D.pmc.map(p=>p.day)).toEqual(['2024-02-28','2024-02-29','2024-03-01']);
     const yearEnd = calculate([ride('last','2024-12-31')], { days:0, now:new Date('2024-12-31T18:00:00') });
     expect(yearEnd.history.cumulative[0].data[365]).toBe(30);
+  });
+  it('compares the year to date with the previous year up to the same date, also across leap years', () => {
+    const lastYear = [ride('feb28','2024-02-28'), ride('feb29','2024-02-29'), ride('mar01','2024-03-01'), ride('mar02','2024-03-02')];
+    // 1 March is day 60 of a common year but day 61 of a leap year: the same date counts, not the same day number.
+    const march = calculate([...lastYear, ride('now','2025-03-01')], { days:0, now:new Date('2025-03-01T18:00:00') });
+    expect(march.history).toMatchObject({ ytdNow: 30, ytdPrev: 90 });
+    expect(march.history.cumulative[0].data.slice(58,62)).toEqual([0,0,30,null]);
+    expect(march.history.cumulative[1].data.slice(58,62)).toEqual([30,60,90,120]);
+    const feb28 = calculate([...lastYear, ride('now','2025-02-28')], { days:0, now:new Date('2025-02-28T18:00:00') });
+    expect(feb28.history.ytdPrev).toBe(30);
+    // 29 February compares with 28 February of the common year before.
+    const leapDay = calculate([ride('feb28','2023-02-28'), ride('mar01','2023-03-01'), ride('now','2024-02-29')], { days:0, now:new Date('2024-02-29T18:00:00') });
+    expect(leapDay.history).toMatchObject({ ytdNow: 30, ytdPrev: 30 });
   });
   it('treats 0 as known, null as unknown and uses finished rather than today\'s metrics', () => {
     const a = ride('zero','2024-01-14', { average_watts:0, metrics:{np:0}, suffer_score:999 });
@@ -168,9 +181,12 @@ describe('Dashboard period: public interface', () => {
   it.each([[null, 'unknown'], [-1, 'stable'], [4.999, 'stable'], [5, 'moderate'], [9.999, 'moderate'], [10, 'drift']])('returns the decoupling status for %s without DOM', (dec, expected) => {
     expect(calculate([ride('x','2024-01-14',{ metrics: { decoupling_pct: dec } })]).decoupling.x).toBe(expected);
   });
-  it.each([[.749, [4,5]], [.75, [5,7]], [1.499, [5,7]], [1.5, [7,10]]])('returns unchanged daily needs at %s h/day', (hours, carbs) => {
+  it.each([[.749, 'light', [4,5]], [.75, 'moderate', [5,7]], [1.499, 'moderate', [5,7]], [1.5, 'high', [7,10]]])('returns unchanged daily needs at %s h/day', (hours, category, carbs) => {
     const D = calculate([ride('x','2024-01-14',{ moving_time: hours * 14 * 3600 })], { athleteState: { ftp: 200, weight: 80 } });
-    expect(D.dailyNeeds).toEqual({ carbs: carbs.map(x => x * 80), protein: [128,160], fat: [64,96], water: [80 * .035,3.2] });
+    expect(D.dailyNeeds).toEqual({ category, perKg: { carbs, protein: [1.6,2], fat: [.8,1.2], water: [.035,.04] },
+      amounts: { carbs: carbs.map(x => x * 80), protein: [128,160], fat: [64,96], water: [80 * .035,3.2] } });
+    expect(D.nutrition).toMatchObject({ category, carbsPerKg: carbs });
+    expect(calculate([], { athleteState: { ftp: 200 } }).dailyNeeds).toMatchObject({ category: 'light', amounts: null });
     expect(calculate([], { athleteState: { ftp: 200, weight: 80 } }).ftpRecommendation).toBe('none');
   });
 

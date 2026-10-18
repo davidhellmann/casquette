@@ -3,7 +3,8 @@
  * from the ride histograms, rhythm (weekday, hour, indoor/outdoor) and power & heart rate per ride.
  * Pure; `null` = the card shows its empty state. Rounding as shown.
  */
-import { fmtDate, fmtDateL, fmtDur, fmtH, isoWeek, nf, trunc, fmtMonthYear, fmtMonthYearShort } from '../../scripts/format.js';
+import { fmtDate, fmtDateL, fmtDur, fmtH, nf, trunc, fmtMonthYear, fmtMonthYearShort } from '../../scripts/format.js';
+import { isoWeek } from '../../training/index.js';
 import { HR_ZONE_NAMES, POWER_ZONE_NAMES } from '../../training/index.js';
 import { t } from '../../i18n/index.js';
 

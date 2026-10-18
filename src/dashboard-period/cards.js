@@ -1,24 +1,15 @@
-import { fuel, fuelCell, ftpRecommendation, decouplingStatus, dailyNeeds } from '../training/index.js';
-import { addDays, dkey, mondayOf, pad } from '../scripts/format.js';
+import { addDays, calendarDay, dailyNeeds, decouplingStatus, ftpRecommendation, fuel, fuelCell, records, weekStart } from '../training/index.js';
 
-const maxRide = (rides, key) => {
-  let best = null, value = 0;
-  for (const r of rides) if (r[key] != null && r[key] > value) { best = r; value = r[key]; }
-  return best;
-};
 const percent = (current, previous) => current == null || !previous ? null : (current - previous) / previous * 100;
 
 export function cards(D, basis, gear, athleteState) {
   const { rides: R, S, days } = D, cls = r => basis === 'hr' ? r.clsH : r.clsP;
-  D.records = Object.fromEntries(['distance', 'moving_time', 'elev', 'load', 'pr', 'hr_max'].map(k => [k, maxRide(R, k)]));
-  D.records.np = maxRide(R.filter(r => r.moving_time >= 1200), 'np');
-  D.records.speed = maxRide(R.filter(r => !r.indoor && r.moving_time >= 1800), 'speed');
+  D.records = records(R);
   const dailyHours = S.time / 3600 / days;
   D.fueling = Object.fromEntries(D.log.map(r => [r.id, { ...fuel(r.moving_time, cls(r).zone), cell: fuelCell(r.moving_time, cls(r).zone) }]));
-  D.nutrition = { dailyHours, category: dailyHours < .75 ? 'light' : dailyHours < 1.5 ? 'moderate' : 'high',
-    carbsPerKg: dailyHours < .75 ? [4, 5] : dailyHours < 1.5 ? [5, 7] : [7, 10],
+  D.dailyNeeds = dailyNeeds(dailyHours, athleteState?.weight);
+  D.nutrition = { dailyHours, category: D.dailyNeeds.category, carbsPerKg: D.dailyNeeds.perKg.carbs,
     fuel: R.reduce((s,r) => s + D.fueling[r.id].total, 0), fluid: R.reduce((s,r) => s + r.h * .65, 0) };
-  D.dailyNeeds = dailyNeeds(athleteState?.weight, D.nutrition.carbsPerKg);
   D.decoupling = Object.fromEntries(D.log.map(r => [r.id, decouplingStatus(r.dec)]));
   D.rhythm = { weekdays: Array(7).fill(0), hours: Array(24).fill(0), indoor: 0, outdoor: 0 };
   D.gearKm = {};
@@ -29,9 +20,9 @@ export function cards(D, basis, gear, athleteState) {
   }
   D.rhythm.total = D.rhythm.indoor + D.rhythm.outdoor;
   const monthly = days > 400, buckets = [], idx = {};
-  const key = d => monthly ? `${d.getFullYear()}-${pad(d.getMonth()+1)}` : dkey(mondayOf(d));
+  const key = d => monthly ? calendarDay(d).slice(0, 7) : calendarDay(weekStart(d));
   const calendarEnd = D.calendarEnd;
-  for (let d = monthly ? new Date(D.rangeStart.getFullYear(), D.rangeStart.getMonth(), 1) : mondayOf(D.rangeStart);
+  for (let d = monthly ? new Date(D.rangeStart.getFullYear(), D.rangeStart.getMonth(), 1) : weekStart(D.rangeStart);
     d <= calendarEnd; d = monthly ? new Date(d.getFullYear(), d.getMonth()+1, 1) : addDays(d, 7)) {
     idx[key(d)] = buckets.length; buckets.push({ d, z: Array(6).fill(0), u: 0, total: 0 });
   }
@@ -74,7 +65,6 @@ export function cards(D, basis, gear, athleteState) {
     rampStatus: ramp > 8 ? 'steep' : ramp > 5 ? 'fast' : ramp >= 1 ? 'sustainable' : ramp > -2 ? 'stable' : 'decline',
     acwrStatus: acwr == null ? 'unknown' : acwr > 1.5 ? 'risk' : acwr > 1.3 ? 'high' : acwr >= .8 ? 'sweet' : 'low',
     verdict: tsb < -30 ? 'fatigue' : ramp > 8 ? 'steep' : ramp < -2 ? 'decline' : acwr != null && acwr < .8 ? 'low' : 'balanced' };
-  D.logMaxTss = Math.max(1,...D.log.map(r=>r.tss || 0));
   const statsDistance = {};
   for (const r of D.ridesAll) if (r.gear_id) statsDistance[r.gear_id] = (statsDistance[r.gear_id] || 0) + (r.distance || 0);
   const bikes = gear.filter(g=>g.type === 'bike').map(g => ({ ...g, statsDistance: statsDistance[g.id] || 0 }));

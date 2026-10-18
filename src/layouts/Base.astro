@@ -7,6 +7,7 @@ import { LANG, pageTitle, t } from '../i18n/index.js';
 import { fmtDayMonth, nf } from '../scripts/format.js';
 import { isDemo, loadAthlete, loadGear, loadRides, loadStatRides } from '../lib/data.js';
 import { legalLinks } from '../lib/legal-links.js';
+import { yearTotals } from '../training/index.js';
 import type { NavSubmenus } from '../components/app/nav';
 
 /** Setup steps for the first sync (shown while the demo data is active). */
@@ -38,13 +39,12 @@ const syncedAt = loadAthlete().synced_at;
 const lastSync = syncedAt ? fmtDayMonth(new Date(syncedAt), true) : undefined;
 
 // Sidebar submenus: the last 5 rides, the latest 3 years and the active bikes – each with a second line (date, km)
-const kmPerYear = new Map<number, number>();
-for (const r of await loadStatRides()) kmPerYear.set(r.year, (kmPerYear.get(r.year) ?? 0) + r.distance / 1000);
+const years = yearTotals(await loadStatRides());
 const km = (v: number) => `${nf(v)} km`;
 const now = new Date();
 const submenus: NavSubmenus = {
   rides: (await loadRides()).filter((r: any) => r.d <= now).slice(0, 5).map((r: any) => ({ href: `${base}rides/${r.id}`, label: r.name, detail: `${fmtDayMonth(r.d)} · ${km(r.distance / 1000)}` })),
-  years: [...kmPerYear].sort((a, b) => b[0] - a[0]).slice(0, 3).map(([y, v]) => ({ href: `${base}years/${y}`, label: String(y), detail: km(v) })),
+  years: years.slice(-3).reverse().map(({ year, km: v }) => ({ href: `${base}years/${year}`, label: String(year), detail: km(v) })),
   gear: (await loadGear()).filter((g: any) => g.type === 'bike' && !g.retired).map((g: any) => ({ href: `${base}gear/${g.id}`, label: g.name, detail: km(g.kmTotal) })),
 };
 ---

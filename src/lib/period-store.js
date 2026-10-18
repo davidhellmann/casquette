@@ -2,10 +2,9 @@
  * The chosen period and zone basis, shared by every page that has the period controls (dashboard,
  * ride log). Stored in localStorage; every change is announced with PERIOD_EVENT.
  */
-import { RANGES } from '../dashboard-period/index.js';
+import { BASES, RANGES } from '../dashboard-period/index.js';
 
 export const PERIOD_EVENT = 'app:period';
-export const BASES = ['power', 'hr'];
 const KEYS = { days: 'rc_days', basis: 'rc_basis' };
 
 const get = (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } };

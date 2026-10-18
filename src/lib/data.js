@@ -82,13 +82,6 @@ export async function curveWkg(best) {
     return [k, ride ? +(v.w / ride.kg).toFixed(2) : null];
   }));
 }
-export function sumTiz(rides, key, n) {
-  const out = Array(n).fill(0);
-  let any = false;
-  for (const r of rides) if (r[key]) { r[key].forEach((v, i) => { if (i < n) out[i] += v; }); any = true; }
-  return any ? out : null;
-}
-export const maxBy = (arr, f) => { let b = null, bv = -Infinity; for (const x of arr) { const v = f(x); if (v != null && v > bv) { bv = v; b = x; } } return b && bv > 0 ? b : null; };
 
 /* ---------------- Gear ---------------- */
 let _gear;

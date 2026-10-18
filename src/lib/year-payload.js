@@ -3,9 +3,9 @@
  * serialisable data for the React views in src/components/years/. Server-side (build time).
  */
 import { BASE } from '../components/app/nav.ts';
-import { loadStatRides, totals, curveWkg } from './data.js';
+import { loadStatRides, curveWkg } from './data.js';
 import { yearData, MONTHS, MONTHS_L, WEEKDAYS } from './years.js';
-import { POWER_ZONE_NAMES } from '../training/index.js';
+import { POWER_ZONE_NAMES, yearTotals } from '../training/index.js';
 import { yearCalendar } from './year-calendar.js';
 import { nf, fmtDateL, fmtTime } from '../scripts/format.js';
 import { t } from '../i18n/index.js';
@@ -16,15 +16,13 @@ const yt = (key, p) => t('year.' + key, p);
 /** /years: every year with its totals and kilometres per month, newest first. */
 export async function yearsIndexPayload() {
   const rides = await loadStatRides();
-  const years = Array.from(new Set(rides.map((r) => r.year))).sort((a, b) => b - a);
+  const byYear = new Map(yearTotals(rides).map((y) => [y.year, y]));
   const cy = new Date().getFullYear();
-  const list = years.map((y) => {
-    const rs = rides.filter((r) => r.year === y);
-    const tt = totals(rs);
-    const prev = totals(rides.filter((r) => r.year === y - 1));
+  const list = [...byYear.values()].reverse().map(({ year: y, km, h, n, elev }) => {
+    const rs = rides.filter((r) => r.year === y), prevKm = byYear.get(y - 1)?.km;
     return {
-      year: y, current: y === cy, km: tt.km, h: tt.h, n: tt.n, elev: tt.elev,
-      delta: y !== cy && prev.km ? pct(tt.km, prev.km) : null,
+      year: y, current: y === cy, km, h, n, elev,
+      delta: y !== cy && prevKm ? pct(km, prevKm) : null,
       months: MONTHS.map((_, m) => rs.filter((r) => r.month === m).reduce((s, r) => s + r.distance / 1000, 0)),
     };
   });
@@ -67,8 +65,7 @@ export async function yearPayload(year) {
   ].map((k) => ({ ...k, tip }));
 
   const months = Y.months.map((m) => {
-    const tiz = m.tizP && m.tizP.reduce((a, b) => a + b, 0) ? m.tizP : null;
-    const total = tiz ? tiz.reduce((a, b) => a + b, 0) : 0;
+    const { seconds, total } = m.tiz, tiz = total ? seconds : null;
     return {
       m: m.m, label: MONTHS[m.m], long: MONTHS_L[m.m],
       n: m.t.n, km: m.t.km, h: m.t.h, elev: m.t.elev, tss: m.t.tss, prevKm: m.prevKm, avgW: m.avgW,
@@ -109,14 +106,15 @@ export async function yearPayload(year) {
   const watts = (best) => Object.fromEntries(Object.entries(best).map(([k, v]) => [k, v.w]));
   return {
     year, isCurrent: Y.isCurrent, base, kpis, months, glance, highlights,
-    calendar: yearCalendar(Y.rides, year, { base }),
+    calendar: yearCalendar(Y.calendar, year, { base }),
     calendarStats: [
       { value: nf(Y.activeDays), label: yt('activeDays').toLowerCase() },
       { value: nf(Y.streak), label: yt('streakDays') },
       { value: Y.bestWeek ? nf(Y.bestWeek.km) : '–', label: yt('bestWeekKm') },
       { value: nf(tt.h / weeks, 1), label: yt('hoursWeek') },
     ],
-    tizP: Y.tizP,
+    tizP: Y.tiz.rides ? Y.tiz.seconds : null,
+    tizNote: Y.tiz.total && Y.tiz.mixed ? t('zones.legacyNote') : null,
     zoneNames: POWER_ZONE_NAMES.slice(0, Z.power_zones.length),
     curves: { all: watts(Y.curveAll), d90: watts(Y.curve), ly: watts(Y.curvePrev) },
     curveWkg: { all: await curveWkg(Y.curveAll), d90: await curveWkg(Y.curve), ly: await curveWkg(Y.curvePrev) },
