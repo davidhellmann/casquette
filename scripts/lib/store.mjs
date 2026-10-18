@@ -5,52 +5,6 @@ import { toYaml } from './yaml.mjs';
 import { DEFAULT_RIDE_NAME } from '../../src/ride/defaults.js';
 import { currentMetrics, storedMetrics } from './metrics.mjs';
 
-/* ---------------- Slim down Strava objects ---------------- */
-const pick = (o, keys) => { const r = {}; if (!o) return r; for (const k of keys) if (o[k] !== undefined) r[k] = o[k]; return r; };
-const localISO = (s) => (s ? String(s).replace(/Z$/, '') : s);
-
-const SUMMARY_KEYS = ['id', 'name', 'type', 'sport_type', 'workout_type', 'start_date', 'start_date_local', 'timezone', 'utc_offset',
-  'distance', 'moving_time', 'elapsed_time', 'total_elevation_gain', 'elev_high', 'elev_low', 'average_speed', 'max_speed',
-  'average_cadence', 'average_temp', 'average_watts', 'weighted_average_watts', 'max_watts', 'kilojoules', 'device_watts',
-  'has_heartrate', 'average_heartrate', 'max_heartrate', 'heartrate_opt_out', 'suffer_score', 'trainer', 'commute', 'manual', 'private',
-  'visibility', 'flagged', 'gear_id', 'start_latlng', 'end_latlng', 'location_city', 'location_state', 'location_country',
-  'kudos_count', 'comment_count', 'athlete_count', 'photo_count', 'total_photo_count', 'achievement_count', 'pr_count',
-  'external_id', 'upload_id_str', 'has_kudoed'];
-
-export function slimSummary(a) {
-  const s = pick(a, SUMMARY_KEYS);
-  s.id = String(a.id);
-  s.start_date_local = localISO(a.start_date_local);
-  if (a.map) s.summary_polyline = a.map.summary_polyline || null;
-  return s;
-}
-
-const LAP_KEYS = ['name', 'lap_index', 'split', 'start_date_local', 'elapsed_time', 'moving_time', 'distance', 'total_elevation_gain',
-  'average_speed', 'max_speed', 'average_cadence', 'average_watts', 'device_watts', 'average_heartrate', 'max_heartrate', 'start_index', 'end_index', 'pace_zone'];
-const SPLIT_KEYS = ['split', 'distance', 'elapsed_time', 'moving_time', 'elevation_difference', 'average_speed', 'average_grade_adjusted_speed', 'average_heartrate', 'pace_zone'];
-
-export function slimDetail(d) {
-  const out = pick(d, ['description', 'calories', 'device_name', 'perceived_exertion', 'prefer_perceived_exertion', 'hide_from_home', 'embed_token']);
-  delete out.embed_token;
-  if (d.gear) out.gear = pick(d.gear, ['id', 'name', 'distance', 'primary']);
-  if (Array.isArray(d.laps)) out.laps = d.laps.map((l) => { const x = pick(l, LAP_KEYS); x.start_date_local = localISO(x.start_date_local); return x; });
-  if (Array.isArray(d.splits_metric)) out.splits_metric = d.splits_metric.map((s) => pick(s, SPLIT_KEYS));
-  if (Array.isArray(d.segment_efforts)) out.segment_efforts = d.segment_efforts.map((e) => ({
-    name: e.name,
-    segment_id: e.segment && e.segment.id != null ? String(e.segment.id) : null,
-    distance: e.distance, elapsed_time: e.elapsed_time, moving_time: e.moving_time,
-    average_watts: e.average_watts ?? null, device_watts: e.device_watts ?? null,
-    average_heartrate: e.average_heartrate ?? null, max_heartrate: e.max_heartrate ?? null, average_cadence: e.average_cadence ?? null,
-    pr_rank: e.pr_rank ?? null, kom_rank: e.kom_rank ?? null,
-    average_grade: e.segment ? e.segment.average_grade : null, climb_category: e.segment ? e.segment.climb_category : null,
-    city: e.segment ? e.segment.city : null,
-    achievements: Array.isArray(e.achievements) ? e.achievements.map((x) => x.type) : [],
-    start_index: e.start_index, end_index: e.end_index,
-  }));
-  if (Array.isArray(d.best_efforts) && d.best_efforts.length) out.best_efforts = d.best_efforts.map((b) => pick(b, ['name', 'distance', 'elapsed_time', 'moving_time', 'pr_rank']));
-  return out;
-}
-
 /* ---------------- One Markdown file per ride ---------------- */
 /** `_zones` is unused: stored metrics are zone-independent (time in zones is computed at build time). */
 export function frontmatter(rec, _zones, extra = {}) {

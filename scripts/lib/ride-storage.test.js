@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRideStorage, loadRideStorageContext } from './ride-storage.mjs';
 import { rebuild } from './rebuild.mjs';
 import { runSync } from './sync.mjs';
+import { createStravaFake } from './strava-fake.mjs';
 import { frontmatter } from './store.mjs';
 import { computeMetrics } from './metrics.mjs';
 import { processRide } from '../../src/ride/index.js';
@@ -137,8 +138,7 @@ describe('failure and recovery', () => {
 });
 
 function fakeSync({ failDetail = false, failGear = false, noDetail = false, noStreams = false, activities } = {}) {
-  class DailyLimitError extends Error {}
-  const get = vi.fn(async (url) => {
+  const strava = createStravaFake((url) => {
     if (url === '/athlete') return { id: 1, weight: 80, ftp: 240, bikes: [{ id: 'b10', name: 'New bike' }] };
     if (url === '/athlete/zones') return { heart_rate: { zones: athlete.zones.heart_rate_zones } };
     if (url === '/athletes/1/stats') return {};
@@ -157,7 +157,7 @@ function fakeSync({ failDetail = false, failGear = false, noDetail = false, noSt
   const geocodeRides = vi.fn(async (recs, { onRide }) => {
     for (const r of recs) { r.geo = { countries: ['Austria'] }; onRide(r); }
   });
-  return { get, geocodeRides, run: () => runSync({ root, get, geocodeRides, DailyLimitError, usage: { calls: 0 }, options: { noDetail, noStreams } }) };
+  return { strava, geocodeRides, run: () => runSync({ root, strava, geocodeRides, options: { noDetail, noStreams } }) };
 }
 
 it('normal sync (list, details/streams, geo) and offline rebuild produce identical rides with complete bike names', async () => {
@@ -176,9 +176,9 @@ it('normal sync (list, details/streams, geo) and offline rebuild produce identic
   const gearBefore = text('src/content/gear/b7.md');
   expect(gearBefore).toContain('notes: "keep" # comment');
   expect(gearBefore).toContain('Bike history');
-  const calls = fake.get.mock.calls.length;
+  const calls = fake.strava.calls.length;
   expect(rebuild({ root })).toBe(4);
-  expect(fake.get).toHaveBeenCalledTimes(calls);
+  expect(fake.strava.calls).toHaveLength(calls);
   for (const [file, before] of files) expect(text(file)).toBe(before);
   expect(text('src/content/gear/b7.md')).toBe(gearBefore);
 });
@@ -228,7 +228,7 @@ it.each(['summary', 'streams'])('updates summary NP without losing independent %
     expect(text(ridePath())).toContain(`np: ${np}`);
   };
   check();
-  expect(fake.get.mock.calls.some(([url]) => url.startsWith('/activities/'))).toBe(false);
+  expect(fake.strava.calls.some(([url]) => url.startsWith('/activities/'))).toBe(false);
   const before = text(ridePath());
   rebuild({ root }); check();
   expect(text(ridePath())).toBe(before);
@@ -278,7 +278,7 @@ it.each(['hr-only', 'hr-unknown', 'short', 'interrupted', 'measured', 'zero'])('
     expect(text(ridePath())).toContain('metric_sources:');
   };
   check(300);
-  expect(fake.get.mock.calls.some(([url]) => url.startsWith('/activities/'))).toBe(false);
+  expect(fake.strava.calls.some(([url]) => url.startsWith('/activities/'))).toBe(false);
   const before = text(ridePath());
   rebuild({ root }); check(300);
   expect(text(ridePath())).toBe(before);

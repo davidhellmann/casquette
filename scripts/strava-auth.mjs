@@ -4,9 +4,9 @@
  * and stores the token in .strava-token.json (refreshed automatically).
  */
 import http from 'node:http';
-import { exec } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { loadEnv } from './lib/env.mjs';
-import { exchange } from './lib/strava.mjs';
+import { exchangeToken } from './lib/strava.mjs';
 
 loadEnv();
 const { STRAVA_CLIENT_ID: id, STRAVA_CLIENT_SECRET: secret } = process.env;
@@ -33,7 +33,7 @@ const server = http.createServer(async (req, res) => {
     return finish(1);
   }
   try {
-    const t = await exchange({ code, grant_type: 'authorization_code', scope });
+    const t = await exchangeToken({ code, grant_type: 'authorization_code', scope });
     res.end(page('✅ Connected to Strava', 'You can close this window.'));
     console.log(`✅ Connected (athlete ${t.athlete_id}). Scopes: ${scope}`);
     if (!scope.includes('activity:read_all')) console.warn('⚠️  "activity:read_all" was not granted – private activities will be missing.');
@@ -46,9 +46,20 @@ const server = http.createServer(async (req, res) => {
     finish(1);
   }
 });
+/** Opens the URL in the default browser (macOS, Windows, Linux/BSD); the printed URL is the fallback. */
+function openBrowser(target) {
+  const [cmd, args] = process.platform === 'darwin' ? ['open', [target]]
+    : process.platform === 'win32' ? ['cmd', ['/c', 'start', '""', `"${target}"`]]
+      : ['xdg-open', [target]];
+  try {
+    const child = spawn(cmd, args, { stdio: 'ignore', detached: true, windowsVerbatimArguments: process.platform === 'win32' });
+    child.on('error', () => {}); // no opener available: the URL above is enough
+    child.unref();
+  } catch {}
+}
 function finish(code) { setTimeout(() => { server.close(); process.exit(code); }, 300); }
 
 server.listen(PORT, () => {
   console.log('Opening Strava in the browser …\nIf nothing happens, open this URL:\n' + url + '\n');
-  exec(`open "${url}"`);
+  openBrowser(url);
 });

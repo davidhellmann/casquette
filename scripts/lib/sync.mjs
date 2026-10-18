@@ -2,7 +2,8 @@ import path from 'node:path';
 import { log, ROOT, readJSON, writeJSON } from './env.mjs';
 import { computeMetrics, downsampleStreams, normZones } from './metrics.mjs';
 import { cogganZones, DEFAULT_HR_ZONES, isRide } from '../../src/training/index.js';
-import { slimSummary, slimDetail, writeGear } from './store.mjs';
+import { writeGear } from './store.mjs';
+import { slimSummary, slimDetail } from './strava.mjs';
 import { createRideStorage, loadRideStorageContext } from './ride-storage.mjs';
 const STREAM_KEYS = 'time,distance,latlng,altitude,velocity_smooth,heartrate,cadence,watts,temp,moving,grade_smooth';
 const FRAME = { 1: 'MTB', 2: 'Cross', 3: 'Road', 4: 'Time trial', 5: 'Gravel' };
@@ -10,7 +11,8 @@ const FRAME = { 1: 'MTB', 2: 'Cross', 3: 'Road', 4: 'Time trial', 5: 'Gravel' };
 const epoch = (a) => Math.floor(Date.parse(a.start_date) / 1000);
 /** The actual sync orchestration, with CLI I/O supplied at the entry point for local tests.
  * No alternate Strava adapter and no environment/auth loading in this module. */
-export async function runSync({ root = ROOT, get, usage, DailyLimitError, geocodeRides, options = {}, fallback = {} }) {
+export async function runSync({ root = ROOT, strava, geocodeRides, options = {}, fallback = {} }) {
+  const get = strava.get;
   const { wait: WAIT = false, noDetail: NO_DETAIL = false, noStreams: NO_STREAMS = false,
     noGeo: NO_GEO = false, limit: LIMIT = 0, geoBudgetMin = 15 } = options;
   const STATE_FILE = path.join(root, '.strava-cache/state.json');
@@ -78,7 +80,7 @@ export async function runSync({ root = ROOT, get, usage, DailyLimitError, geocod
     for (;;) {
       let list;
       try { list = await get('/athlete/activities', { before, per_page: 200 }, { wait: WAIT }); }
-      catch (e) { if (e instanceof DailyLimitError) break; throw e; }
+      catch (e) { if (strava.isDailyLimit(e)) break; throw e; }
       if (!list || !list.length) { state.listComplete = true; break; }
       list.forEach(upsert);
       before = Math.min(...list.map(epoch));
@@ -102,7 +104,7 @@ export async function runSync({ root = ROOT, get, usage, DailyLimitError, geocod
         description: g.description || null, distance: g.distance || 0, retired: !!g.retired, primary: !!g.primary,
         weight: g.weight || null, _at: Date.now(),
       };
-    } catch (e) { if (e instanceof DailyLimitError) break; }
+    } catch (e) { if (strava.isDailyLimit(e)) break; }
   }
   writeJSON(GEAR_FILE, gearCache);
   const gear = Object.values(gearCache).map(({ _at, ...g }) => g);
@@ -159,9 +161,9 @@ export async function runSync({ root = ROOT, get, usage, DailyLimitError, geocod
       }
       storage.save(rec, streamUpdate);
       done++;
-      if (done % 10 === 0) log(`  … ${done}/${todo.length} rides (API today: ${usage.daily}/${usage.dailyLimit})`);
+      if (done % 10 === 0) log(`  … ${done}/${todo.length} rides (API today: ${strava.usage().daily}/${strava.usage().dailyLimit})`);
     } catch (e) {
-      if (e instanceof DailyLimitError) { stopped = true; break; }
+      if (strava.isDailyLimit(e)) { stopped = true; break; }
       log(`⚠️  Error on ride ${rec.id}: ${e.message}`);
     }
   }
@@ -178,7 +180,7 @@ export async function runSync({ root = ROOT, get, usage, DailyLimitError, geocod
   }
 
   const left = todo.length - done;
-  log(`✅ Done in ${Math.round((Date.now() - started) / 1000)} s · ${usage.calls} API calls · ${done} rides with details`);
+  log(`✅ Done in ${Math.round((Date.now() - started) / 1000)} s · ${strava.usage().calls} API calls · ${done} rides with details`);
   if (!state.listComplete || left > 0) {
     log(`ℹ️  Still pending: ${state.listComplete ? '' : 'parts of the activity list, '}${left} rides with details.` +
       (stopped ? ' Strava daily limit reached – just run `npm run sync` again tomorrow (or leave `npm run sync:all` running).' : ''));
