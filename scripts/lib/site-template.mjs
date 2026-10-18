@@ -9,10 +9,10 @@
 //   privacy policy) are kept with it and dropped without it.
 
 /** Every legal variable, in the order an error lists them. */
-export const LEGAL_VARS = ['SITE_LEGAL_NAME', 'SITE_LEGAL_ADDRESS', 'SITE_LEGAL_COUNTRY', 'SITE_LEGAL_EMAIL'];
-export const CABIN_VAR = 'SITE_CABIN_HOST';
+const LEGAL_VARS = ['SITE_LEGAL_NAME', 'SITE_LEGAL_ADDRESS', 'SITE_LEGAL_COUNTRY', 'SITE_LEGAL_EMAIL'];
+const CABIN_VAR = 'SITE_CABIN_HOST';
 /** Every placeholder a page may use. */
-export const PLACEHOLDERS = [...LEGAL_VARS, CABIN_VAR];
+const PLACEHOLDERS = [...LEGAL_VARS, CABIN_VAR];
 
 /** Thrown for anything the build refuses: missing or invalid variables, leftover placeholders. */
 export class SiteBuildError extends Error {
@@ -92,7 +92,7 @@ export function applyBlock(html, name, on) {
 export const cabinScript = (host) => `<script async defer src="https://${escapeHtml(host)}/hello.js"></script>`;
 
 /** True for a full page (fragments such as website/ui/*.html have no <body> and get no script). */
-export const isPage = (html) => /<\/body>/i.test(html);
+const isPage = (html) => /<\/body>/i.test(html);
 
 /**
  * Adds the Cabin script before </body> of a page. No host, no page, or already there: unchanged.

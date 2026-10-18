@@ -4,9 +4,9 @@
 // Variables and an example: website/README.md. Reads only the process environment, never .env.
 import path from 'node:path';
 import { parseArgs } from 'node:util';
+import { ROOT } from './lib/env.mjs';
 import { buildSite } from './lib/site-build.mjs';
 
-const ROOT = path.resolve(import.meta.dirname, '..');
 const { values } = parseArgs({
   options: {
     out: { type: 'string', default: 'dist-site' },

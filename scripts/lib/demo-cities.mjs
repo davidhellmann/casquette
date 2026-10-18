@@ -263,6 +263,3 @@ export const CITIES = [
     ],
   },
 ];
-
-/** Every route of every city, with its city key. */
-export const ALL_ROUTES = CITIES.flatMap((c) => c.routes.map((r) => ({ ...r, city: c.key })));
