@@ -4,6 +4,7 @@ import { SERIES, barRadius, niceTicks } from '@/components/charts/series';
 import { SeriesLegend, TooltipBox } from '@/components/charts/chart-parts';
 import { nf } from '@/scripts/format.js';
 import { t } from '@/i18n/index.js';
+import { routes } from '@/lib/routes.js';
 import type { YearSummary } from './YearsView';
 
 const config = {
@@ -12,7 +13,7 @@ const config = {
 } satisfies ChartConfig;
 
 /** All years side by side: kilometres (rounded bars) and hours (smooth line); a click opens the year. */
-export function YearsChart({ years, base }: { years: YearSummary[]; base: string }) {
+export function YearsChart({ years }: { years: YearSummary[] }) {
   const rows = years.slice().reverse();
   const kmTicks = niceTicks(0, Math.max(...rows.map((r) => r.km)));
   const hTicks = niceTicks(0, Math.max(...rows.map((r) => r.h)));
@@ -30,7 +31,7 @@ export function YearsChart({ years, base }: { years: YearSummary[]; base: string
   };
   const open = (r: { year?: number; payload?: YearSummary }) => {
     const y = r.payload?.year ?? r.year;
-    if (y) location.href = `${base}years/${y}`;
+    if (y) location.href = routes.year(y);
   };
   return (
     <>

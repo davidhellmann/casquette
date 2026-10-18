@@ -23,7 +23,7 @@ const s = (key: string, x?: Record<string, unknown>) => t('dash.sec.' + key, x);
  * zone basis chosen in the page header (#32).
  */
 export function DashboardCards({ D, source, basis }: { D: any; source: any; basis: Basis }) {
-  const { athleteState } = source.athlete, zones = athleteState.zones, kg = athleteState.weight, base = source.base;
+  const { athleteState } = source.athlete, zones = athleteState.zones, kg = athleteState.weight;
   // The ride in the analysis: the newest of the period until another is picked
   const [picked, setPicked] = React.useState<string | null>(null);
   const selected = D.rides.some((r: any) => r.id === picked) ? picked : D.rides[0]?.id ?? null;
@@ -48,11 +48,11 @@ export function DashboardCards({ D, source, basis }: { D: any; source: any; basi
           <TimeInZonesCard D={D} />
           <RhythmCard D={D} />
         </div>
-        <PowerHrCard D={D} zones={zones} base={base} />
+        <PowerHrCard D={D} zones={zones} />
       </Section>
       <Section title={s('progress')} sub={s('progressSub')}>
         <div className="grid gap-3 lg:grid-cols-2">
-          <EfficiencyCard D={D} basis={basis} base={base} />
+          <EfficiencyCard D={D} basis={basis} />
           <PeriodCurveCard D={D} zones={zones} kg={kg} />
         </div>
       </Section>
@@ -62,13 +62,13 @@ export function DashboardCards({ D, source, basis }: { D: any; source: any; basi
       {D.history.multiYear && (
         <Section title={s('history')} sub={historySince(D)}>
           <div className="grid gap-3 lg:grid-cols-12">
-            <div className="grid lg:col-span-4"><AllTimeCard D={D} base={base} /></div>
+            <div className="grid lg:col-span-4"><AllTimeCard D={D} /></div>
             <div className="grid lg:col-span-8"><YearsCard D={D} /></div>
           </div>
           <CumulativeCard D={D} />
         </Section>
       )}
-      <RecordsSection D={D} base={base} allTime={!D.hasPrevious} />
+      <RecordsSection D={D} allTime={!D.hasPrevious} />
       <Section title={s('nutrition')} sub={s('nutritionSub')}>
         <div className="grid gap-3 lg:grid-cols-12">
           <div className="grid lg:col-span-7"><NutritionCard D={D} kg={kg} /></div>

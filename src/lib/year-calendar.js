@@ -4,14 +4,15 @@
  * from `trainingCalendar` (src/training/training-calendar.js, measure 'km'); this only adds text and links.
  */
 import { daysBetween, weekStart } from '../training/index.js';
+import { routes } from './routes.js';
 import { nf, trunc, fmtWeekdayDate, fmtMonthShort } from '../scripts/format.js';
 import { t } from '../i18n/index.js';
 
 /**
- * @param calendar `trainingCalendar(rides, { from: 1 Jan, to: 31 Dec, today, measure: 'km' })`
+ * @param calendar `trainingCalendar(rides, { from: 1 Jan, to: 31 Dec, today: calendar end, measure: 'km' })`
  * @returns {{ days: (object|null)[], weeks: number, months: { week: number, label: string }[] }}
  */
-export function yearCalendar(calendar, year, { base }) {
+export function yearCalendar(calendar, year) {
   const days = calendar.cells.map(({ d, day, level, outside, future }) => {
     if (outside || future) return null;
     const title = fmtWeekdayDate(d);
@@ -21,7 +22,7 @@ export function yearCalendar(calendar, year, { base }) {
       title,
       detail: t('year.calTip', { rides: t('common.rides', { n: nf(day.n) }), km: nf(day.value, 1) }),
       notes: day.rides.map((r) => trunc(r.name, 40)),
-      href: `${base}rides/${day.rides[0].id}`,
+      href: routes.ride(day.rides[0].id),
     };
   });
   const start = weekStart(new Date(year, 0, 1));

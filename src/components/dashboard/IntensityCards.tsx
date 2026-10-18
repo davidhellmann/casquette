@@ -11,6 +11,7 @@ import { t } from '@/i18n/index.js';
 import { powerHr, rhythm, timeInZones, zoneShare, zoneWeeks } from './intensity-data.js';
 import { Figure } from '@/components/app/KeyFigures';
 import { BasisToggle, type Basis } from './parts';
+import { routes } from '@/lib/routes.js';
 
 const cd = (key: string, x?: Record<string, unknown>) => t('dash.card.' + key, x);
 
@@ -158,7 +159,7 @@ export function RhythmCard({ D }: { D: any }) {
 }
 
 /** Average power and heart rate per ride, Z2 power window as a band; a click opens the ride. */
-export function PowerHrCard({ D, zones, base }: { D: any; zones: any; base: string }) {
+export function PowerHrCard({ D, zones }: { D: any; zones: any }) {
   const P = powerHr(D, zones);
   const config = {
     w: { label: t('metric.avgPower'), color: SERIES.ridePower.color },
@@ -188,7 +189,7 @@ export function PowerHrCard({ D, zones, base }: { D: any; zones: any; base: stri
           ]} />
           <ChartContainer config={config} className="aspect-auto h-[300px] w-full [&_.recharts-surface]:cursor-pointer">
             <ComposedChart data={P.rows} margin={{ top: 8, right: 0, bottom: 0, left: -8 }}
-              onClick={(e: any) => { const r = P.rows[e?.activeIndex ?? e?.activeTooltipIndex]; if (r) location.href = `${base}rides/${r.id}`; }}>
+              onClick={(e: any) => { const r = P.rows[e?.activeIndex ?? e?.activeTooltipIndex]; if (r) location.href = routes.ride(r.id); }}>
               <defs>
                 <linearGradient id="fill-phr" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="var(--color-w)" stopOpacity={0.22} />

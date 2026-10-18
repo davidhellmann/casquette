@@ -10,6 +10,7 @@ import { nf } from '@/scripts/format.js';
 import { t } from '@/i18n/index.js';
 import { curveValue, efficiency, periodCurve } from './progress-data.js';
 import { type Basis } from './parts';
+import { routes } from '@/lib/routes.js';
 
 const cd = (key: string) => t('dash.card.' + key);
 
@@ -24,12 +25,12 @@ function ActiveRide({ onChange }: { onChange: (id: string | null) => void }) {
  * EF per ride (dots in its zone colour) and the rolling trend. A click opens the ride; on the
  * keyboard the arrow keys move between rides (Recharts accessibility layer) and Enter opens one.
  */
-export function EfficiencyCard({ D, basis, base }: { D: any; basis: Basis; base: string }) {
+export function EfficiencyCard({ D, basis }: { D: any; basis: Basis }) {
   const E = efficiency(D, basis);
   const active = React.useRef<string | null>(null);
   const setActive = React.useCallback((id: string | null) => { active.current = id; }, []);
   const hintId = React.useId();
-  const open = (id: string | null | undefined) => { if (id) location.href = `${base}rides/${id}`; };
+  const open = (id: string | null | undefined) => { if (id) location.href = routes.ride(id); };
   const config = {
     ef: { label: t('dash.chart.efPerRide'), color: 'var(--muted-foreground)' },
     trend: { label: t('dash.chart.efTrend'), color: SERIES.efficiencyTrend.color },

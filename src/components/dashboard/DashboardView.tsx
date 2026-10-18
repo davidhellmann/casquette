@@ -92,7 +92,7 @@ function DashboardContent() {
         <ChartCard title={t('dash.card.pmc')} description={t('dash.card.pmcSub')}>
           <FitnessChart D={D} />
         </ChartCard>
-        <CalendarCard D={D} base={source.base} />
+        <CalendarCard D={D} />
         <DashboardCards D={D} source={source} basis={data.period.basis} />
         <RecentRides D={D} basis={data.period.basis} />
         <DashboardFooter source={source} />

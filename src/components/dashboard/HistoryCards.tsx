@@ -12,18 +12,19 @@ import { t } from '@/i18n/index.js';
 import { allTime, historySince, kilometreRace, records, yearsCompared } from './history-data.js';
 import { Figure } from '@/components/app/KeyFigures';
 import { Section } from './parts';
+import { routes } from '@/lib/routes.js';
 
 const cd = (key: string) => t('dash.card.' + key);
 
 /** All-time totals, the best year and the longest ride. */
-export function AllTimeCard({ D, base }: { D: any; base: string }) {
+export function AllTimeCard({ D }: { D: any }) {
   const A = allTime(D);
   return (
     <ChartCard title={t('dash.allTime.title')} description={historySince(D)} data-testid="all-time-card">
       <div className="grid grid-cols-2 gap-x-4 gap-y-4">
         {A.items.map((x) => <Figure key={x.key} value={x.value} label={x.label} sub={x.sub} />)}
         {A.longest && (
-          <a href={`${base}rides/${A.longest.id}`} className="-m-1.5 rounded-md p-1.5 hover:bg-background">
+          <a href={routes.ride(A.longest.id)} className="-m-1.5 rounded-md p-1.5 hover:bg-background">
             <Figure value={A.longest.value} label={A.longest.label} sub={A.longest.name} />
           </a>
         )}
@@ -118,7 +119,7 @@ export function CumulativeCard({ D }: { D: any }) {
 }
 
 /** The eight records of the period – each card opens its ride. */
-export function RecordsSection({ D, base, allTime: all }: { D: any; base: string; allTime: boolean }) {
+export function RecordsSection({ D, allTime: all }: { D: any; allTime: boolean }) {
   const title = t(all ? 'dash.sec.recordsAll' : 'dash.sec.records');
   if (!D.rides.length) {
     return (
@@ -142,7 +143,7 @@ export function RecordsSection({ D, base, allTime: all }: { D: any; base: string
           return (
             <li key={r.key} className="grid">
               {r.id ? (
-                <a href={`${base}rides/${r.id}`} className="grid gap-1 rounded-lg bg-card px-5 py-4 transition-colors hover:bg-muted/60 focus-visible:outline-2 focus-visible:outline-ring">{body}</a>
+                <a href={routes.ride(r.id)} className="grid gap-1 rounded-lg bg-card px-5 py-4 transition-colors hover:bg-muted/60 focus-visible:outline-2 focus-visible:outline-ring">{body}</a>
               ) : <div className="grid gap-1 rounded-lg bg-card px-5 py-4">{body}</div>}
             </li>
           );

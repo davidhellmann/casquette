@@ -19,7 +19,7 @@ import { Bikes, Glance, Highlights, type GlanceItem, type Highlight, type YearBi
 import { monthColumns } from './year-tables';
 import { useIslandReady } from '@/lib/island-ready';
 
-/** One month of the year review (src/lib/year-payload.js). */
+/** One month of the year review (src/lib/year-payload.ts). */
 export interface YearMonth {
   m: number;
   label: string;
@@ -54,11 +54,10 @@ interface YearKpi {
 
 type Curves = Record<'all' | 'd90' | 'ly', Record<string, number | null>>;
 
-/** Build payload of /years/<year> (src/lib/year-payload.js). */
+/** Build payload of /years/<year> (src/lib/year-payload.ts). */
 export interface YearPayload {
   year: number;
   isCurrent: boolean;
-  base: string;
   kpis: YearKpi[];
   months: YearMonth[];
   glance: GlanceItem[];

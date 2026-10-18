@@ -5,7 +5,6 @@
  * Pure: no I/O, no DOM (the build pages load the data, use-dashboard.ts reads the element).
  * Contract: docs/ride.md "Dashboard and goals".
  */
-import { BASE } from './routes.js';
 import { calendarDate } from '../training/index.js';
 
 /** Ride fields the islands read – no renaming, no domain calculation. */
@@ -44,9 +43,8 @@ function decodeRide(ride) {
  * Build side: final rides (from the ride module), the athlete, today's athlete state and the goals →
  * the JSON text for `#dash-data`, with `<` escaped so it can never close the script element.
  */
-export function encodeDashboard({ rides, athlete = {}, athleteState = null, goals = [], base = BASE }) {
+export function encodeDashboard({ rides, athlete = {}, athleteState = null, goals = [] }) {
   const payload = {
-    base,
     athlete: { profile: athlete.profile, athleteState, gear: athlete.gear, synced_at: athlete.synced_at, sync: athlete.sync },
     rides: rides.map(encodeRide),
     streamsCount: rides.filter((r) => r.streams).length,
@@ -56,14 +54,13 @@ export function encodeDashboard({ rides, athlete = {}, athleteState = null, goal
 }
 
 /**
- * Island side: the JSON text of `#dash-data` → `{ base, athlete, goals, streamsCount, rides }` with
+ * Island side: the JSON text of `#dash-data` → `{ athlete, goals, streamsCount, rides }` with
  * final, flat rides as the dashboard period expects them (newest first, rides without a valid
  * local start dropped).
  */
 export function decodeDashboard(text) {
   const raw = JSON.parse(text || '{}');
   return {
-    base: raw.base || '/',
     athlete: raw.athlete || {},
     goals: raw.goals || [],
     streamsCount: raw.streamsCount || 0,

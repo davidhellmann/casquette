@@ -21,7 +21,11 @@ export interface MapViewProps {
 }
 /** A bike with routes; `color` from the shared bike palette (charts/categories.ts). */
 type Bike = { id: string; name: string; color?: string };
-type Source = { base: string; routes: Route[]; bikes: Bike[]; places: [string, string, string][] };
+/** A route in the build payload (#map-data): id, name, ride date, year, bike, km, sport type, encoded polyline, place indexes. */
+export type RouteData = Omit<Route, 'll' | 'bb'> & { p: string };
+/** Build payload of the map in #map-data (src/lib/map-payload.ts); each place once as [name, region, country]. */
+export interface MapData { routes: RouteData[]; bikes: Bike[]; places: [string, string, string][] }
+type Source = { routes: Route[]; bikes: Bike[]; places: [string, string, string][] };
 type Filters = { year: string; bike: string; type: string };
 
 let cached: Source | null = null;
@@ -29,7 +33,7 @@ let cached: Source | null = null;
 function readSource(): Source {
   if (!cached) {
     const D = JSON.parse(document.getElementById('map-data')?.textContent || '{}');
-    cached = { base: D.base || '/', routes: prepareRoutes(D.routes) as Route[], bikes: D.bikes || [], places: D.places || [] };
+    cached = { routes: prepareRoutes(D.routes) as Route[], bikes: D.bikes || [], places: D.places || [] };
   }
   return cached;
 }
@@ -120,7 +124,7 @@ export function MapView({ years, bikes, types }: MapViewProps) {
 
   const panel = S && (
     <PlacesPanel P={P} browser={browser} G={G} onGeo={onGeo} q={q} onQ={setQ} tab={tab} onTab={setTab}
-      rides={rides} limit={limit} onMore={() => setLimit((n) => n + PAGE)} base={S.base} />
+      rides={rides} limit={limit} onMore={() => setLimit((n) => n + PAGE)} />
   );
 
   return (
