@@ -13,7 +13,7 @@ beforeAll(() => {
   // The generator must work offline: any network access fails the whole suite.
   vi.stubGlobal('fetch', () => { throw new Error('demo:generate must not use the network'); });
   try { demo = generateDemoData(); } finally { vi.unstubAllGlobals(); }
-});
+}, 60_000); // generating the whole dataset can exceed the 10 s hook default on a busy machine
 
 const cache = loadRouteCache(ROOT, CITIES.map((c) => c.key));
 const cityOf = (ride) => CITIES.find((c) => c.country === ride.data.geo?.country);
