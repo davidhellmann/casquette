@@ -107,4 +107,11 @@ describe('Ride – public, pure processing', () => {
     for (const key of ['clsP', 'clsH']) expect(Object.keys(r[key]).sort()).toEqual(['source', 'zone']);
     for (const kind of ['power', 'hr']) expect(r.tizBasis[kind]).not.toHaveProperty('label');
   });
+
+  it('carries the ride page details: elevation range, perceived exertion, laps, splits and segment efforts', () => {
+    const laps = [{ lap_index: 1 }, { lap_index: 2 }], splits = [{ split: 1 }], efforts = [{ segment_id: 7 }];
+    expect(process({ elev_low: '12.5', elev_high: 340, perceived_exertion: 6, laps, splits_metric: splits, segment_efforts: efforts }))
+      .toMatchObject({ elev_low: 12.5, elev_high: 340, rpe: 6, laps, splits, segs: efforts });
+    expect(process({ elev_low: '' })).toMatchObject({ elev_low: null, elev_high: null, rpe: null, laps: [], splits: [], segs: [] });
+  });
 });
