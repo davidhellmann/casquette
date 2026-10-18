@@ -10,12 +10,22 @@ const STREAM_KEYS = 'time,distance,latlng,altitude,velocity_smooth,heartrate,cad
 const PAGE = 200;
 
 /**
+ * Time for looking up places at the end of a sync (0 = no limit). An explicit `GEO_BUDGET_MIN` always
+ * wins; otherwise `--wait` (`npm run sync:all`, the first full sync) resolves every place, and a plain
+ * sync spends at most 15 minutes.
+ */
+function geoBudgetMs({ wait, geoBudgetMin }) {
+  const explicit = geoBudgetMin !== undefined && geoBudgetMin !== null && String(geoBudgetMin).trim() !== '';
+  return (explicit ? Number(geoBudgetMin) : wait ? 0 : 15) * 60e3;
+}
+
+/**
  * The sync run: athlete → activity list → gear → athlete file and history → details and streams
  * → places. The Strava client, geocoder and clock are supplied by the entry point (tests pass fakes);
  * no environment or auth loading in this module.
  */
 export async function runSync({ root = ROOT, strava, geocodeRides, clock = systemClock, options = {}, fallback = {} }) {
-  const { wait = false, noDetail = false, noStreams = false, noGeo = false, limit = 0, geoBudgetMin = 15 } = options;
+  const { wait = false, noDetail = false, noStreams = false, noGeo = false, limit = 0, geoBudgetMin } = options;
   const started = clock.now();
   const athleteStorage = createAthleteStorage({ root, clock });
 
@@ -45,7 +55,7 @@ export async function runSync({ root = ROOT, strava, geocodeRides, clock = syste
 
   if (!noGeo) {
     try {
-      await geocodeRides(storage.list(), { root, budgetMs: Number(geoBudgetMin) * 60e3, onRide: (rec) => storage.save(rec) });
+      await geocodeRides(storage.list(), { root, budgetMs: geoBudgetMs({ wait, geoBudgetMin }), onRide: (rec) => storage.save(rec) });
     } catch (e) { log(`⚠️  Places skipped: ${e.message}`); }
   }
 

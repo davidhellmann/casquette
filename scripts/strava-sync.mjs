@@ -26,7 +26,7 @@ async function main() {
     strava, geocodeRides,
     options: {
       wait: flag('--wait'), noDetail: flag('--no-detail'), noStreams: flag('--no-streams'), noGeo: flag('--no-geo'),
-      limit, geoBudgetMin: process.env.GEO_BUDGET_MIN ?? 15,
+      limit, geoBudgetMin: process.env.GEO_BUDGET_MIN,
     },
     fallback: { weight: process.env.WEIGHT, ftp: process.env.FTP },
   });

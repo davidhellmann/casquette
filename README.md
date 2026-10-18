@@ -100,20 +100,16 @@ Without any synced rides, Casquette shows about three years of generated rides, 
    ```bash
    npm run strava:auth
    ```
-4. **Sync your history.** Strava's rate limits allow only a limited number of requests per 15 minutes and per day. `sync:all` waits them out and keeps going until your complete history is downloaded, newest rides first. You can stop it at any time; the next run continues where it left off.
+4. **Sync your history.** Strava's rate limits allow only a limited number of requests per 15 minutes and per day. `sync:all` waits them out and keeps going until your complete history is downloaded, newest rides first. At the end it looks up the place names of all your routes via OpenStreetMap Nominatim (one request per second, so a large history adds about an hour). You can stop it at any time; the next run continues where it left off.
    ```bash
    npm run sync:all
    ```
-5. **Look up places** once (optional). This reverse-geocodes your routes via OpenStreetMap Nominatim at one request per second, so a large history can take an hour or more. It can be interrupted and resumed. Afterwards every sync handles new places itself.
-   ```bash
-   npm run geo
-   ```
-6. **Start the dashboard.** If `npm run dev` was already running during your first sync, restart it.
+5. **Start the dashboard.** If `npm run dev` was already running during your first sync, restart it.
    ```bash
    npm run dev
    ```
 
-From then on, run `npm run sync` whenever you want new rides. How the sync works in detail (rate limits, cache and offline rebuild, power and HR backfill, geocoding): [`docs/sync.md`](docs/sync.md).
+From then on, run `npm run sync` whenever you want new rides; it looks up the few new places itself. How the sync works in detail (rate limits, cache and offline rebuild, power and HR backfill, geocoding): [`docs/sync.md`](docs/sync.md).
 
 ## Your data stays local
 
@@ -189,7 +185,7 @@ custom:
 | `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET` | Your Strava API application (required for syncing) |
 | `FTP`, `WEIGHT` | Fallbacks if Strava provides no values |
 | `STRAVA_AUTH_PORT` | Local port for the OAuth callback (default `8723`) |
-| `GEO_BUDGET_MIN` | Minutes per sync spent on looking up new places (default `15`) |
+| `GEO_BUDGET_MIN` | Minutes per sync spent on looking up new places (default `15`; `sync:all` has no limit unless this is set) |
 | `PUBLIC_LANG` | UI language (default `en`) |
 
 Geocoding settings (`GEO_LANG`, `NOMINATIM_URL`, `NOMINATIM_UA`) are described in [`docs/sync.md`](docs/sync.md#places-and-countries).
@@ -207,7 +203,7 @@ Geocoding settings (`GEO_LANG`, `NOMINATIM_URL`, `NOMINATIM_UA`) are described i
 | `npm run sync` | Fetch new rides plus as much history as today's rate limit allows |
 | `npm run sync:all` | Like `sync`, but waits out rate limits until the full history is there |
 | `npm run sync:rebuild` | Rewrite all ride files from the local cache, offline |
-| `npm run geo` | Look up places for all rides (one-off, resumable) |
+| `npm run geo` | Look up all missing places without touching Strava (resumable), e.g. after changing `GEO_LANG` |
 | `npm test` / `npm run test:watch` | Run the tests once / in watch mode |
 | `npm run test:e2e` | Build the demo site and run the browser tests ([details](#tests)) |
 | `npm run test:website` | Browser test of the promo website in `website/` |

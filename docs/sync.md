@@ -78,8 +78,9 @@ Strava provides no usable place names, so Casquette looks them up itself via rev
 
 - Each route is sampled about every kilometre and rounded to a grid of roughly 1.5 km. Only the centres of these grid cells are sent to Nominatim: no times, no ride data.
 - Every grid cell is looked up exactly once and stored in `src/data/geo-cells.json`. That file stays local because it reveals every place you have ridden through. Delete it and all cells have to be looked up again.
-- Nominatim allows one request per second ([usage policy](https://operations.osmfoundation.org/policies/nominatim/)), so run **`npm run geo` once** after your first full sync. A few thousand cells take about an hour; you can stop it at any time and it resumes where it left off. It makes no Strava requests.
-- After that, every sync looks up the few new cells itself, for at most `GEO_BUDGET_MIN` minutes per run (default 15). `--no-geo` turns this off.
+- Nominatim allows one request per second ([usage policy](https://operations.osmfoundation.org/policies/nominatim/)). A few thousand cells take about an hour.
+- Every sync looks up the missing cells at the end. `npm run sync:all` (`--wait`, the first full sync) resolves all of them; a plain `npm run sync` spends at most 15 minutes and leaves the rest for the next run. `GEO_BUDGET_MIN` sets the limit for both explicitly (`0` = no limit). `--no-geo` turns places off.
+- **`npm run geo`** looks up all missing cells without any Strava requests and without a time limit. You can stop it at any time and it resumes where it left off. Use it when you skipped places during syncs, or after switching `GEO_LANG` (see below).
 - Results go into the `geo:` block of each ride's frontmatter (start, country, region, all places along the route). They show up on the ride page, in the place explorer on the map and in the ride log search.
 - Indoor and virtual rides (Zwift and similar) are skipped.
 

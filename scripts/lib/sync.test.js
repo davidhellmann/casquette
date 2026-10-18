@@ -271,3 +271,23 @@ describe('sync run steps', () => {
       .toBe(Date.parse('2024-04-01T12:00:00Z') / 1000);
   });
 });
+
+describe('places budget', () => {
+  const budget = async (options) => {
+    const fake = fakeSync();
+    await runSync({ root, strava: fake.strava, geocodeRides: fake.geocodeRides, options: { noDetail: true, noStreams: true, ...options } });
+    return fake.geocodeRides.mock.calls[0][1].budgetMs;
+  };
+
+  it('spends at most 15 minutes on a plain sync', async () => {
+    expect(await budget({})).toBe(15 * 60e3);
+  });
+  it('resolves every place on a waiting sync (npm run sync:all)', async () => {
+    expect(await budget({ wait: true })).toBe(0);
+  });
+  it('an explicit GEO_BUDGET_MIN wins in both cases', async () => {
+    expect(await budget({ geoBudgetMin: '5' })).toBe(5 * 60e3);
+    expect(await budget({ wait: true, geoBudgetMin: '5' })).toBe(5 * 60e3);
+    expect(await budget({ wait: true, geoBudgetMin: '' })).toBe(0);
+  });
+});
