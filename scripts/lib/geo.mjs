@@ -12,6 +12,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT, readJSON, writeJSON, sleep, log } from './env.mjs';
 import { decodePolyline } from '../../src/scripts/polyline.js';
+import { isIndoor } from '../../src/training/index.js';
 
 /** The place cache below `root`; a cache at its former location is moved there on first use. */
 function geoCellsFile(root) {
@@ -44,8 +45,8 @@ function km(a, b) {
 const cellKey = (p) => `${Math.round(p[0] / GRID)}:${Math.round(p[1] / GRID)}`;
 const cellCenter = (k) => k.split(':').map((n) => +(Number(n) * GRID).toFixed(5));
 
-/** Outdoor ride with GPS? (Zwift and similar use fictional coordinates.) */
-export const isGeoRide = (s) => !!(s && s.summary_polyline && !s.trainer && !/^Virtual/.test(s.sport_type || s.type || ''));
+/** Outdoor ride with GPS? (Indoor rides – Zwift and similar – use fictional coordinates.) */
+export const isGeoRide = (s) => !!(s && s.summary_polyline && !isIndoor(s));
 
 /** Ordered, unique grid cells along the route (start + every ~1 km + finish). */
 export function routeCells(polyline) {

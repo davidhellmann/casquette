@@ -36,6 +36,7 @@ Pass flags after `--`, e.g. `npm run sync -- --limit=10`.
 | `--no-geo` | Skip looking up places |
 | `--backfill-power` | Only backfill power distributions for older rides, see [Power and HR backfill](#power-and-hr-backfill) |
 | `--backfill-hr` | Only backfill HR distributions for older rides, see [Power and HR backfill](#power-and-hr-backfill) |
+| `--rebuild` | Alias of `npm run sync:rebuild`: only the offline rebuild runs, see [Cache and offline rebuild](#cache-and-offline-rebuild) |
 
 ## Rate limits
 

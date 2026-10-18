@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isRide, countsInStats } from './index.js';
+import { isRide, countsInStats, isIndoor } from './index.js';
 
 // All Strava cycling sport types (sport_type) – see GLOSSARY.md "Ride" / "Stat ride".
 const HUMAN_POWERED = ['Ride', 'VirtualRide', 'GravelRide', 'MountainBikeRide', 'Velomobile', 'Handcycle'];
@@ -27,5 +27,17 @@ describe('countsInStats – stat ride (pages)', () => {
   });
   it('every stat ride is a ride', () => {
     for (const t of [...HUMAN_POWERED, ...E_BIKES, ...NOT_RIDES]) if (countsInStats(t)) expect(isRide(t)).toBe(true);
+  });
+});
+
+describe('isIndoor – indoor ride', () => {
+  it('is a trainer ride or a virtual ride', () => {
+    expect(isIndoor({ sport_type: 'Ride', trainer: true })).toBe(true);
+    expect(isIndoor({ sport_type: 'VirtualRide', trainer: false })).toBe(true);
+    expect(isIndoor({ type: 'VirtualRide' })).toBe(true);
+  });
+  it('outdoor rides are not indoor', () => {
+    for (const sport_type of ['Ride', 'GravelRide', 'MountainBikeRide', 'EBikeRide']) expect(isIndoor({ sport_type, trainer: false }), sport_type).toBe(false);
+    expect(isIndoor(null)).toBe(false);
   });
 });

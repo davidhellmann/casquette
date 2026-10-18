@@ -4,7 +4,7 @@
  * Rules and contracts: docs/ride.md.
  */
 import { t } from '../i18n/index.js';
-import { countsInStats, rideLoad, zoneIdx } from '../training/index.js';
+import { countsInStats, isIndoor, rideLoad, zoneIdx } from '../training/index.js';
 import { calendarDate } from '../training/calendar-day.js';
 import { distributionTiz } from './distribution.js';
 
@@ -67,7 +67,7 @@ export function processRide(a, athleteState) {
   const re = a.suffer_score ?? null;
   return {
     id: String(a.id), name: a.name || t('ride.crumb'), sport_type: a.sport_type || 'Ride', start_local: a.start_date_local, start, d,
-    year: d.getFullYear(), month: d.getMonth(), indoor: !!a.trainer || a.sport_type === 'VirtualRide', stats: countsInStats(a.sport_type || 'Ride'),
+    year: d.getFullYear(), month: d.getMonth(), indoor: isIndoor(a), stats: countsInStats(a.sport_type || 'Ride'),
     gear_id: a.gear_id || null, gear_name: a.gear_name || null, device: a.device_name || null, commute: !!a.commute,
     distance: a.distance || 0, moving_time: a.moving_time || 0, elapsed_time: a.elapsed_time || 0, elev: a.total_elevation_gain || 0,
     speed: a.average_speed || 0, max_speed: a.max_speed || 0, w, np, max_watts: a.max_watts ?? null, kj: a.kilojoules ?? null,

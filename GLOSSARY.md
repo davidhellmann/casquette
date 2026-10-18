@@ -22,6 +22,10 @@ _Avoid_: counted ride, real ride
 A ride with an e-bike or e-MTB sport type; shown in the ride log and on the map, flagged, but excluded from all stats.
 _Avoid_: assisted ride
 
+**Indoor ride**:
+A ride on a trainer or a virtual ride (Zwift and similar). It has no real route, so it gets no places.
+_Avoid_: trainer ride, virtual ride (each is only one kind)
+
 **Ride date**:
 The local calendar day of a ride, taken from its written local start time, never converted into another time zone.
 _Avoid_: ride day
