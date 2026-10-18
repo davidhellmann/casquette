@@ -3,7 +3,7 @@ import Base from '../layouts/Base.astro';
 import { PerformanceView, type PerformancePayload } from '../components/performance/PerformanceView';
 import { performanceData, PROFILE_DURS } from '../lib/performance.js';
 import { athleteToday, curveWkg } from '../lib/data.js';
-import { dkey } from '../scripts/format.js';
+import { calendarDay } from '../training/index.js';
 import { t } from '../i18n/index.js';
 
 const P = await performanceData();
@@ -23,7 +23,7 @@ const payload: PerformancePayload = {
   curves: { all: watts(P.allTime), d90: watts(P.last90), ly: watts(P.lastYear) },
   curveWkg: { all: allTimeWkg, d90: await curveWkg(P.last90), ly: await curveWkg(P.lastYear) },
   lastYear: new Date().getFullYear() - 1,
-  history: P.history.slice().reverse().map((h: any) => ({ date: dkey(h.d), ftp: h.ftp ?? null, weight: h.weight ?? null, source: h.source || null, note: h.note || null })),
+  history: P.history.slice().reverse().map((h: any) => ({ date: calendarDay(h.d), ftp: h.ftp ?? null, weight: h.weight ?? null, source: h.source || null, note: h.note || null })),
   profile: P.profile,
   durations: PROFILE_DURS.map(([, label]) => String(label)),
   years: P.months.length ? Math.round(P.months.length / 12) : 0,

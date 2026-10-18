@@ -3,18 +3,19 @@
  * metric: distance (km) · time (h) · elevation (hm) · count · tss · zone_time (h, zone + basis) · long_rides (count ≥ min_km)
  * period: year · month · week
  */
-import { sod, addDays, mondayOf, fmtMonthYearShort, fmtDate } from './format.js';
-import { rideCalendar } from '../training/index.js';
+import { fmtMonthYearShort, fmtDate } from './format.js';
+import { addDays, rideCalendar, startOfDay, weekStart } from '../training/index.js';
+import { tizTotal } from '../ride/index.js';
 import { t } from '../i18n/index.js';
 
 export const UNIT = { distance: 'km', time: 'h', elevation: t('units.elev'), count: '', tss: 'TSS', zone_time: 'h', long_rides: '' };
 export const DEC = { distance: 0, time: 1, elevation: 0, count: 0, tss: 0, zone_time: 1, long_rides: 0 };
 
 function periodOf(period, ref) {
-  const d = sod(ref);
+  const d = startOfDay(ref);
   if (period === 'year') return { start: new Date(d.getFullYear(), 0, 1), end: new Date(d.getFullYear() + 1, 0, 1) };
   if (period === 'month') return { start: new Date(d.getFullYear(), d.getMonth(), 1), end: new Date(d.getFullYear(), d.getMonth() + 1, 1) };
-  const s = mondayOf(d);
+  const s = weekStart(d);
   return { start: s, end: addDays(s, 7) };
 }
 const prevRef = (period, start) => (period === 'year' ? new Date(start.getFullYear() - 1, 6, 1) : period === 'month' ? new Date(start.getFullYear(), start.getMonth() - 1, 15) : addDays(start, -3));
@@ -27,10 +28,7 @@ function valueOf(g, rides) {
     case 'count': return rides.length;
     case 'tss': return rides.reduce((s, r) => s + (r.tss || 0), 0);
     case 'long_rides': return rides.filter((r) => (r.distance || 0) / 1000 >= (g.min_km || 80)).length;
-    case 'zone_time': {
-      const key = g.basis === 'hr' ? 'tizH' : 'tizP', z = (g.zone || 2) - 1;
-      return rides.reduce((s, r) => s + ((r[key] && r[key][z]) || 0), 0) / 3600;
-    }
+    case 'zone_time': return (tizTotal(rides, g.basis === 'hr' ? 'hr' : 'power').seconds[(g.zone || 2) - 1] || 0) / 3600;
     default: return 0;
   }
 }

@@ -1,10 +1,7 @@
-/** Display: numbers, dates, durations, escaping – runs in the browser and during the Astro build. Domain rules live in src/training/. */
+/** Display: numbers, dates, durations, escaping in the UI locale – runs in the browser and during the Astro build. Domain rules, including calendar-day arithmetic, live in src/training/. */
 import { LOCALE } from '../i18n/index.js';
-export const pad = (n) => String(n).padStart(2, '0');
-export const dkey = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-export const sod = (d) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
-export const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
-export const mondayOf = (d) => { const x = sod(d); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
+import { calendarDate } from '../training/calendar-day.js';
+const pad = (n) => String(n).padStart(2, '0');
 export const nf = (v, dec = 0) => (v == null || isNaN(v) ? '–' : Number(v).toLocaleString(LOCALE, { minimumFractionDigits: dec, maximumFractionDigits: dec }));
 export const fmtDur = (s) => { const tm = Math.round((s || 0) / 60), h = Math.floor(tm / 60), m = tm % 60; return h ? `${h}:${pad(m)} h` : `${m} min`; };
 /** Seconds → "m:ss" / "h:mm:ss"; `hours` always shows the hour ("0:05:12", elapsed time on a ride). */
@@ -37,15 +34,8 @@ export const monthLabel = (key) => fmtMonthYear(monthStart(key));
 /** Month key 'YYYY-MM' → "Jun 24" (axis ticks). */
 export const monthTick = (key) => fmtMonthYearShort(monthStart(key));
 /** 'YYYY-MM-DD' (local calendar day) → date in the UI locale. */
-export const fmtIso = (s) => fmtDateL(new Date(`${s}T00:00:00`));
+export const fmtIso = (s) => fmtDateL(calendarDate(s));
 export const trunc = (s, n) => ((s || '').length > n ? s.slice(0, n - 1) + '…' : s || '');
 export const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 export const zr = (z, u) => (z.max == null ? `≥ ${z.min} ${u}` : !z.min ? `≤ ${z.max} ${u}` : `${z.min}–${z.max} ${u}`);
-export function isoWeek(d) {
-  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-  const day = t.getUTCDay() || 7;
-  t.setUTCDate(t.getUTCDate() + 4 - day);
-  const y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
-  return Math.ceil(((t - y0) / 86400000 + 1) / 7);
-}
 export const curveLabel = (s) => (s < 60 ? s + ' s' : s < 3600 ? s / 60 + ' min' : s / 3600 + ' h');

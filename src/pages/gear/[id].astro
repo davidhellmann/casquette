@@ -3,11 +3,10 @@ import { BASE } from '../../components/app/nav';
 import Base from '../../layouts/Base.astro';
 import { render } from 'astro:content';
 import { GearDetailView, type GearDetailPayload, type GearRecord } from '../../components/gear/GearDetailView';
-import { avgOutdoorSpeed, gearRecords, kmPerMonth, kmPerType, kmPerYear } from '../../components/gear/gear-data.js';
+import { avgOutdoorSpeed, kmPerMonth, kmPerType, kmPerYear } from '../../components/gear/gear-data.js';
 import { loadGear, curveWkg } from '../../lib/data.js';
-import { bestCurve } from '../../training/index.js';
+import { bestCurve, calendarDay, records } from '../../training/index.js';
 import { gearUrl } from '../../lib/strava-links.js';
-import { dkey } from '../../scripts/format.js';
 import { t } from '../../i18n/index.js';
 
 export async function getStaticPaths() {
@@ -24,7 +23,7 @@ const rides: any[] = g.rides;
 const c = g.custom || {};
 const purchase = c.purchase_date && !isNaN(Date.parse(c.purchase_date)) ? new Date(c.purchase_date) : null;
 const curve = bestCurve(rides);
-const recs = gearRecords(rides);
+const recs = records(rides);
 const recordValue = { longest: (r: any) => r.distance, climb: (r: any) => r.elev, fastest: (r: any) => r.speed, np: (r: any) => r.np };
 const num = (v: number | null | undefined) => (v == null ? undefined : v);
 
@@ -43,10 +42,10 @@ const payload: GearDetailPayload = {
     avgSpeed: avgOutdoorSpeed(rides),
     indoorShare: g.t.h ? (g.t.indoorH / g.t.h) * 100 : null,
     kj: g.t.kj, tss: g.t.tss,
-    first: g.first ? dkey(g.first.d) : null,
-    last: g.last ? dkey(g.last.d) : null,
+    first: g.first ? calendarDay(g.first.d) : null,
+    last: g.last ? calendarDay(g.last.d) : null,
   },
-  purchase: purchase ? dkey(purchase) : null,
+  purchase: purchase ? calendarDay(purchase) : null,
   price: c.price_eur ?? null,
   costPerKm: g.costPerKm,
   ownedYears: purchase ? (Date.now() - purchase.getTime()) / 86400000 / 365 : null,
@@ -59,7 +58,7 @@ const payload: GearDetailPayload = {
   curveWkg: await curveWkg(curve),
   records: (Object.keys(recordValue) as GearRecord['key'][]).map((key) => {
     const r: any = recs[key];
-    return { key, ride: r ? { href: `${base}rides/${r.id}`, name: r.name, date: dkey(r.d), value: recordValue[key](r) } : null };
+    return { key, ride: r ? { href: `${base}rides/${r.id}`, name: r.name, date: calendarDay(r.d), value: recordValue[key](r) } : null };
   }),
   rides: rides.map((r) => ({
     id: r.id, href: `${base}rides/${r.id}`, date: r.d.toISOString(), name: r.name || '', places: '', indoor: !!r.indoor, eBike: null,

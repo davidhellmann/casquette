@@ -4,20 +4,15 @@
  * whole weeks (weekdays stay intact) so the newest demo ride falls into the last seven days.
  * Pure, no I/O. Only used while the demo data is active – real data is never shifted.
  */
-const DAY = 86400000;
-const DAY_RE = /^(\d{4})-(\d{2})-(\d{2})/;
+import { dayOrdinal, ordinalDay } from '../training/index.js';
 
-const utcDay = (day) => {
-  const m = DAY_RE.exec(day || '');
-  return m ? Date.UTC(+m[1], +m[2] - 1, +m[3]) : NaN;
-};
+const DAY = 86400000;
 
 /** Days (multiple of 7, ≥ 0) to add so that `newestDay` ('YYYY-MM-DD') lands in (today − 7, today]. */
 export function demoDayShift(newestDay, today) {
-  const newest = utcDay(newestDay);
+  const newest = dayOrdinal(newestDay);
   if (!Number.isFinite(newest)) return 0;
-  const now = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
-  const behind = Math.round((now - newest) / DAY);
+  const behind = dayOrdinal(today) - newest;
   return behind > 0 ? Math.floor(behind / 7) * 7 : 0;
 }
 
@@ -26,7 +21,7 @@ function shiftISO(value, days) {
   if (typeof value !== 'string') return value;
   const m = /^(\d{4}-\d{2}-\d{2})(T[\d:.]+)?(Z)?$/.exec(value);
   if (!m) return value;
-  const day = new Date(utcDay(m[1]) + days * DAY).toISOString().slice(0, 10);
+  const day = ordinalDay(dayOrdinal(m[1]) + days);
   return day + (m[2] || '') + (m[3] || '');
 }
 

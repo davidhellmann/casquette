@@ -1,10 +1,9 @@
 /** Performance development: eFTP, W/kg, long-term fitness, power profile per year. */
 import { loadStatRides, loadHistory, ftpAt, weightAt } from './data.js';
-import { bestCurve, fitnessSeries, rideCalendar } from '../training/index.js';
-import { dkey, addDays } from '../scripts/format.js';
+import { addDays, bestCurve, calendarDay, fitnessSeries, rideCalendar, rideDate } from '../training/index.js';
 
-/** Ride → input for the fitness series (calendar day from the local start time, as on the dashboard). */
-const fitnessInput = (r) => ({ day: r.start_local.slice(0, 10), tss: r.load });
+/** Ride → input for the fitness series (ride date, as on the dashboard). */
+const fitnessInput = (r) => ({ day: rideDate(r), tss: r.load });
 
 export const PROFILE_DURS = [[5, '5 s'], [60, '1 min'], [300, '5 min'], [1200, '20 min'], [3600, '60 min']];
 
@@ -35,7 +34,7 @@ export async function performanceData() {
   const current = withE[withE.length - 1] || null;
 
   // Long-term fitness (CTL) – sampled weekly
-  const series = fitnessSeries(asc.map(fitnessInput), { to: dkey(today) });
+  const series = fitnessSeries(asc.map(fitnessInput), { to: calendarDay(today) });
   const ctl = series
     .filter((x, i) => i % 7 === 0 || i === series.length - 1)
     .map((x) => ({ date: x.day, ctl: x.ctl, atl: x.atl }));

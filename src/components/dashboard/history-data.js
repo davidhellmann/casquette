@@ -55,13 +55,13 @@ export function kilometreRace(D) {
 export function records(D) {
   const rec = D.records, k = (key) => t('dash.records.' + key), elev = t('units.elev');
   return [
-    { key: 'distance', label: k('longest'), r: rec.distance, f: (r) => `${nf(r.distance / 1000, 1)} km` },
-    { key: 'time', label: k('longestTime'), r: rec.moving_time, f: (r) => fmtDur(r.moving_time) },
-    { key: 'elev', label: k('elev'), r: rec.elev, f: (r) => `${nf(r.elev)} ${elev}` },
+    { key: 'distance', label: k('longest'), r: rec.longest, f: (r) => `${nf(r.distance / 1000, 1)} km` },
+    { key: 'time', label: k('longestTime'), r: rec.longestTime, f: (r) => fmtDur(r.moving_time) },
+    { key: 'elev', label: k('elev'), r: rec.climb, f: (r) => `${nf(r.elev)} ${elev}` },
     { key: 'np', label: k('np'), r: rec.np, f: (r) => `${Math.round(r.np)} W` },
     { key: 'load', label: k('load'), r: rec.load, f: (r) => nf(r.load) + (r.tss != null ? ' TSS' : k('effort')) },
-    { key: 'speed', label: k('speed'), r: rec.speed, f: (r) => `${nf(r.speed * 3.6, 1)} km/h` },
-    { key: 'prs', label: k('prs'), r: rec.pr, f: (r) => t('common.prs', { n: r.pr }) },
-    { key: 'hr', label: k('hr'), r: rec.hr_max, f: (r) => `${r.hr_max} bpm` },
+    { key: 'speed', label: k('speed'), r: rec.fastest, f: (r) => `${nf(r.speed * 3.6, 1)} km/h` },
+    { key: 'prs', label: k('prs'), r: rec.prs, f: (r) => t('common.prs', { n: r.pr }) },
+    { key: 'hr', label: k('hr'), r: rec.maxHr, f: (r) => `${r.hr_max} bpm` },
   ].map(({ r, f, ...x }) => (r ? { ...x, id: r.id, value: f(r), name: r.name, date: fmtDateL(r.d) } : { ...x, id: null, value: '–', name: null, date: t('common.noData') }));
 }

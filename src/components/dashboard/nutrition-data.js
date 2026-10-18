@@ -11,15 +11,15 @@ const n = (key, x) => t('dash.nutrition.' + key, x);
 
 /** Daily needs for the athlete's weight at the period's load, and what the rides burned and needed. */
 export function nutrition(D, kg) {
-  const S = D.S, { dailyHours, category, carbsPerKg: kh, fuel, fluid } = D.nutrition, needs = D.dailyNeeds;
+  const S = D.S, { dailyHours, fuel, fluid } = D.nutrition, { category, perKg, amounts } = D.dailyNeeds;
   const range = (r, f) => (r ? `${f(r[0])}–${f(r[1])}` : '–');
   return {
     subHtml: n('sub', { kg, cat: n('category.' + category), min: nf(dailyHours * 60) }),
     macros: [
-      { key: 'carbs', label: n('carbs'), value: `${range(needs?.carbs, Math.round)} g`, sub: `${kh[0]}–${kh[1]} g/kg` },
-      { key: 'protein', label: n('protein'), value: `${range(needs?.protein, Math.round)} g`, sub: `${nf(1.6, 1)}–${nf(2, 1)} g/kg` },
-      { key: 'fat', label: n('fat'), value: `${range(needs?.fat, Math.round)} g`, sub: `${nf(0.8, 1)}–${nf(1.2, 1)} g/kg` },
-      { key: 'water', label: n('water'), value: `${range(needs?.water, (v) => nf(v, 1))} l`, sub: n('waterSub') },
+      { key: 'carbs', label: n('carbs'), value: `${range(amounts?.carbs, Math.round)} g`, sub: `${range(perKg.carbs, String)} g/kg` },
+      { key: 'protein', label: n('protein'), value: `${range(amounts?.protein, Math.round)} g`, sub: `${range(perKg.protein, (v) => nf(v, 1))} g/kg` },
+      { key: 'fat', label: n('fat'), value: `${range(amounts?.fat, Math.round)} g`, sub: `${range(perKg.fat, (v) => nf(v, 1))} g/kg` },
+      { key: 'water', label: n('water'), value: `${range(amounts?.water, (v) => nf(v, 1))} l`, sub: n('waterSub') },
     ],
     totals: [
       { key: 'kcal', label: n('burned'), value: nf(S.kcal), unit: 'kcal' },

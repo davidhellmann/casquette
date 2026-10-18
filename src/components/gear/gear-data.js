@@ -3,16 +3,17 @@
  * bike's rides (normalised rides: `d`, `year`, `month`, `distance`, `moving_time`, `elev` …).
  * Pure: no I/O, no DOM.
  */
+import { yearTotals } from '../../training/index.js';
 
 const kmOf = (rides) => rides.reduce((s, r) => s + (r.distance || 0) / 1000, 0);
 const pad = (n) => String(n).padStart(2, '0');
 
 /** Kilometres per calendar year from the first to the last ride (years without rides = 0), rounded. */
 export function kmPerYear(rides) {
-  if (!rides.length) return [];
-  const years = rides.map((r) => r.year);
-  const out = [];
-  for (let y = Math.min(...years); y <= Math.max(...years); y++) out.push({ year: y, km: Math.round(kmOf(rides.filter((r) => r.year === y))) });
+  const totals = yearTotals(rides);
+  if (!totals.length) return [];
+  const km = new Map(totals.map((y) => [y.year, y.km])), out = [];
+  for (let y = totals[0].year; y <= totals.at(-1).year; y++) out.push({ year: y, km: Math.round(km.get(y) ?? 0) });
   return out;
 }
 
@@ -44,26 +45,6 @@ export function kmPerBikeAndYear(bikes) {
   const years = [...new Set(used.flatMap((b) => b.rides.map((r) => r.year)))].sort((a, b) => a - b);
   const rows = years.map((year) => Object.fromEntries([['year', year], ...used.map((b) => [b.id, Math.round(kmOf(b.rides.filter((r) => r.year === year)))])]));
   return { bikes: used.map((b) => ({ id: b.id, name: b.name })), rows };
-}
-
-const maxBy = (arr, f) => {
-  let best = null, bv = -Infinity;
-  for (const x of arr) { const v = f(x); if (v != null && v > bv) { bv = v; best = x; } }
-  return best && bv > 0 ? best : null;
-};
-
-/**
- * Records on a bike: longest ride, most climbing, fastest outdoor ride (≥ 30 min) and best
- * normalised power (≥ 20 min). Each is the ride or null.
- */
-export function gearRecords(rides) {
-  const outdoor = rides.filter((r) => !r.indoor);
-  return {
-    longest: maxBy(rides, (r) => r.distance),
-    climb: maxBy(rides, (r) => r.elev),
-    fastest: maxBy(outdoor.filter((r) => r.moving_time >= 1800), (r) => r.speed),
-    np: maxBy(rides.filter((r) => r.moving_time >= 1200), (r) => r.np),
-  };
 }
 
 /** Average outdoor speed in km/h (total distance / total moving time), or null without outdoor rides. */
