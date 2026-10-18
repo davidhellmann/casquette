@@ -5,7 +5,7 @@ import { createRideStorage, loadRideStorageContext } from './ride-storage.mjs';
 import { rebuild } from './rebuild.mjs';
 import { runSync } from './sync.mjs';
 import { createStravaFake } from './strava-fake.mjs';
-import { frontmatter } from './store.mjs';
+import { rideFrontmatter } from './ride-file.mjs';
 import { computeMetrics } from './metrics.mjs';
 import { processRide } from '../../src/ride/index.js';
 import { athleteTimeline } from '../../src/training/index.js';
@@ -63,6 +63,15 @@ it('keeps the user body on a date change and adopts a new description after list
   expect(text(ridePath('2025-01-02'))).toContain('Own text');
   expect(fs.existsSync(path.join(root, ridePath()))).toBe(false);
   expect(store.read('7').file).toBe(ridePath('2025-01-02'));
+});
+
+it('lists ride records newest first and skips cache records without a summary', () => {
+  const store = open();
+  for (const [id, day] of [['1', '2024-05-01'], ['2', '2024-06-01'], ['3', '2023-01-01']]) {
+    store.save({ id, summary: { ...summary(id), start_date: `${day}T12:00:00Z`, start_date_local: `${day}T12:00:00` } });
+  }
+  put('.strava-cache/activities/4.json', { id: '4', _sync: {} });
+  expect(store.list().map((r) => r.id)).toEqual(['2', '1', '3']);
 });
 
 describe('failure and recovery', () => {
@@ -223,7 +232,7 @@ it.each(['summary', 'streams'])('updates summary NP without losing independent %
     expect(saved.metrics).toMatchObject(independent);
     const np = source === 'summary' ? 300 : 200;
     expect(saved.metrics.np).toBe(np);
-    expect(processRide(frontmatter(saved, athlete.zones), athleteTimeline({ athlete: { zones: { ftp: 200 } } }).at('2024-05-01')))
+    expect(processRide(rideFrontmatter(saved), athleteTimeline({ athlete: { zones: { ftp: 200 } } }).at('2024-05-01')))
       .toMatchObject({ np, tss: source === 'summary' ? 225 : 100 });
     expect(text(ridePath())).toContain(`np: ${np}`);
   };
@@ -261,7 +270,7 @@ it.each(['hr-only', 'hr-unknown', 'short', 'interrupted', 'measured', 'zero'])('
     expect(saved.metrics).toMatchObject(independent);
     expect(saved.metrics.np ?? null).toBe(np);
     expect(saved.metrics.metric_sources.np).toBe(genuine ? 'streams' : 'summary');
-    const fm = frontmatter(saved, athlete.zones);
+    const fm = rideFrontmatter(saved);
     expect(fm.metrics).toEqual(saved.metrics);
     expect(processRide(fm, athleteTimeline({ athlete: { zones: { ftp: 200 } } }).at('2024-05-01')))
       .toMatchObject({ np, tss: np == null ? null : Math.round((np / 200) ** 2 * 100), load: np == null ? 99 : Math.round((np / 200) ** 2 * 100) });
@@ -306,7 +315,7 @@ it.each([undefined, 'streams'])('keeps legacy NP of unknown per-metric origin (%
   expect(open().read('7').metrics).toEqual(expected);
   rebuild({ root });
   expect(open().read('7').metrics).toEqual(expected);
-  expect(frontmatter(open().read('7'), athlete.zones).metrics).toEqual(expected);
+  expect(rideFrontmatter(open().read('7')).metrics).toEqual(expected);
 });
 
 it('normal sync resumes after a stream write failure without false completion flags', async () => {

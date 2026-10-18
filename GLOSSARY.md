@@ -280,6 +280,10 @@ _Avoid_: estimate
 The single place where the sync reads and writes ride files: activity cache, ride Markdown and chart streams, guarded by an undo journal.
 _Avoid_: ride store, repository, writer
 
+**Ride file**:
+The Markdown file of one ride, `<year>/<ride date>_<id>.md`: all of its data in the frontmatter, followed by the ride body. Ride storage writes it; the demo data uses the same format.
+_Avoid_: ride document, ride Markdown
+
 **Demo data**:
 The synthetic, seeded dataset in `demo/` (rides, gear, chart streams, athlete, goals, FTP/weight history, zones file) shown while no synced ride exists. A fictional "travelling rider" rides real roads in five cities; the road geometry is cached in `demo/source/routes/` (OpenStreetMap data, ODbL). Real data and demo data are never mixed: one synced ride switches the whole site to real data. Demo dates move forward in whole weeks so the newest demo ride is recent. The sync never touches it.
 _Avoid_: sample data, fixtures, example data (the `*.example.json` fallbacks are something else)

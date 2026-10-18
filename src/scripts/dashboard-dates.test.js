@@ -5,7 +5,7 @@ import { dashboardRides, hydrateRides } from './dashboard-data.js';
 import { dashboardPeriod, RANGES } from '../dashboard-period/index.js';
 import { evalGoal } from './goals.js';
 import { computeMetrics } from '../../scripts/lib/metrics.mjs';
-import { frontmatter } from '../../scripts/lib/store.mjs';
+import { rideFrontmatter } from '../../scripts/lib/ride-file.mjs';
 import { dkey } from './format.js';
 
 it.each([
@@ -22,7 +22,7 @@ it.each([
   const athleteState = timeline.at(a.start_date_local);
   const data = Array.from({ length: 1801 }, (_, i) => i);
   const metrics = computeMetrics(a, { time: { data }, watts: { data: data.map(() => 200) }, heartrate: { data: data.map(() => 150) } }, athleteState.zones);
-  const ride = processRide(frontmatter({ id: a.id, summary: a, metrics }, athleteState.zones), athleteState);
+  const ride = processRide(rideFrontmatter({ id: a.id, summary: a, metrics }), athleteState);
   // Future instant has a plausible local day; must not leak into ANY consumer, including goals.
   const future = processRide({ ...a, id: 'future', start_date: new Date(+now + 1).toISOString(), metrics }, athleteState);
   const ebike = processRide({ ...a, id: 'ebike', sport_type: 'EBikeRide', start_date_local: '2025-01-01T00:00:00', metrics }, athleteState);

@@ -2,6 +2,7 @@
 // Config + helpers (shared with e2e/screenshots.spec.ts); the browser driver lives in scripts/screenshots.mjs.
 import fs from 'node:fs';
 import path from 'node:path';
+import { splitFrontmatter } from './ride-file.mjs';
 
 /** Every capture uses the same viewport and pixel density (2880×1800 output). */
 export const VIEWPORT = { width: 1440, height: 900, deviceScaleFactor: 2 };
@@ -37,7 +38,7 @@ export function pickHeroRide(rides) {
 /** Top-level `key: value` scalars of each demo ride's frontmatter (enough for pickHeroRide and rideYears). */
 export function readDemoRides(dir) {
   return fs.readdirSync(dir, { recursive: true }).filter((f) => f.endsWith('.md')).map((f) => {
-    const front = fs.readFileSync(path.join(dir, f), 'utf8').split('\n---')[0];
+    const front = splitFrontmatter(fs.readFileSync(path.join(dir, f), 'utf8'))?.front ?? '';
     const ride = {};
     for (const [, key, raw] of front.matchAll(/^([a-z_]+): (.+)$/gm)) {
       ride[key] = raw === 'true' ? true : raw === 'false' ? false : raw.replace(/^"|"$/g, '');

@@ -9,12 +9,12 @@
  *   see demo-route-cache.mjs). The generator only reads that cache and never uses the network.
  * - The rider spends a few weeks at a time in each city; every outdoor ride starts and ends at
  *   the rider's base there. Places (`geo:`), segments, time zones and altitude follow the route.
- * - Rides go through the same storage boundary as the sync (computeMetrics, frontmatter,
- *   toYaml, downsampleStreams), so the files match the real schema exactly.
+ * - Rides go through the same ride file module and metrics as the sync (computeMetrics,
+ *   ride-file.mjs, downsampleStreams), so the files match the real schema exactly.
  * - Pure: returns data, writes nothing. `scripts/generate-demo.mjs` writes it to demo/.
  */
 import { computeMetrics, downsampleStreams, normalizedPower, to1Hz } from './metrics.mjs';
-import { frontmatter } from './store.mjs';
+import { rideBody, rideFileName, rideFrontmatter, rideText } from './ride-file.mjs';
 import { toYaml } from './yaml.mjs';
 import { cogganZones } from '../../src/training/index.js';
 import { CITIES } from './demo-cities.mjs';
@@ -440,7 +440,6 @@ export function generateDemoData({ seed = DEFAULT_SEED, through = DEFAULT_THROUG
     const frac = (utcDay(p.day) - startMs) / span;
     const city = cities[cityAt(utcDay(p.day))];
     const { ftp } = standAt(history, p.day);
-    const zones = { ftp, heart_rate_zones: HR_ZONES, heart_rate_zone_source: 'Manual', power_zones: cogganZones(ftp) };
     const winter = p.kind === 'ride' && p.season < 0.3;
     const indoor = p.kind === 'test' || (winter ? r.chance(0.75) : r.chance(p.season > 0.7 ? 0.04 : 0.2));
     const ebike = !indoor && r.chance(0.07);
@@ -560,8 +559,7 @@ export function generateDemoData({ seed = DEFAULT_SEED, through = DEFAULT_THROUG
       streamsFile: true,
       _sync: { summary: syncedAt, detail: syncedAt, streams: syncedAt },
     };
-    const data = frontmatter(rec, zones, { gear_name: gear?.name });
-    rides.push({ file: `rides/${p.day.slice(0, 4)}/${p.day}_${id}.md`, data, body: rec.detail.description });
+    rides.push({ file: `rides/${rideFileName(rec)}`, data: rideFrontmatter(rec, { gearName: gear?.name }), body: rideBody(rec) });
     streams[id] = downsampleStreams(raw, STREAM_POINTS);
   }
 
@@ -631,7 +629,7 @@ function splitsOf(sim) {
 /** Dataset → { 'relative/path': text } below demo/. */
 export function renderDemoFiles(demo) {
   const files = {};
-  for (const x of demo.rides) files[x.file] = `---\n${toYaml(x.data)}---\n${x.body ? `\n${x.body}\n` : ''}`;
+  for (const x of demo.rides) files[x.file] = rideText(x.data, x.body);
   for (const x of demo.gear) files[x.file] = `---\n${toYaml(x.data)}---\n\n${x.body}\n`;
   for (const [id, s] of Object.entries(demo.streams)) if (s) files[`streams/${id}.json`] = JSON.stringify(s);
   for (const [name, value] of Object.entries(demo.data)) files[`data/${name}`] = JSON.stringify(value, null, 2) + '\n';

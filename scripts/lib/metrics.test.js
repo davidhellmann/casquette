@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { computeMetrics, timeInZones } from './metrics.mjs';
-import { frontmatter } from './store.mjs';
+import { rideFrontmatter } from './ride-file.mjs';
 import { athleteTimeline, rideLoad } from '../../src/training/index.js';
 import { processRide } from '../../src/ride/index.js';
 
@@ -22,7 +22,7 @@ describe('sync → frontmatter → ride', () => {
 
   it('computes historical TIZ exactly against raw sampling, without new sync data', () => {
     const metrics = computeMetrics(activity, streams, athleteState().zones);
-    const fm = frontmatter({ id: '7', summary: activity, metrics }, athleteState().zones);
+    const fm = rideFrontmatter({ id: '7', summary: activity, metrics });
     for (const ftp of [150, 200, 300]) {
       const r = processRide(fm, athleteState(ftp));
       expect(r.tizP).toEqual(timeInZones(streams.time.data, streams.watts.data, athleteState(ftp).zones.power_zones));
@@ -38,7 +38,7 @@ describe('sync → frontmatter → ride', () => {
     expect(metrics).not.toHaveProperty('time_in_hr_zones');
     expect(metrics).not.toHaveProperty('time_in_hr_zones_basis');
     expect(metrics.hr_distribution).toEqual({ version: 1, method: 'right-sample-dt-0-10s', samples: [[0, 1], [131, 6], [150, 2], [181, 2]] });
-    const fm = frontmatter({ id: '7', summary: activity, metrics }, athleteState().zones);
+    const fm = rideFrontmatter({ id: '7', summary: activity, metrics });
     const zonesFile = (bpm) => ({ heart_rate: [{ from: '2024-01-01', bpm }] });
     for (const bpm of [[0, 130, 150, 165, 180], [0, 140, 160, 170, 185]]) {
       const state = athleteTimeline({ zonesFile: zonesFile(bpm) }).at(activity.start_date_local);
@@ -63,7 +63,7 @@ describe('sync → frontmatter → ride', () => {
     const metrics = Object.freeze({ source, np: 240, intensity_factor: 9, tss: 999, avg_wkg: 99, np_wkg: 99, ftp_used: 400,
       power_curve: { 60: 300 }, hr_curve: { 60: 170 }, variability_index: 1.2, decoupling_pct: 3,
       time_in_power_zones: [60, 120], time_in_hr_zones: [100, 80], computed_at: '2024-05-02' });
-    const fm = frontmatter({ id: '7', summary: activity, metrics }, athleteState().zones);
+    const fm = rideFrontmatter({ id: '7', summary: activity, metrics });
     forbidden.forEach((key) => expect(fm.metrics).not.toHaveProperty(key));
     expect(fm.metrics).toMatchObject({ np: 240, power_curve: { 60: 300 }, hr_curve: { 60: 170 }, variability_index: source === 'summary' ? 1.333 : 1.2, decoupling_pct: 3,
       time_in_power_zones: [60, 120], time_in_hr_zones: [100, 80], computed_at: '2024-05-02',
@@ -75,19 +75,19 @@ describe('sync → frontmatter → ride', () => {
   });
 
   it('invents no power distribution and no historical boundaries without raw data', () => {
-    const fm = frontmatter({ id: '7', summary: activity, metrics: { time_in_power_zones: [10, 20] } }, athleteState().zones);
+    const fm = rideFrontmatter({ id: '7', summary: activity, metrics: { time_in_power_zones: [10, 20] } });
     expect(fm.metrics).not.toHaveProperty('power_distribution');
     expect(processRide(fm, athleteState()).tizBasis.power).toMatchObject({ source: 'legacy', ftp: null, zones: null, exact: false });
-    const missing = frontmatter({ id: '7', summary: activity }, athleteState().zones);
+    const missing = rideFrontmatter({ id: '7', summary: activity });
     expect(processRide(missing, athleteState()).tizP).toBeNull();
-    expect(missing).toEqual(frontmatter({ id: '7', summary: activity }, athleteState().zones));
+    expect(missing).toEqual(rideFrontmatter({ id: '7', summary: activity }));
   });
 
   it.each([0, null, undefined, NaN, -1])('tells measured zero watts apart from missing/invalid streams (%s)', (value) => {
     const a = { ...activity, weighted_average_watts: null, average_watts: value === 0 ? 0 : null, suffer_score: 99 };
     const st = { time: { data: Array.from({ length: 3601 }, (_, i) => i) }, watts: { data: Array(3601).fill(value) } };
     const metrics = computeMetrics(a, st, athleteState().zones);
-    const r = processRide(frontmatter({ id: '7', summary: a, metrics }, athleteState().zones), athleteState());
+    const r = processRide(rideFrontmatter({ id: '7', summary: a, metrics }), athleteState());
     expect(r.np).toBe(value === 0 ? 0 : null);
     expect(r.tss).toBe(value === 0 ? 0 : null);
     expect(rideLoad(r)).toBe(value === 0 ? 0 : 99);
@@ -99,7 +99,7 @@ describe('sync → frontmatter → ride', () => {
       const a = { ...activity, weighted_average_watts: summaryNP, suffer_score: 99 };
       const st = { time: { data: Array.from({ length: 3601 }, (_, i) => i) }, watts: { data: [0, ...Array(3600).fill(invalid)] } };
       const metrics = computeMetrics(a, st, athleteState().zones);
-      const r = processRide(frontmatter({ id: '7', summary: a, metrics }, athleteState().zones), athleteState());
+      const r = processRide(rideFrontmatter({ id: '7', summary: a, metrics }), athleteState());
       expect(r.np).toBe(summaryNP);
       expect(r.tss).toBe(summaryNP == null ? null : 225);
       expect(rideLoad(r)).toBe(summaryNP == null ? 99 : 225);
@@ -115,7 +115,7 @@ describe('sync → frontmatter → ride', () => {
     else if (kind === 'sparse') time.splice(0, 60, ...time.map(i => i * 11));
     else { watts.splice(30, 0, kind === 'missing' ? null : kind === 'negative' ? -1 : NaN); time.push(60); }
     const metrics = computeMetrics({ ...activity, weighted_average_watts: null }, { time: { data: time }, watts: { data: watts } }, athleteState().zones);
-    const r = processRide(frontmatter({ id: '7', summary: { ...activity, weighted_average_watts: null, suffer_score: 99 }, metrics }, athleteState().zones), athleteState());
+    const r = processRide(rideFrontmatter({ id: '7', summary: { ...activity, weighted_average_watts: null, suffer_score: 99 }, metrics }), athleteState());
     expect(r.np).toBeNull();
     expect(r.load).toBe(99);
     expect(metrics.power_curve).not.toHaveProperty('60');
@@ -126,7 +126,7 @@ describe('sync → frontmatter → ride', () => {
   it('uses only complete NP windows from sufficiently long measured sections', () => {
     const watts = [...Array(60).fill(0), null, ...Array(60).fill(200)];
     const metrics = computeMetrics(activity, { time: { data: watts.map((_, i) => i) }, watts: { data: watts } }, athleteState().zones);
-    const r = processRide(frontmatter({ id: '7', summary: activity, metrics }, athleteState().zones), athleteState());
+    const r = processRide(rideFrontmatter({ id: '7', summary: activity, metrics }), athleteState());
     expect(r.np).toBe(Math.round((200 ** 4 / 2) ** .25));
     expect(metrics.power_curve[60]).toBe(200);
     expect(metrics.power_curve).not.toHaveProperty('120');

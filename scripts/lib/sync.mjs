@@ -2,7 +2,7 @@ import path from 'node:path';
 import { log, ROOT, readJSON, writeJSON } from './env.mjs';
 import { computeMetrics, downsampleStreams, normZones } from './metrics.mjs';
 import { cogganZones, DEFAULT_HR_ZONES, isRide } from '../../src/training/index.js';
-import { writeGear } from './store.mjs';
+import { writeGear } from './gear-file.mjs';
 import { slimSummary, slimDetail } from './strava.mjs';
 import { createRideStorage, loadRideStorageContext } from './ride-storage.mjs';
 const STREAM_KEYS = 'time,distance,latlng,altitude,velocity_smooth,heartrate,cadence,watts,temp,moving,grade_smooth';
@@ -140,8 +140,7 @@ export async function runSync({ root = ROOT, strava, geocodeRides, options = {},
 
   /* ---------- Details and streams (newest first) ---------- */
   const todo = storage.list()
-    .filter((r) => r.summary && ((!NO_STREAMS && !r._sync?.streams) || (!NO_DETAIL && !r._sync?.detail)))
-    .sort((a, b) => String(b.summary.start_date).localeCompare(String(a.summary.start_date)));
+    .filter((r) => (!NO_STREAMS && !r._sync?.streams) || (!NO_DETAIL && !r._sync?.detail));
   log(`${todo.length} rides still need details/per-second data.`);
   let done = 0, stopped = false;
   for (const rec of todo) {
@@ -171,8 +170,7 @@ export async function runSync({ root = ROOT, strava, geocodeRides, options = {},
   /* ---------- Places (reverse geocoding, with time budget) ---------- */
   if (!NO_GEO) {
     try {
-      const recs = storage.list().filter((r) => r.summary).sort((a, b) => String(b.summary?.start_date).localeCompare(String(a.summary?.start_date)));
-      await geocodeRides(recs, {
+      await geocodeRides(storage.list(), {
         budgetMs: Number(geoBudgetMin) * 60e3,
         onRide: (rec) => storage.save(rec),
       });

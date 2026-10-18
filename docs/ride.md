@@ -136,9 +136,10 @@ Successful rides are skipped on resume; without usable measurements
 legacy data is kept. The regular API adapter handles rate limits and retries;
 `--wait` also waits for the daily limit, `--limit=N` caps the number of fetches.
 
-**Offline and migration:** `scripts/strava-rebuild.mjs` imports only local store
-and metrics modules, neither auth/geo nor the env loader. `sync --rebuild` also branches
-before env loading and dynamic online imports. Summary cache metrics are no longer
+**Offline rebuild:** `npm run sync:rebuild` (`scripts/strava-rebuild.mjs`) imports only ride
+storage, ride file and metrics modules, neither auth/geo nor the env loader.
+`npm run sync -- --rebuild` is an alias that runs the same script before env loading and
+online imports. Summary cache metrics are no longer
 deleted wholesale. `currentMetrics` refreshes NP/VI/EF on save and offline rebuild
 based on **`metric_sources` per metric**. The global `source: streams`
 only means that a time stream was present: HR-only, short/interrupted
@@ -158,23 +159,25 @@ data. No rewrite/backfill of existing data belongs to this fix.
 Cache and frontmatter use the same state. Curves, distribution, TIZ/basis,
 other provenance entries and timestamps are kept. Ride body and gear custom/body are kept;
 offline gear timestamps are stable. Other cache fields may be stale: the known
-299 geo deviations are not a #7 migration. Commit code and data separately;
-`migrateRideMetrics` edits only known metric lines in the generated
-frontmatter, preserves the remaining bytes and is idempotent. With a stale cache, apply only this
-migration to the tracked data and review the full rebuild diff.
+299 geo deviations are not a #7 migration. With a cache older than the ride files, a rebuild
+overwrites the newer Strava and place fields: review the result
+([Cache and offline rebuild](sync.md#cache-and-offline-rebuild)).
 
 ## Ride storage (Refs #9)
 
-`scripts/lib/ride-storage.mjs::createRideStorage({ root, zones, gear })` binds the
-context once and offers `read(id)`, `list()` and `save(rec, { streams, streamsAt }?)`.
-Only `save` writes the ride cache/Markdown/chart streams. `store.mjs` contains the
-formatting and the separate gear writer, no alternative ride write paths.
+`scripts/lib/ride-storage.mjs::createRideStorage({ root, gear })` binds the
+gear names once and offers `read(id)`, `list()` (ride records with a summary, newest first),
+`save(rec, { streams, streamsAt }?)` and `saveDistributions(id, distributions)`.
+Only these write the ride cache/Markdown/chart streams. The ride file itself – path
+`<year>/<ride date>_<id>.md`, frontmatter, ride body rule, the targeted metrics patch and the
+one frontmatter parser – lives in `scripts/lib/ride-file.mjs`, shared by ride storage, the demo
+generator and the demo readers; `gear-file.mjs` is the separate gear writer.
 `loadRideStorageContext` merges athlete gear and gear cache (cache wins); online,
 available names from `/athlete` and the gear query are added. The list is
 collected until then so that `--no-detail --no-streams` also gets complete bike
 names. The shared gear context is completed before the first save.
-Stored metrics are zone-independent since HR distributions (#51); the `zones` context is
-no longer used for metrics. Weight/historical FTP and zones belong exclusively to the build evaluation.
+Stored metrics are zone-independent since HR distributions (#51), so ride storage takes no
+zones. Weight/historical FTP and zones belong exclusively to the build evaluation.
 
 List, details/streams, sync geo, standalone geo and rebuild use `save`.
 Streams stay in memory until the detail fetch succeeds; a detail error

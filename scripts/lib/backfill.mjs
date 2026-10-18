@@ -18,8 +18,7 @@ export async function runBackfill({ root = ROOT, strava, wait = false, limit = 0
   const storage = createRideStorage({ root });
   const wanted = kinds.map((k) => KINDS[k]);
   const missing = (rec) => wanted.filter((k) => rec.metrics?.[k.legacy] && !rec.metrics[k.field]);
-  const todo = storage.list().filter((r) => r.summary && missing(r).length)
-    .sort((a, b) => String(b.summary.start_date).localeCompare(String(a.summary.start_date)));
+  const todo = storage.list().filter((r) => missing(r).length);
   const what = wanted.map((k) => k.label).join(' and ');
   const result = { total: todo.length, saved: 0, unavailable: [], failed: [], remaining: todo.length, stopped: false };
   log(`Backfill: ${todo.length} rides without a ${what} distribution.`);

@@ -6,6 +6,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
+import { splitFrontmatter } from './ride-file.mjs';
 
 /** Every file below `dir`, as paths relative to it ('/'-separated). */
 function walk(dir, rel = '') {
@@ -22,7 +23,7 @@ export function demoIds(demoDir) {
   const rides = new Set();
   const segments = new Set();
   for (const file of walk(path.join(demoDir, 'rides')).filter((f) => f.endsWith('.md'))) {
-    const text = fs.readFileSync(path.join(demoDir, 'rides', file), 'utf8');
+    const text = splitFrontmatter(fs.readFileSync(path.join(demoDir, 'rides', file), 'utf8'))?.front ?? '';
     const id = text.match(/^id:\s*"?([^"\n]+)"?\s*$/m);
     if (id) rides.add(id[1]);
     for (const [, seg] of text.matchAll(/^\s*segment_id:\s*"?([^"\n]+)"?\s*$/gm)) segments.add(seg);
