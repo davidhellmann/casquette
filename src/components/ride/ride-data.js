@@ -1,77 +1,8 @@
 /**
- * Pure data for the ride page (src/pages/rides/[id].astro → RideView): stream rows for display,
- * the power curve rows and the route colouring. No DOM, no React – unit-tested in ride-data.test.js.
+ * Pure data for the ride page (src/pages/rides/[id].astro → RideView): the route and stream colouring
+ * and the power curve rows (stream rows: src/lib/chart-streams.js). No DOM, no React – unit-tested in ride-data.test.js.
  */
 import { zoneIdx } from '../../training/index.js';
-
-/** The stream charts, top to bottom: key in the row, key in the Strava stream, unit. */
-export const STREAM_SERIES = [
-  { key: 'watts', stream: 'watts', unit: 'W' },
-  { key: 'hr', stream: 'heart_rate', unit: 'bpm' },
-  { key: 'cad', stream: 'cadence', unit: 'rpm' },
-  { key: 'kmh', stream: 'velocity', unit: 'km/h' },
-  { key: 'alt', stream: 'altitude', unit: 'm' },
-];
-
-const present = (arr, n) => Array.isArray(arr) && arr.length >= n && arr.some((v) => v != null && v !== 0);
-
-/**
- * Indices to draw from `n` samples, at most ~`max`: per bucket the minimum and the maximum of the
- * primary series, so spikes survive (min-max decimation). First and last sample always included.
- */
-export function displayIndices(primary, n, max = 800) {
-  if (n <= max) return Array.from({ length: n }, (_, i) => i);
-  const buckets = Math.max(1, Math.floor(max / 2));
-  const size = n / buckets;
-  const out = [0];
-  for (let b = 0; b < buckets; b++) {
-    const from = Math.floor(b * size), to = Math.min(n, Math.floor((b + 1) * size));
-    if (to <= from) continue;
-    if (!primary) { out.push(from); continue; }
-    let lo = -1, hi = -1;
-    for (let i = from; i < to; i++) {
-      const v = primary[i];
-      if (v == null) continue;
-      if (lo < 0 || v < primary[lo]) lo = i;
-      if (hi < 0 || v > primary[hi]) hi = i;
-    }
-    if (lo < 0) out.push(from);
-    else if (lo === hi) out.push(lo);
-    else out.push(Math.min(lo, hi), Math.max(lo, hi));
-  }
-  out.push(n - 1);
-  return [...new Set(out)].sort((a, b) => a - b);
-}
-
-/**
- * Rows for the stream charts, downsampled for display only (the data stays as it is).
- * Each row: i (sample index, for the map), t (s), km, and one value per series in `keys`.
- */
-export function streamRows(st, max = 800) {
-  if (!st || !Array.isArray(st.time) || st.time.length < 2) return { rows: [], keys: [] };
-  const n = st.time.length;
-  const series = STREAM_SERIES.filter((s) => present(st[s.stream], n));
-  const keys = series.map((s) => s.key);
-  const primary = st.watts && present(st.watts, n) ? st.watts : st.heart_rate || st.altitude || null;
-  const rows = displayIndices(primary, n, max).map((i) => {
-    const row = { i, t: st.time[i], km: st.distance?.[i] != null ? st.distance[i] / 1000 : null };
-    for (const s of series) {
-      const v = st[s.stream][i];
-      row[s.key] = v == null ? null : s.key === 'kmh' ? +(v * 3.6).toFixed(1) : v;
-    }
-    return row;
-  });
-  return { rows, keys };
-}
-
-/** Centred moving average (radius `r` samples), nulls skipped – evens out the route colouring. */
-export function rollingMean(values, r = 3) {
-  return values.map((_, i) => {
-    let sum = 0, k = 0;
-    for (let j = Math.max(0, i - r); j <= Math.min(values.length - 1, i + r); j++) if (values[j] != null) { sum += values[j]; k++; }
-    return k ? sum / k : null;
-  });
-}
 
 const zoneOf = (v, zones) => zoneIdx(v, zones) + 1;
 

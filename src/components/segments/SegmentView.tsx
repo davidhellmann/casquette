@@ -3,7 +3,6 @@ import { ExternalLink, Map as MapIcon } from 'lucide-react';
 import { ChartCard } from '@/components/app/ChartCard';
 import { DataTable, dataTableColumns, numeric, numSort, type DataTableColumn } from '@/components/app/DataTable';
 import { EmptyState } from '@/components/app/EmptyState';
-import { BASE } from '@/components/app/nav';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { fmtClock, fmtIso, nf } from '@/scripts/format.js';
@@ -14,6 +13,8 @@ import { KpiCard } from '@/components/app/KpiCard';
 import { DeltaToBest, PrRank, isoDate } from './parts';
 import { prHistory, segmentTrack } from './segment-data.js';
 import { useIslandReady } from '@/lib/island-ready';
+import { chartStreams } from '@/lib/chart-streams.js';
+import { routes } from '@/lib/routes.js';
 
 /** An attempt with everything the table shows. */
 export interface SegmentAttempt extends Attempt { cad: number | null; kg: number; bike: string | null }
@@ -47,7 +48,7 @@ export interface SegmentPayload {
 
 type Track = NonNullable<ReturnType<typeof segmentTrack>>;
 const S = (key: string, p?: Record<string, unknown>) => t(`segments.${key}`, p);
-const rideHref = (id: string) => `${BASE}rides/${id}`;
+const rideHref = routes.ride;
 
 /** The segment cut out of the first of `tracks` whose stream file loads; null = none, undefined = loading. */
 function useSegmentTrack(tracks: SegmentPayload['tracks'], distance: number) {
@@ -57,12 +58,9 @@ function useSegmentTrack(tracks: SegmentPayload['tracks'], distance: number) {
     let gone = false;
     (async () => {
       for (const tr of tracks) {
-        try {
-          const r = await fetch(`${BASE}streams/${tr.ride}.json`);
-          if (!r.ok) continue;
-          const cut = segmentTrack(await r.json(), tr, distance);
-          if (cut) { if (!gone) setTrack(cut); return; }
-        } catch { /* next track */ }
+        const st = await chartStreams.load(tr.ride);
+        const cut = st && segmentTrack(st, tr, distance);
+        if (cut) { if (!gone) setTrack(cut); return; }
       }
       if (!gone) setTrack(null);
     })();
