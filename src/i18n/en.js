@@ -159,10 +159,13 @@ export default {
     tip: 'This dashboard shows generated demo rides. Connect Strava and run the first sync to see your own data – the demo disappears automatically.',
   },
 
-  range: {
+  period: {
     label: 'Period',
-    basis: 'Zones by',
     long: { 7: '7 days', 14: '14 days', 30: '30 days', 90: '3 months', 365: '1 year', 0: 'All time' },
+  },
+
+  basis: {
+    label: 'Zones by',
     power: 'Power',
     hr: 'HR',
   },
@@ -356,7 +359,7 @@ export default {
       title: 'Garage',
       sub: '{active} active bikes · {retired} retired · <b>{km} km</b> in total',
       bike: 'Bike',
-      inRange: '+{km} km in period',
+      inPeriod: '+{km} km in period',
       empty: 'No gear data yet – arrives with the next sync',
     },
     deep: {

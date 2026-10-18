@@ -26,7 +26,7 @@ export function history(D, selectedDays) {
   const day = Object.fromEntries(Object.entries(C.days).map(([key, o]) =>
     [key, { load: o.value, sec: o.sec, n: o.n, names: o.rides.slice(0, 3).map(r => r.name), id: o.rides[0].id }]));
   const cells = C.cells.map(({ d, week, key, level, future }) => ({ d, week, rideDay: day[key], future,
-    dim: selectedDays !== 0 && D.days < 365 && d < D.rangeStart, level }));
+    dim: selectedDays !== 0 && D.days < 365 && d < D.periodStart, level }));
   const months = []; let lastM = -1;
   for (let w = 0; w < C.weeks; w++) {
     const wd = cells[w * 7].d;

@@ -2,7 +2,7 @@ import * as React from 'react';
 import { Heart, Zap } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SegmentedToggle } from './SegmentedToggle';
-import { RANGES } from '@/dashboard-period/index.js';
+import { PERIODS } from '@/dashboard-period/index.js';
 import { PERIOD_EVENT, readPeriod, writePeriod } from '@/lib/period-store.js';
 import { t } from '@/i18n/index.js';
 
@@ -22,19 +22,19 @@ export function PeriodControl() {
 
   return (
     <div className="flex items-center gap-2" data-testid="period-control">
-      <SegmentedToggle value={days} onChange={(v) => writePeriod({ days: +v })} label={t('range.label')} className="hidden lg:flex"
-        options={RANGES.map((d: number) => ({ value: String(d), label: t(`range.long.${d}`) }))} />
+      <SegmentedToggle value={days} onChange={(v) => writePeriod({ days: +v })} label={t('period.label')} className="hidden lg:flex"
+        options={PERIODS.map((d: number) => ({ value: String(d), label: t(`period.long.${d}`) }))} />
       <Select value={days} onValueChange={(v) => writePeriod({ days: +v })}>
-        <SelectTrigger size="sm" aria-label={t('range.label')} className="w-28 lg:hidden">
+        <SelectTrigger size="sm" aria-label={t('period.label')} className="w-28 lg:hidden">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {RANGES.map((d: number) => <SelectItem key={d} value={String(d)}>{t(`range.long.${d}`)}</SelectItem>)}
+          {PERIODS.map((d: number) => <SelectItem key={d} value={String(d)}>{t(`period.long.${d}`)}</SelectItem>)}
         </SelectContent>
       </Select>
-      <SegmentedToggle value={period.basis} onChange={(v) => writePeriod({ basis: v })} label={t('range.basis')} options={[
-        { value: 'power', ariaLabel: t('range.power'), label: <><Zap /><span className="hidden sm:inline">{t('range.power')}</span></> },
-        { value: 'hr', ariaLabel: t('range.hr'), label: <><Heart /><span className="hidden sm:inline">{t('range.hr')}</span></> },
+      <SegmentedToggle value={period.basis} onChange={(v) => writePeriod({ basis: v })} label={t('basis.label')} options={[
+        { value: 'power', ariaLabel: t('basis.power'), label: <><Zap /><span className="hidden sm:inline">{t('basis.power')}</span></> },
+        { value: 'hr', ariaLabel: t('basis.hr'), label: <><Heart /><span className="hidden sm:inline">{t('basis.hr')}</span></> },
       ]} />
     </div>
   );

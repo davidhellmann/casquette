@@ -6,7 +6,7 @@ planned English names are listed in `docs/adr/0001-english-domain-language.md`.
 `src/dashboard-period/index.js::dashboardPeriod(rides, { days, basis, now, gear?, athleteState? })`
 is the pure entry point for the dashboard cards. `rides` are **final, flat rides**
 from the ride module or `decodeDashboard` (`src/lib/dashboard-payload.js`), including `d`, `stats`, `h`, `load`,
-`clsP`/`clsH`, historical W/kg and TIZ with metadata. `days`: 7/14/30/90/365/0 (`RANGES`);
+`clsP`/`clsH`, historical W/kg and TIZ with metadata. `days`: 7/14/30/90/365/0 (`PERIODS`);
 `basis`: `power`/`hr`; `now`: a valid, explicit Date. Invalid options are
 rejected. Optional `gear` provides the garage, not training metrics. Optional `athleteState`
 is the already resolved athlete state for today, used for daily needs and the FTP test hint;

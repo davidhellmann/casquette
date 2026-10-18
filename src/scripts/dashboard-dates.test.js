@@ -2,7 +2,7 @@ import { expect, it } from 'vitest';
 import { processRide } from '../ride/index.js';
 import { athleteTimeline } from '../training/index.js';
 import { decodeDashboard, encodeDashboard } from '../lib/dashboard-payload.js';
-import { dashboardPeriod, RANGES } from '../dashboard-period/index.js';
+import { dashboardPeriod, PERIODS } from '../dashboard-period/index.js';
 import { evalGoal } from './goals.js';
 import { computeMetrics } from '../../scripts/lib/metrics.mjs';
 import { rideFrontmatter } from '../../scripts/lib/ride-file.mjs';
@@ -29,7 +29,7 @@ it.each([
   const future = processRide({ ...a, id: 'future', start_date: new Date(+now + 1).toISOString(), metrics }, athleteState);
   const ebike = processRide({ ...a, id: 'ebike', sport_type: 'EBikeRide', start_date_local: '2025-01-01T00:00:00', metrics }, athleteState);
   const all = transport([ride, future, ebike]);
-  for (const days of RANGES) for (const basis of ['power', 'hr']) {
+  for (const days of PERIODS) for (const basis of ['power', 'hr']) {
     const d = dashboardPeriod(all, { days, basis, now, athleteState, gear: [{ id: 'bike', type: 'bike' }] });
     expect(d.rides.map(r => r.id)).toEqual(['done']);
     expect(d.S).toMatchObject({ n: 1, dist: 10000, tss: 50, time: 1800, avgWkg: 2.5 });

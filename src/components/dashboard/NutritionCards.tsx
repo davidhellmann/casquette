@@ -80,7 +80,7 @@ export function GarageCard({ D }: { D: any }) {
                 </div>
                 <div className="shrink-0 text-right">
                   <p className="font-mono text-sm tabular-nums">{b.km}</p>
-                  {b.inRange && <p className="text-xs text-muted-foreground">{b.inRange}</p>}
+                  {b.inPeriod && <p className="text-xs text-muted-foreground">{b.inPeriod}</p>}
                 </div>
               </div>
               <Bar width={b.share} color="var(--brand)" />

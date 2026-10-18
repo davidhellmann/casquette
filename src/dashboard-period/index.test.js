@@ -107,7 +107,7 @@ describe('Dashboard period: public interface', () => {
     const rides = [ride('start',start),ride('end',end)], clock = new Date(end+'T18:00:00');
     const D = calculate(rides, { days:0, now:clock });
     expect(D.days).toBe(14);
-    expect(D.rangeStart.getDate()).toBe(new Date(start+'T00:00:00').getDate());
+    expect(D.periodStart.getDate()).toBe(new Date(start+'T00:00:00').getDate());
     expect(D.S.hoursPerWeek).toBe(1);
     expect(D.history.cumulative[0].data.filter(v=>v !== null)).toHaveLength(end === '2024-04-07' ? 98 : 308);
     expect(D.history.cumulative[0].data[end === '2024-04-07' ? 84 : 294]).toBe(30);
@@ -198,6 +198,6 @@ describe('Dashboard period: public interface', () => {
     expect(JSON.stringify(rides)).toBe(before);
     expect(+now).toBe(clock);
     expect(() => calculate(rides,{now:undefined})).toThrow('now');
-    expect(() => calculate(rides,{days:15})).toThrow('range');
+    expect(() => calculate(rides,{days:15})).toThrow('period');
   });
 });

@@ -13,7 +13,7 @@ export function goalCards(goals, ridesAll, now) {
     const daysLeft = Math.max(0, Math.ceil((e.P.end - now) / 86400000));
     return {
       id: g.id ?? g.label,
-      eyebrow: [t('goals.period.' + g.period), g.metric === 'zone_time' ? `Z${g.zone || 2} ${t(g.basis === 'hr' ? 'range.hr' : 'range.power')}` : null].filter(Boolean).join(' · '),
+      eyebrow: [t('goals.period.' + g.period), g.metric === 'zone_time' ? `Z${g.zone || 2} ${t(g.basis === 'hr' ? 'basis.hr' : 'basis.power')}` : null].filter(Boolean).join(' · '),
       label: g.label,
       note: g.metric === 'zone_time' ? t('zones.legacyNote') : null,
       status: e.done ? { up: true, text: t('goals.reached') }

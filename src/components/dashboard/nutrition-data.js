@@ -58,7 +58,7 @@ export function garage(D) {
     bikes: active.map((b) => ({
       id: b.id, name: b.name || g('bike'),
       spec: [b.frame_type, b.brand, b.model].filter(Boolean).join(' · ') + (b.weight ? ` · ${nf(b.weight, 1)} kg` : ''),
-      km: `${nf(b.statsDistance / 1000)} km`, inRange: D.gearKm[b.id] ? g('inRange', { km: nf(D.gearKm[b.id]) }) : null,
+      km: `${nf(b.statsDistance / 1000)} km`, inPeriod: D.gearKm[b.id] ? g('inPeriod', { km: nf(D.gearKm[b.id]) }) : null,
       share: (b.statsDistance / max) * 100,
     })),
     empty: g('empty'),
