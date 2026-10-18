@@ -47,6 +47,24 @@ test('a collapsed sidebar stays collapsed across pages, from the first paint', a
   await expect(sidebar).toHaveAttribute('data-state', 'collapsed');
 });
 
+test('in the collapsed sidebar the logo, the nav icons, the demo note and the theme switch share one centre line', async ({ page }) => {
+  await page.goto('/');
+  await hydrated(page);
+  await page.getByRole('button', { name: 'Toggle sidebar' }).first().click();
+  await expect(page.locator('[data-slot="sidebar"]')).toHaveAttribute('data-state', 'collapsed');
+  const centres = await page.evaluate(() => {
+    const icons = [
+      document.querySelector('[data-slot="app-mark"]'),
+      ...document.querySelectorAll('[data-sidebar="sidebar"] nav a svg'),
+      document.querySelector('[data-demo-note] svg'),
+      document.querySelector('[data-testid="theme-menu"] svg'),
+    ].filter((el): el is Element => !!el && el.getBoundingClientRect().width > 0);
+    return icons.map((el) => { const b = el.getBoundingClientRect(); return Math.round(b.left + b.width / 2); });
+  });
+  expect(centres.length).toBeGreaterThan(5);
+  expect(new Set(centres).size, `icon centres: ${centres.join(', ')}`).toBe(1);
+});
+
 test('the theme switches light/dark and is applied before paint on the next page', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'light' });
   await page.goto('/');
