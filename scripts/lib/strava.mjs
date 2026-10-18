@@ -5,7 +5,8 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { ROOT, log as defaultLog, sleep } from './env.mjs';
+import { ROOT, log as defaultLog, systemClock } from './env.mjs';
+import { cogganZones, DEFAULT_HR_ZONES } from '../../src/training/index.js';
 
 const API = 'https://www.strava.com/api/v3';
 const OAUTH = 'https://www.strava.com/oauth/token';
@@ -13,9 +14,6 @@ const ATTEMPTS = 8;
 
 /** Thrown when the daily limit is reached and waiting is not wanted. */
 export class DailyLimitError extends Error {}
-
-/** The real clock: wall time and waiting. */
-export const systemClock = { now: () => Date.now(), sleep };
 
 /** Token store in `.strava-token.json` (owner-only permissions). */
 export function fileTokenStore(file = path.join(ROOT, '.strava-token.json')) {
@@ -141,10 +139,47 @@ export function createStravaClient({ fetch = globalThis.fetch, clock = systemClo
   };
 }
 
+/* ---------------- Strava athlete, zones and gear → our shapes ---------------- */
 /** Strava zones ({min,max:-1}) → {min,max:null}; `null` without zones. */
 export function normZones(z) {
   if (!Array.isArray(z) || !z.length) return null;
   return z.map((x) => ({ min: x.min ?? 0, max: x.max == null || x.max < 0 ? null : x.max }));
+}
+
+/** Today's zones from `/athlete/zones` (or null): Strava HR zones, else the default HR zones;
+ * Strava power zones, else Coggan from the FTP. */
+export function athleteZones(apiZones, ftp) {
+  return {
+    ftp,
+    heart_rate_zones: normZones(apiZones?.heart_rate?.zones) || DEFAULT_HR_ZONES,
+    heart_rate_zone_source: apiZones?.heart_rate ? (apiZones.heart_rate.custom_zones ? 'Manual' : 'Strava') : 'Default',
+    power_zones: normZones(apiZones?.power?.zones) || (ftp ? cogganZones(ftp) : null),
+  };
+}
+
+/** Strava athlete → profile of the athlete file (weight and FTP already resolved). */
+export function athleteProfile(a, { weight, ftp }) {
+  return {
+    id: a.id, first_name: a.firstname, last_name: a.lastname, username: a.username,
+    city: a.city, state: a.state, country: a.country, sex: a.sex,
+    weight, ftp, premium: !!(a.summit || a.premium), created_at: a.created_at, avatar: a.profile || null,
+  };
+}
+
+const gearType = (id) => (String(id).startsWith('b') ? 'bike' : 'shoe');
+const FRAME = { 1: 'MTB', 2: 'Cross', 3: 'Road', 4: 'Time trial', 5: 'Gravel' };
+
+/** Bikes and shoes listed on the Strava athlete (id and name only). */
+export const athleteGear = (a) => [...(a.bikes || []), ...(a.shoes || [])].map((g) => ({ ...g, type: gearType(g.id) }));
+
+/** Strava gear details (`/gear/<id>`) → cached gear. */
+export function slimGear(g, id = g.id) {
+  return {
+    id: g.id, name: g.name || g.nickname || id, type: gearType(g.id),
+    brand: g.brand_name || null, model: g.model_name || null, frame_type: FRAME[g.frame_type] || null,
+    description: g.description || null, distance: g.distance || 0, retired: !!g.retired, primary: !!g.primary,
+    weight: g.weight || null,
+  };
 }
 
 /* ---------------- Slim down Strava objects for the activity cache ---------------- */

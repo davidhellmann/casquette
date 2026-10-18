@@ -9,7 +9,8 @@ import { splitFrontmatter } from './ride-file.mjs';
  * and the Markdown body are yours – the sync keeps both unchanged. */
 const DEFAULT_CUSTOM = 'custom:\n  purchase_date: null    # e.g. "2024-03-15"\n  price_eur: null        # purchase price → cost per km\n  components: []         # e.g. ["Shimano GRX 2x12", "Zipp 303 S"]\n  color: null\n  notes: null\n';
 
-export function writeGear(g, { rebuild = false, root = ROOT } = {}) {
+/** Writes `src/content/gear/<id>.md`; `rebuild` keeps the stored sync time instead of `now`. */
+export function writeGear(g, { rebuild = false, root = ROOT, now = Date.now() } = {}) {
   const file = path.join(root, 'src', 'content', 'gear', `${g.id}.md`);
   let custom = DEFAULT_CUSTOM, body = '', syncedAt = null, hasBody = false;
   if (fs.existsSync(file)) {
@@ -32,7 +33,7 @@ export function writeGear(g, { rebuild = false, root = ROOT } = {}) {
     id: g.id, name: g.name, type: g.type, brand: g.brand, model: g.model, frame_type: g.frame_type,
     description: g.description, weight: g.weight, distance: g.distance, retired: !!g.retired, primary: !!g.primary,
     strava_url: g.type === 'bike' ? `https://www.strava.com/bikes/${String(g.id).replace(/^b/, '')}` : `https://www.strava.com/shoes/${String(g.id).replace(/^g/, '')}`,
-    synced_at: rebuild ? syncedAt : new Date().toISOString(),
+    synced_at: rebuild ? syncedAt : new Date(now).toISOString(),
   };
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, `---\n${toYaml(fm)}${custom}---\n${hasBody ? body : '\n<!-- Write freely about your bike here: setup, stories, photos … -->\n'}`);

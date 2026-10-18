@@ -15,6 +15,7 @@
  */
 import { computeMetrics, downsampleStreams, normalizedPower, to1Hz } from './metrics.mjs';
 import { rideBody, rideFileName, rideFrontmatter, rideText } from './ride-file.mjs';
+import { athleteFile, historyEntry } from './athlete-storage.mjs';
 import { toYaml } from './yaml.mjs';
 import { cogganZones } from '../../src/training/index.js';
 import { CITIES } from './demo-cities.mjs';
@@ -248,7 +249,7 @@ function fitnessHistory(startMs, endMs) {
   const n = steps.length;
   return steps.map(([ftp, weight], i) => {
     const day = dayStr(startMs + Math.round(((endMs - startMs - 20 * DAY) * i) / (n - 1)) + 3 * DAY);
-    return { id: day, date: day, ftp, weight, source: i % 3 === 1 ? 'strava' : 'manual', note: i === 0 ? 'Starting value' : i % 3 === 1 ? 'Change detected in Strava' : 'FTP test (20 min)' };
+    return historyEntry({ day, ftp, weight, source: i % 3 === 1 ? 'strava' : 'manual', note: i === 0 ? 'Starting value' : i % 3 === 1 ? 'Change detected in Strava' : 'FTP test (20 min)' });
   });
 }
 const standAt = (history, day) => {
@@ -578,13 +579,13 @@ export function generateDemoData({ seed = DEFAULT_SEED, through = DEFAULT_THROUG
   }));
 
   const last = history[history.length - 1];
-  const athlete = {
-    synced_at: syncedAt,
+  const athlete = athleteFile({
+    syncedAt,
     profile: { id: 'demo', first_name: 'Demo', last_name: 'Rider', username: 'demo-rider', city: cities[HOME_CITY].name, state: cities[HOME_CITY].region, country: cities[HOME_CITY].countryName, sex: null, weight: last.weight, ftp: last.ftp, premium: false, created_at: `${dayStr(startMs - 400 * DAY)}T12:00:00Z`, avatar: null },
     zones: { ftp: last.ftp, heart_rate_zones: HR_ZONES, heart_rate_zone_source: 'Manual', power_zones: cogganZones(last.ftp) },
     gear: gearList, stats: null,
-    sync: { list_complete: true, oldest: rides.length ? rides[0].data.start_date : null },
-  };
+    listComplete: true, oldest: rides.length ? rides[0].data.start_date : null,
+  });
   const goals = [
     { id: 'year-km', label: 'Distance per year', period: 'year', metric: 'distance', target: 4500 },
     { id: 'year-elevation', label: 'Elevation per year', period: 'year', metric: 'elevation', target: 45000 },

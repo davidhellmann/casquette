@@ -172,8 +172,9 @@ Only these write the ride cache/Markdown/chart streams. The ride file itself –
 `<year>/<ride date>_<id>.md`, frontmatter, ride body rule, the targeted metrics patch and the
 one frontmatter parser – lives in `scripts/lib/ride-file.mjs`, shared by ride storage, the demo
 generator and the demo readers; `gear-file.mjs` is the separate gear writer.
-`loadRideStorageContext` merges athlete gear and gear cache (cache wins); online,
-available names from `/athlete` and the gear query are added. The list is
+The gear names come from athlete storage (`scripts/lib/athlete-storage.mjs`, below):
+`gear().byId` merges athlete gear and gear cache (cache wins); online,
+available names from `/athlete` and the gear query are added to the same live map. The list is
 collected until then so that `--no-detail --no-streams` also gets complete bike
 names. The shared gear context is completed before the first save.
 Stored metrics are zone-independent since HR distributions (#51), so ride storage takes no
@@ -204,8 +205,20 @@ is not implemented). Don't delete the journal manually; fix the error first and
 start again. Gear, athlete and list cursor are not part of this journal;
 the cursor only advances after successful ride saves.
 
-Tests use only synthetic caches under `logs/`, local Strava/geo fakes
-and the actual `runSync` flow. They compare normal output and rebuild,
+## Athlete storage
+
+`scripts/lib/athlete-storage.mjs::createAthleteStorage({ root, clock })` owns the athlete-side
+files next to ride storage: `src/data/athlete.json` (`writeAthlete`, shape `athleteFile`),
+`src/data/fitness-history.json` (`recordFitness`: appends FTP/weight only when they differ from
+the latest entry, dated with today's local calendar day; shape `historyEntry`),
+`.strava-cache/gear.json` (`gear()`: known gear, 7-day TTL for gear details) and
+`.strava-cache/state.json` (`listCursor()`: newest/oldest listed activity, history paging, list
+complete). The demo generator reuses `athleteFile` and `historyEntry`. `runSync`
+(`scripts/lib/sync.mjs`) is a sequence of steps – athlete, activity list, gear, athlete file and
+history, details and streams, places – with the Strava client, geocoder and clock injected.
+
+Tests use only synthetic caches under `logs/` or the OS temp folder, the shared Strava fake
+(`scripts/lib/strava-fake.mjs`), a local geo fake and the actual `runSync` flow. They compare normal output and rebuild,
 check the context sources, description/body/date change and injected errors at
 stream, Markdown, cache and rename boundaries, including resume.
 

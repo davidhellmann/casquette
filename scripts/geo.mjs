@@ -7,9 +7,10 @@
  */
 import { log } from './lib/env.mjs';
 import { geocodeRides } from './lib/geo.mjs';
-import { createRideStorage, loadRideStorageContext } from './lib/ride-storage.mjs';
+import { createRideStorage } from './lib/ride-storage.mjs';
+import { createAthleteStorage } from './lib/athlete-storage.mjs';
 
-const storage = createRideStorage(loadRideStorageContext());
+const storage = createRideStorage({ gear: createAthleteStorage().gear().byId });
 const { changed } = await geocodeRides(storage.list(), {
   onRide: (rec) => storage.save(rec),
 });

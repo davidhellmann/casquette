@@ -5,15 +5,9 @@ import { patchRideMetrics, rideBody, rideFileName, rideFrontmatter, rideText } f
 import { currentMetrics } from './metrics.mjs';
 import { distributionTiz } from '../../src/ride/distribution.js';
 
-/** Same complete context for online sync, standalone geo and offline rebuild. */
-export function loadRideStorageContext({ root = ROOT, athlete = readJSON(path.join(root, 'src/data/athlete.json'), null) } = {}) {
-  if (!athlete) throw new Error('Ride storage needs src/data/athlete.json.');
-  const gear = Object.fromEntries((athlete.gear || []).map((g) => [g.id, g]));
-  Object.assign(gear, readJSON(path.join(root, '.strava-cache/gear.json'), {}));
-  return { gear };
-}
-
-/** One writer per checkout. Per-file replacement plus undo journal, NOT a multi-file
+/** Ride storage over the activity cache, ride files and chart streams. `gear`: known gear by id
+ * (athlete storage `gear().byId`), the source of `gear_name`.
+ * One writer per checkout. Per-file replacement plus undo journal, NOT a multi-file
  * atomic transaction or a power-loss durability guarantee. Failed writes roll back;
  * if rollback itself fails, all public operations retry recovery before proceeding. */
 export function createRideStorage({ root = ROOT, gear = {} } = {}) {
