@@ -156,6 +156,10 @@ _Avoid_: power profile, MMP chart
 The best power per duration across a set of rides, with the ride each best came from.
 _Avoid_: all-time curve
 
+**New power best**:
+A duration of a ride's power curve at which the ride currently holds the all-time best: strictly above the best curve of every other stat ride, earlier and later. It is a current fact, not a historical one, so it disappears when a later ride beats it.
+_Avoid_: PR (that is Strava's per-segment achievement), new record
+
 **Estimated FTP**:
 95 % of the best 20-minute power in the period.
 _Avoid_: predicted FTP

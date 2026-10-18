@@ -34,6 +34,7 @@ const gear = (await loadGear()).find((g: any) => g.id === r.gear_id);
 const hasLatlng = !!(st && st.latlng);
 const points = hasLatlng ? null : decodePolyline(a.summary_polyline);
 const mapKey = hasLatlng ? (st.watts ? 'watts' : st.heart_rate ? 'heart_rate' : null) : null;
+// New power bests (GLOSSARY): all-time bests as of today – compared with every other stat ride, later ones included.
 const newPR = Object.entries(r.best || {}).filter(([k, w]: any) => w && (!allBest[k] || w > allBest[k].w)).map(([k]) => +k);
 const f = fuel(r.moving_time, r.clsP.zone);
 const num = (v: any) => (v == null || v === '' ? null : Number(v));
