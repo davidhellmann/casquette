@@ -1,0 +1,12 @@
+---
+import Base from '../../layouts/Base.astro';
+import { RidesView } from '../../components/rides/RidesView';
+import { dashboardPayload } from '../../lib/dashboard-payload.js';
+import { t } from '../../i18n/index.js';
+
+const json = await dashboardPayload();
+---
+<Base title={t('log.title')} active="rides" period>
+  <RidesView client:load />
+  <script type="application/json" id="dash-data" set:html={json}></script>
+</Base>

@@ -1,0 +1,18 @@
+[
+  {
+    "id": "2024-03-01",
+    "date": "2024-03-01",
+    "ftp": 230,
+    "weight": 78,
+    "source": "manual",
+    "note": "FTP test (20 min)"
+  },
+  {
+    "id": "2025-04-15",
+    "date": "2025-04-15",
+    "ftp": 250,
+    "weight": 76,
+    "source": "strava",
+    "note": "Change detected in Strava"
+  }
+]

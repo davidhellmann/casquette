@@ -1,0 +1,314 @@
+/* ==========================================================================
+   Design tokens + Tailwind v4 entry for the new UI (shadcn/ui).
+   Every colour is a CSS custom property with a light and a dark value; Tailwind
+   utilities resolve to these variables (`@theme inline`). Components never use
+   hex values or Tailwind palette colours.
+   Light = cool greys, dark = navy, pink is the default data colour. See DESIGN.md.
+   ========================================================================== */
+/* Tailwind scans the app's markup only – components, pages and layouts – not the domain modules,
+   scripts or docs, whose prose and identifiers would otherwise turn into stray utilities. */
+@import 'tailwindcss' source(none);
+@source '../components';
+@source '../pages';
+@source '../layouts';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  color-scheme: light;
+  --radius: 0.5rem;
+
+  /* Frame (shadcn roles). sidebar = canvas behind the sidebar, background = content panel, card = fill on the panel */
+  --sidebar: #e9ebee;
+  --sidebar-foreground: #1c2130;
+  --sidebar-primary: #1c2130;
+  --sidebar-primary-foreground: #f7f8f9;
+  --sidebar-accent: #dde0e5;
+  --sidebar-accent-foreground: #1c2130;
+  --sidebar-border: #d6dae0;
+  --sidebar-ring: #5b6270;
+  --background: #f7f8f9;
+  --foreground: #1c2130;
+  --card: #eceef1;
+  --card-foreground: #1c2130;
+  --popover: #ffffff;
+  --popover-foreground: #1c2130;
+  --primary: #1c2130;
+  --primary-foreground: #f7f8f9;
+  --secondary: #eceef1;
+  --secondary-foreground: #1c2130;
+  --muted: #eceef1;
+  --muted-foreground: #5b6270;
+  --accent: #e2e5e9;
+  --accent-foreground: #1c2130;
+  --destructive: #c92a2a;
+  --destructive-foreground: #f7f8f9;
+  --border: #dfe2e6;
+  --input: #d6dae0;
+  --ring: #5b6270;
+
+  /* Pink: the default data colour (single series, sparklines, "this ride / this year", highlights)
+     and the accent (card label chips). Grey for the rest comes from the frame (muted-foreground, foreground). */
+  --brand: #f0468a;
+  --brand-foreground: #1c2130;
+  --brand-surface: #fde4ee;
+  --brand-surface-foreground: #b0245e;
+
+  /* Training-calendar load scale: empty + 4 steps */
+  --load-0: #e2e5e9;
+  --load-1: #fbd3e3;
+  --load-2: #f7a3c5;
+  --load-3: #f36fa6;
+  --load-4: #e83c82;
+
+  /* Power vs heart rate where both share a chart (ride streams use the zone colours, the rest grey) */
+  --power: #f76707;
+  --heart-rate: #e03131;
+
+  /* Status: better/worse, deltas, form; warning in between */
+  --positive: #237a34; /* dark enough for small text on the panel (≥ 4.5:1) */
+  --warning: #e8b400;
+  --negative: #c92a2a;
+  --grid: rgb(28 33 48 / 0.08);
+
+  /* Zones: cold → warm → violet (power 1–7, heart rate 1–5) */
+  --zone-1: #94a3b8;
+  --zone-2: #2f9e44;
+  --zone-3: #e8b400;
+  --zone-4: #f76707;
+  --zone-5: #e03131;
+  --zone-6: #9b1c1c;
+  --zone-7: #7048e8;
+
+  /* Categories (bikes, ride types, earlier years): pink first, then navy, slate, berry, rose and grey –
+     several things side by side that still read grey and pink. Kept apart from the zone colours. */
+  --category-1: var(--brand);
+  --category-2: #34446e;
+  --category-3: #7d93c2;
+  --category-4: #a3346f;
+  --category-5: #f3a5c6;
+  --category-6: #8a93a3;
+
+  /* shadcn chart slots, mapped onto the category palette */
+  --chart-1: var(--category-1);
+  --chart-2: var(--category-2);
+  --chart-3: var(--category-3);
+  --chart-4: var(--category-4);
+  --chart-5: var(--category-5);
+}
+
+.dark {
+  color-scheme: dark;
+
+  --sidebar: #0d1424;
+  --sidebar-foreground: #e7eaf1;
+  --sidebar-primary: #e7eaf1;
+  --sidebar-primary-foreground: #131b2e;
+  --sidebar-accent: #1d2740;
+  --sidebar-accent-foreground: #e7eaf1;
+  --sidebar-border: #1f2940;
+  --sidebar-ring: #8f98ad;
+  --background: #131b2e;
+  --foreground: #e7eaf1;
+  --card: #1a2338;
+  --card-foreground: #e7eaf1;
+  --popover: #1a2338;
+  --popover-foreground: #e7eaf1;
+  --primary: #e7eaf1;
+  --primary-foreground: #131b2e;
+  --secondary: #1a2338;
+  --secondary-foreground: #e7eaf1;
+  --muted: #1a2338;
+  --muted-foreground: #8f98ad;
+  --accent: #232d45;
+  --accent-foreground: #e7eaf1;
+  --destructive: #ff6b6b;
+  --destructive-foreground: #131b2e;
+  --border: #232d45;
+  --input: #2b3652;
+  --ring: #8f98ad;
+
+  --brand: #ff5c9c;
+  --brand-foreground: #131b2e;
+  --brand-surface: #3a1f37;
+  --brand-surface-foreground: #ff8ab8;
+
+  --load-0: #263049; /* visible on the card fill (#1a2338) */
+  --load-1: #4a2342;
+  --load-2: #7c2d5c;
+  --load-3: #c23f7f;
+  --load-4: #ff5c9c;
+
+  --power: #ff922b;
+  --heart-rate: #ff6b6b;
+  --positive: #69db7c;
+  --warning: #fcc419;
+  --negative: #ff6b6b;
+  --grid: rgb(231 234 241 / 0.08);
+
+  --zone-1: #64748b;
+  --zone-2: #40c057;
+  --zone-3: #fcc419;
+  --zone-4: #ff922b;
+  --zone-5: #ff6b6b;
+  --zone-6: #e03131;
+  --zone-7: #9775fa;
+
+  --category-2: #c3cde6;
+  --category-3: #6f86c0;
+  --category-4: #c23a7c;
+  --category-5: #ffb0d0;
+  --category-6: #7c8494;
+}
+
+@theme inline {
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* The logo only (AppLogo) */
+  --font-logo: var(--font-damion), cursive;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-surface: var(--brand-surface);
+  --color-brand-surface-foreground: var(--brand-surface-foreground);
+  --color-load-0: var(--load-0);
+  --color-load-1: var(--load-1);
+  --color-load-2: var(--load-2);
+  --color-load-3: var(--load-3);
+  --color-load-4: var(--load-4);
+  --color-power: var(--power);
+  --color-heart-rate: var(--heart-rate);
+  --color-positive: var(--positive);
+  --color-warning: var(--warning);
+  --color-negative: var(--negative);
+  --color-grid: var(--grid);
+  --color-zone-1: var(--zone-1);
+  --color-zone-2: var(--zone-2);
+  --color-zone-3: var(--zone-3);
+  --color-zone-4: var(--zone-4);
+  --color-zone-5: var(--zone-5);
+  --color-zone-6: var(--zone-6);
+  --color-zone-7: var(--zone-7);
+  --color-category-1: var(--category-1);
+  --color-category-2: var(--category-2);
+  --color-category-3: var(--category-3);
+  --color-category-4: var(--category-4);
+  --color-category-5: var(--category-5);
+  --color-category-6: var(--category-6);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-sidebar text-foreground font-sans antialiased;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Weights 400/500/600 only: markup from i18n strings and Leaflet tooltips must not render 700 */
+  b,
+  strong {
+    @apply font-semibold;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Leaflet (route, ride and segment maps): monochrome tiles – colour is reserved for the routes – and
+   controls/tooltips in the frame tokens. Scoped to [data-slot="leaflet"]. */
+[data-slot='leaflet'].leaflet-container {
+  font: inherit;
+  background: var(--card);
+}
+[data-slot='leaflet'] .leaflet-tile-pane {
+  filter: grayscale(1) contrast(0.92) brightness(1.04) opacity(0.85);
+}
+.dark [data-slot='leaflet'] .leaflet-tile-pane {
+  filter: grayscale(1) invert(1) contrast(0.88) brightness(0.72) opacity(0.9);
+}
+/* Leaflet blends tiles with `plus-lighter`, which leaves bright 1-px seams in current Chromium (#24) */
+[data-slot='leaflet'] .leaflet-tile-pane img.leaflet-tile {
+  mix-blend-mode: normal;
+}
+[data-slot='leaflet'] .leaflet-bar {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: none;
+  overflow: hidden;
+}
+[data-slot='leaflet'] .leaflet-bar a {
+  font-weight: 500;
+  background: var(--background);
+  color: var(--foreground);
+  border-bottom-color: var(--border);
+}
+[data-slot='leaflet'] .leaflet-bar a:hover {
+  background: var(--accent);
+}
+[data-slot='leaflet'].leaflet-container .leaflet-control-attribution {
+  background: color-mix(in srgb, var(--background) 90%, transparent);
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+[data-slot='leaflet'].leaflet-container .leaflet-control-attribution a {
+  color: var(--foreground);
+}
+[data-slot='leaflet'] .leaflet-tooltip {
+  background: var(--popover);
+  color: var(--popover-foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: none;
+  font-size: 12px;
+  padding: 6px 9px;
+}
+[data-slot='leaflet'] .leaflet-tooltip-top::before {
+  border-top-color: var(--border);
+}

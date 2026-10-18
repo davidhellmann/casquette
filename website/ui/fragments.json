@@ -1,0 +1,77 @@
+{
+  "generated": "npm run fragments",
+  "clock": "2026-10-11T12:00:00.000Z",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "scope": ".ui-fragment",
+  "stylesheet": "ui.css",
+  "fragments": [
+    {
+      "name": "dashboard",
+      "file": "dashboard.html",
+      "width": 1120,
+      "height": 771,
+      "anchor": "left",
+      "source": "/",
+      "note": "Dashboard top: key figures and the fitness chart (hero)"
+    },
+    {
+      "name": "load",
+      "file": "load.html",
+      "width": 271,
+      "height": 161,
+      "anchor": "left",
+      "source": "/",
+      "note": "Training load key figure with its sparkline (hero float)"
+    },
+    {
+      "name": "calendar",
+      "file": "calendar.html",
+      "width": 1120,
+      "height": 323,
+      "anchor": "right",
+      "source": "/",
+      "note": "Training calendar of the last 52 weeks (hero float; newest weeks on the right)"
+    },
+    {
+      "name": "intensity",
+      "file": "intensity.html",
+      "width": 1120,
+      "height": 1229,
+      "anchor": "left",
+      "source": "/",
+      "note": "Dashboard intensity section: weekly volume and time by zone, time in zones, rhythm"
+    },
+    {
+      "name": "ride",
+      "file": "ride.html",
+      "width": 1120,
+      "height": 652,
+      "anchor": "right",
+      "source": "/rides/demo-0226",
+      "note": "Ride streams: power, heart rate, cadence, speed, elevation (mirrored section)"
+    },
+    {
+      "name": "year",
+      "file": "year.html",
+      "width": 1120,
+      "height": 772,
+      "anchor": "left",
+      "source": "/years/2025",
+      "note": "Year review head: key figures and the training calendar"
+    }
+  ],
+  "map": {
+    "name": "map",
+    "light": "map-light.webp",
+    "dark": "map-dark.webp",
+    "width": 1120,
+    "height": 820,
+    "scale": 2,
+    "anchor": "right",
+    "source": "/map",
+    "note": "Route map with filters and places panel (image; places panel on the right)"
+  }
+}

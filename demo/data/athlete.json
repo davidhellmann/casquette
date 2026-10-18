@@ -1,0 +1,133 @@
+{
+  "synced_at": "2026-10-11T06:00:00.000Z",
+  "profile": {
+    "id": "demo",
+    "first_name": "Demo",
+    "last_name": "Rider",
+    "username": "demo-rider",
+    "city": "Munich",
+    "state": "Bavaria",
+    "country": "Germany",
+    "sex": null,
+    "weight": 74.6,
+    "ftp": 268,
+    "premium": false,
+    "created_at": "2022-09-18T12:00:00Z",
+    "avatar": null
+  },
+  "zones": {
+    "ftp": 268,
+    "heart_rate_zones": [
+      {
+        "min": 0,
+        "max": 128
+      },
+      {
+        "min": 129,
+        "max": 146
+      },
+      {
+        "min": 147,
+        "max": 160
+      },
+      {
+        "min": 161,
+        "max": 172
+      },
+      {
+        "min": 173,
+        "max": null
+      }
+    ],
+    "heart_rate_zone_source": "Manual",
+    "power_zones": [
+      {
+        "min": 0,
+        "max": 147
+      },
+      {
+        "min": 148,
+        "max": 201
+      },
+      {
+        "min": 202,
+        "max": 241
+      },
+      {
+        "min": 242,
+        "max": 281
+      },
+      {
+        "min": 282,
+        "max": 322
+      },
+      {
+        "min": 323,
+        "max": 402
+      },
+      {
+        "min": 403,
+        "max": null
+      }
+    ]
+  },
+  "gear": [
+    {
+      "id": "bdemo1",
+      "name": "Steel Classic",
+      "type": "bike",
+      "brand": "Fernweh",
+      "model": "Randonneur 8",
+      "frame_type": "Road",
+      "description": null,
+      "weight": 10.4,
+      "distance": 18944637,
+      "retired": true,
+      "primary": false
+    },
+    {
+      "id": "bdemo2",
+      "name": "Carbon Endurance",
+      "type": "bike",
+      "brand": "Velomax",
+      "model": "Endura SL",
+      "frame_type": "Road",
+      "description": null,
+      "weight": 8.1,
+      "distance": 4919375,
+      "retired": false,
+      "primary": true
+    },
+    {
+      "id": "bdemo3",
+      "name": "Gravel All-Road",
+      "type": "bike",
+      "brand": "Dustline",
+      "model": "Gravelo 2",
+      "frame_type": "Gravel",
+      "description": null,
+      "weight": 9.6,
+      "distance": 5751372,
+      "retired": false,
+      "primary": false
+    },
+    {
+      "id": "bdemo4",
+      "name": "Indoor Trainer",
+      "type": "bike",
+      "brand": "Velomax",
+      "model": "Basebike",
+      "frame_type": "Road",
+      "description": null,
+      "weight": 9,
+      "distance": 1628643,
+      "retired": false,
+      "primary": false
+    }
+  ],
+  "stats": null,
+  "sync": {
+    "list_complete": true,
+    "oldest": "2023-10-28T12:36:49Z"
+  }
+}

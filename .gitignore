@@ -1,0 +1,46 @@
+# deps & build
+node_modules/
+dist/
+.astro/
+
+# secrets – never commit
+.env
+.env.*
+!.env.example
+.strava-token.json
+
+# sync cache (raw data, rebuilt from the API)
+.strava-cache/
+
+# personal sync data & configuration – stays local, never in the repo
+# (folders are kept via .gitkeep; examples ship as *.example.json)
+src/content/rides/**
+!src/content/rides/.gitkeep
+src/content/gear/**
+!src/content/gear/.gitkeep
+public/streams/**
+!public/streams/.gitkeep
+src/data/athlete.json
+src/data/fitness-history.json
+src/data/geo-cells.json
+src/data/goals.json
+src/data/zones.json
+
+# logs
+logs/
+*.log
+
+# os
+.DS_Store
+
+# local scratch and agent files
+.scratch/
+.claude/
+
+# e2e build and reports
+dist-e2e/
+dist-fragments/
+dist-site/
+dist-demo/
+test-results/
+playwright-report/

@@ -1,0 +1,431 @@
+/* Casquette website – plain CSS, no build (#43). One file: tokens, base, frame (nav, logo,
+ * footer), the shared layout (hero stage, alternating feature sections, privacy panel, steps)
+ * and the motion helpers. Approved look: issue #43 and its prototype (round 4).
+ */
+
+/* ---------- Tokens: the app's palette (src/styles/app.css), one step deeper ----------
+ * The page sits a shade below the app's background and the website's cards use the app's
+ * background, so real app UI placed on a card reads like the app. Keep the hex values in sync
+ * with app.css when the palette changes. Every colour is light-dark(light, dark). <html> carries .dark by default; the theme
+ * switch (site.js, rc_site_theme) sets .light, .dark or neither – then the system decides. */
+:root {
+  color-scheme: light dark;
+  --page: light-dark(#eef0f3, #0d1424);          /* page background */
+  --surface: light-dark(#f7f8f9, #131b2e);       /* cards, panels, secondary buttons = app --background */
+  --fill: light-dark(#e4e7eb, #1a2338);          /* inline code, empty cells on a surface */
+  --ink: light-dark(#1c2130, #e7eaf1);           /* = app --foreground */
+  --muted: light-dark(#5b6270, #8f98ad);         /* = app --muted-foreground */
+  --brand: light-dark(#f0468a, #ff5c9c);         /* = app --brand: logo stop, cap stripe, eyebrows, accents */
+  --brand-ink: light-dark(#b0245e, #ff8ab8); /* = app --brand-surface-foreground: pink small text */
+  --positive: light-dark(#237a34, #69db7c);      /* = app --positive */
+  --load-0: light-dark(#e2e5e9, #263049);        /* training calendar levels = app --load-0…4 */
+  --load-1: light-dark(#fbd3e3, #4a2342);
+  --load-2: light-dark(#f7a3c5, #7c2d5c);
+  --load-3: light-dark(#f36fa6, #c23f7f);
+  --load-4: light-dark(#e83c82, #ff5c9c);
+
+  --font: 'Gabarito', system-ui, sans-serif;
+  --font-logo: 'Damion', cursive;
+  --font-mono: 'Geist Mono', ui-monospace, monospace;
+
+  --max: 1200px;            /* content width, including the gutters */
+  --gutter: 32px;
+  --radius: 18px;
+  --radius-sm: 6px;
+  --section-gap: 150px;
+  --ease-out: cubic-bezier(.2, .8, .2, 1);
+}
+/* The theme switch (site.js) sets .light or .dark on <html>; without it the system decides */
+:root.light { color-scheme: light; }
+:root.dark { color-scheme: dark; }
+@media (max-width: 860px) {
+  :root { --gutter: 24px; --section-gap: 96px; }
+}
+
+/* ---------- Fonts: self-hosted, OFL (fonts/OFL.txt) ---------- */
+@font-face {
+  font-family: 'Gabarito'; font-style: normal; font-weight: 400 900; font-display: swap;
+  src: url(fonts/gabarito-latin.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Gabarito'; font-style: normal; font-weight: 400 900; font-display: swap;
+  src: url(fonts/gabarito-latin-ext.woff2) format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* block, as in the app: the cap is placed on Damion's metrics, never on a fallback font */
+@font-face {
+  font-family: 'Damion'; font-style: normal; font-weight: 400; font-display: block;
+  src: url(fonts/damion-latin.woff2) format('woff2');
+}
+@font-face {
+  font-family: 'Geist Mono'; font-style: normal; font-weight: 100 900; font-display: swap;
+  src: url(fonts/geist-mono-latin.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Geist Mono'; font-style: normal; font-weight: 100 900; font-display: swap;
+  src: url(fonts/geist-mono-latin-ext.woff2) format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* ---------- Base ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font: 400 clamp(17px, 1.5vw, 21px)/1.5 var(--font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+img, svg { display: block; max-width: 100%; }
+h1, h2, h3, p, ol, ul, figure { margin: 0; }
+ol, ul { padding: 0; list-style: none; }
+a { color: inherit; }
+code, pre { font-family: var(--font-mono); }
+::selection { background: var(--ink); color: var(--page); }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; border-radius: 4px; }
+
+.skip {
+  position: absolute; left: var(--gutter); top: -100px; z-index: 100;
+  background: var(--ink); color: var(--page); border-radius: 999px; padding: 10px 16px;
+  font: 500 15px/1 var(--font); text-decoration: none;
+}
+.skip:focus { top: 12px; }
+
+.wrap { max-width: var(--max); margin: 0 auto; padding: 0 var(--gutter); }
+/* The feature shots bleed off the outer edge and the hero cards overhang the stage: clip them
+ * here (not on the root, where browsers still count the overflow) – never a horizontal scroll */
+main { overflow-x: clip; }
+
+/* ---------- Type ---------- */
+/* Headings: Gabarito 800, tight tracking (#43) */
+/* Headings break into even lines, running text avoids orphans and ragged last lines */
+h1, h2, h3, h4 { text-wrap: balance; }
+p, li, dd, figcaption, blockquote { text-wrap: pretty; }
+.h-hero, .h-section, .h-panel { font-weight: 800; letter-spacing: -.02em; line-height: .98; }
+.h-hero { font-size: clamp(46px, 8.2vw, 112px); line-height: .94; letter-spacing: -.022em; }
+.h-section { font-size: clamp(36px, 4vw, 60px); }
+.h-panel { font-size: clamp(38px, 4.6vw, 68px); }
+/* Eyebrow: the small pink line in Damion above a heading (≥ 24 px: large text for contrast) */
+.eyebrow { font: 400 24px/1 var(--font-logo); color: var(--brand); }
+.lede { color: var(--muted); max-width: 22em; }
+/* Small labels and commands */
+.label { font: 500 11px/1.3 var(--font-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.cmd { overflow-wrap: anywhere; font-size: 13px; color: var(--ink); background: var(--fill); border-radius: var(--radius-sm); padding: 3px 7px; }
+
+/* ---------- Logo: the approved "cap on the c" (DESIGN.md → Brand) ----------
+ * Same spec as the app's AppLogo: Damion as-is + pink full stop, the cap at the static em offsets
+ * of capPlacement() in src/lib/brand.js (src/brand.test.js checks these numbers and the markup).
+ * Size it with font-size (≥ 24 px). */
+.logo {
+  display: inline-block; padding-left: 0.3288em;
+  font: 400 30px/1 var(--font-logo); white-space: nowrap; color: var(--ink); text-decoration: none;
+}
+.logo-word { position: relative; display: inline-block; }
+.logo-stop { color: var(--brand); }
+.logo-cap {
+  position: absolute; max-width: none;
+  left: -0.3288em; top: -0.2368em; width: 0.936em; height: 0.702em;
+  transform: rotate(-19deg); transform-origin: 30% 90%;
+}
+
+/* ---------- Nav ---------- */
+.nav { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 76px; }
+.nav-links { display: flex; align-items: center; gap: 22px; font-size: 15px; }
+.nav-links a { color: var(--muted); text-decoration: none; transition: color .2s; }
+.nav-links a:hover { color: var(--ink); }
+/* Theme switch: Light / Dark / Auto as three small icon buttons in a pill; the chosen one is filled */
+.theme-switch { display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: var(--surface); }
+.theme-switch[hidden] { display: none; }
+.theme-switch button {
+  display: grid; place-items: center; width: 30px; height: 30px; padding: 0;
+  border: 0; border-radius: 999px; background: transparent; color: var(--muted); cursor: pointer; transition: color .2s, background .2s;
+}
+.theme-switch button:hover { color: var(--ink); }
+.theme-switch button[aria-pressed="true"] { color: var(--ink); background: var(--fill); }
+.theme-switch svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.nav-links .nav-cta { white-space: nowrap; color: var(--ink); background: var(--surface); border-radius: 999px; padding: 8px 15px; }
+@media (max-width: 860px) {
+  .nav-links { gap: 12px; }
+  .nav-links a:not(.nav-cta) { display: none; }
+}
+
+/* ---------- Buttons ---------- */
+.btns { display: flex; flex-wrap: wrap; gap: 10px; }
+.btn {
+  display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 13px 22px;
+  font: 500 16px/1.2 var(--font); text-decoration: none; transition: opacity .2s;
+}
+.btn:hover { opacity: .86; }
+.btn-primary { background: var(--ink); color: var(--page); }
+.btn-secondary { background: var(--surface); color: var(--ink); }
+
+/* ---------- Hero (#hero, #47) ----------
+ * Eyebrow, the H1 word by word, subline and buttons; below them the stage: the dashboard (a real
+ * UI fragment, inserted by site.js) on an app panel that rises out of a slight tilt and fades out
+ * at the bottom, and two floating cards (training load, training calendar) that pop in; then the
+ * lines draw and the calendar fills up. site.js sets per slot the fragment size (--fw, --fh), the
+ * dashboard scale (--s), the calendar crop (--crop), per path its length (--len), per calendar
+ * day its place in the fill-up (--n), and on #hero --late (seconds the fragments took, so the
+ * sequence keeps its order) and .is-live. Fragments are scaled as a whole and never styled from
+ * here – only animated through their hooks (website/ui/README.md).
+ * Phone (≤ 860 px): the training load card sits under the shot, the calendar is left out. */
+.hero { text-align: center; padding-top: 56px; }
+.hero .h-hero { margin: 22px auto 20px; } /* two lines from tablet up: "Training dashboard" ≈ 8.3em */
+.hero .h-hero .w { display: inline-block; }
+.hero .eyebrow { font-size: 26px; }
+.hero .lede { max-width: 32em; margin: 0 auto 28px; line-height: 1.45; }
+.hero .btns { justify-content: center; }
+.hero-stage {
+  --pad: 24px;              /* panel padding around the dashboard, in fragment px */
+  --hero-shadow: 0 1px 2px light-dark(rgb(13 20 36 / .06), rgb(0 0 0 / .3)), 0 28px 56px -26px light-dark(rgb(13 20 36 / .4), rgb(0 0 0 / .7));
+  position: relative; max-width: 1240px; height: clamp(300px, 40vw, 600px); margin: 56px auto 0;
+}
+.hero-shot { position: absolute; inset: 0; overflow: hidden; border-radius: var(--radius) var(--radius) 0 0; }
+.hero-panel { position: absolute; inset: 0; border-radius: inherit; background: var(--surface); transform-origin: 50% 0; }
+/* A fragment keeps its own layout width and is scaled as a whole */
+.hero-fit { position: absolute; top: 0; left: 0; width: var(--fw); transform-origin: 0 0; }
+.hero-panel > .hero-fit { top: calc(var(--pad) * var(--s, 1)); left: calc(var(--pad) * var(--s, 1)); transform: scale(var(--s, 1)); }
+/* Floating cards: a piece of the app panel around the fragment's card */
+.hero-card { --cs: .85; position: absolute; z-index: 1; padding: 6px; border-radius: 16px; background: var(--surface); box-shadow: var(--hero-shadow); }
+.hero-card[hidden] { display: none; }
+.hero-window { position: relative; overflow: hidden; border-radius: 10px; width: calc(var(--fw) * var(--cs)); height: calc(var(--fh) * var(--cs)); }
+.hero-card .hero-fit { transform: scale(var(--cs)); }
+/* overhanging the stage, but never closer than 12 px to the viewport edge */
+.hero-card--load { left: calc(-1 * min(3%, var(--gutter) - 12px)); top: 27%; }
+/* The calendar: its newest weeks, pinned right (fragments.json anchor), from the month row down;
+ * the cut-off older weeks fade out to the left */
+.hero-card--calendar { --cs: .66; right: calc(-1 * min(3%, var(--gutter) - 12px)); top: 11%; }
+.hero-card--calendar .hero-window {
+  width: 320px; height: calc((var(--fh) - var(--crop, 0px)) * var(--cs));
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 24%); mask-image: linear-gradient(to right, transparent, #000 24%);
+}
+.hero-card--calendar .hero-fit { left: auto; right: 0; top: calc(var(--crop, 0px) * var(--cs) * -1); transform-origin: 100% 0; }
+@media (max-width: 860px) {
+  .hero-stage { height: auto; }
+  .hero-shot { position: relative; height: calc((var(--fh, 771px) + 2 * var(--pad)) * var(--s, .3)); }
+  .hero-card--calendar { display: none; }
+  .hero-card--load { --cs: 1; position: relative; left: auto; top: auto; width: fit-content; margin: 12px auto 0; }
+}
+
+/* Intro: plays once on load; the stage waits for its fragments (.is-live). Its delays count from
+ * page start (minus --late); the minimums keep the order after a slow load. Without motion
+ * everything stays in its final state (no rules apply). */
+@media (prefers-reduced-motion: no-preference) {
+  .js .hero .eyebrow { animation: hero-up .8s .05s var(--ease-out) both; }
+  .js .hero .h-hero .w { animation: hero-word .9s calc(.15s + var(--i) * .08s) var(--ease-out) both; }
+  .js .hero .lede { animation: hero-up .9s .55s var(--ease-out) both; }
+  .js .hero .btns { animation: hero-up .9s .7s var(--ease-out) both; }
+  .js .hero-panel, .js .hero-card { opacity: 0; }
+  .js .hero.is-live .hero-panel { animation: hero-rise 1.5s max(0s, calc(.6s - var(--late, 0s))) var(--ease-out) both; }
+  .js .hero.is-live .hero-card--load {
+    animation: hero-pop .9s max(.3s, calc(1.5s - var(--late, 0s))) var(--ease-out) both,
+      hero-bob 6s max(1.2s, calc(2.4s - var(--late, 0s))) ease-in-out infinite;
+  }
+  .js .hero.is-live .hero-card--calendar {
+    animation: hero-pop .9s max(.45s, calc(1.7s - var(--late, 0s))) var(--ease-out) both,
+      hero-bob 7s max(1.35s, calc(2.6s - var(--late, 0s))) ease-in-out infinite reverse;
+  }
+  /* Lines draw (dashed lines keep their pattern and come with the panel), then their areas fill */
+  .js .hero.is-live .hero-panel :is(path.recharts-area-curve, path.recharts-line-curve:not([stroke-dasharray])) {
+    animation: hero-draw 1.3s max(.5s, calc(1.3s - var(--late, 0s))) ease-out both;
+  }
+  .js .hero.is-live .hero-panel path.recharts-area-area { animation: hero-fade .9s max(1.1s, calc(1.9s - var(--late, 0s))) both; }
+  .js .hero.is-live .hero-card--load path.recharts-area-curve { animation: hero-draw 1.6s max(.7s, calc(1.9s - var(--late, 0s))) ease-out both; }
+  .js .hero.is-live .hero-card--load path.recharts-area-area { animation: hero-fade .9s max(1.6s, calc(2.8s - var(--late, 0s))) both; }
+  /* The calendar fills up: ride days pop in, oldest visible first */
+  .js .hero.is-live .hero-card--calendar [role=gridcell] > [data-day] {
+    animation: hero-cell .45s calc(max(.9s, calc(2s - var(--late, 0s))) + var(--n, 0) * 35ms) var(--ease-out) both;
+  }
+}
+@keyframes hero-up { from { opacity: 0; transform: translateY(14px); } }
+@keyframes hero-word { from { opacity: 0; transform: translateY(.35em); } }
+@keyframes hero-rise {
+  from { opacity: 0; transform: perspective(1800px) rotateX(16deg) translateY(60px) scale(.95); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes hero-pop { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes hero-bob { 50% { transform: translateY(-6px); } }
+@keyframes hero-draw {
+  from { stroke-dasharray: var(--len) var(--len); stroke-dashoffset: var(--len); }
+  to { stroke-dasharray: var(--len) var(--len); stroke-dashoffset: 0; }
+}
+@keyframes hero-fade { from { opacity: 0; } }
+@keyframes hero-cell { from { transform: scale(0); } }
+
+/* ---------- Feature sections (#dashboard #ride #year #map; content: #48) ----------
+ * A narrow text column aligned with the content grid and a media column whose shot (fixed width)
+ * starts at the inner edge and bleeds off the outer edge until the viewport is wide enough to show
+ * it fully (~1800 px). .feature--flip mirrors it (text right, shot bleeding off the left). */
+.feature {
+  --off: max(var(--gutter), calc((100vw - var(--max)) / 2 + var(--gutter)));  /* viewport edge → content edge */
+  --text-col: 360px;
+  --col-gap: 64px;
+  --ui-zoom: .88;           /* the fragments are laid out 1120 px wide (ui/fragments.json) */
+  --shot-pad: 24px;         /* the app's panel around the fragment */
+  --shot-w: calc(1120px * var(--ui-zoom) + 2 * var(--shot-pad));  /* ≈ 1034 px: fits from ~1790 px */
+  --shot-h: clamp(340px, 34vw, 600px);
+  display: grid; grid-template-columns: calc(var(--off) + var(--text-col)) 1fr; gap: var(--col-gap);
+  align-items: center; margin: var(--section-gap) 0;
+}
+.feature-text { padding-left: var(--off); }
+.feature-text .h-section { margin: 16px 0 16px; }
+.feature-media { position: relative; height: var(--shot-h); }
+.feature-shot {
+  position: absolute; top: 0; bottom: 0; left: 0; width: var(--shot-w); padding: var(--shot-pad);
+  overflow: hidden; border-radius: var(--radius) var(--radius) 0 0; background: var(--surface);
+}
+.feature--flip { grid-template-columns: 1fr calc(var(--off) + var(--text-col)); }
+.feature--flip .feature-text { order: 2; padding-left: 0; padding-right: var(--off); }
+.feature--flip .feature-shot { left: auto; right: 0; }
+/* The fragment fills the shot at a fixed scale (zoom, never its width: the charts are drawn SVG);
+ * the shot's fixed width puts each piece's key side (`anchor` in ui/fragments.json: left, ride
+ * right, year left, map right) on the inner, always visible edge. The map is an image crop. */
+.feature-shot > .ui-fragment { zoom: var(--ui-zoom); }
+/* The year's head ends with its training calendar: a taller shot, fading later, so it shows */
+#year { --shot-h: clamp(420px, 46vw, 720px); }
+#year .feature-shot { --fade-from: 72%; --fade-to: 100%; }
+.feature-shot > picture > img { width: calc(1120px * var(--ui-zoom)); max-width: none; height: auto; border-radius: 10px; }
+@media (max-width: 860px) {
+  /* Stacked; every shot runs off the right edge */
+  .feature, .feature--flip { grid-template-columns: 1fr; gap: 28px; --ui-zoom: .65; --shot-pad: 16px; --shot-h: 300px; }
+  .feature-text, .feature--flip .feature-text { order: 0; padding: 0 var(--gutter); }
+  .feature-shot, .feature--flip .feature-shot { left: var(--gutter); right: auto; }
+}
+
+/* Motion inside the shots once their section is revealed (.in, site.js): lines draw, areas fade
+ * in, bars grow, the year's calendar fills day by day. Only the fragments' documented animation
+ * hooks (ui/README.md) and only `animation` – nothing else of the site reaches into a fragment.
+ * site.js marks the curves (data-draw, pathLength=1) and sets --d (day index) on the calendar
+ * days. Reduced motion: no .in and no animations (Helpers). */
+.feature.in .ui-fragment path.recharts-line-curve[data-draw],
+.feature.in .ui-fragment path.recharts-area-curve[data-draw] { animation: feature-draw 1.8s var(--ease-out) .35s backwards; }
+.feature.in .ui-fragment path.recharts-area-area { animation: feature-fade 1s ease-out 1.1s backwards; }
+.feature.in .ui-fragment .recharts-bar-rectangle path { transform-box: fill-box; transform-origin: 50% 100%; animation: feature-grow .9s var(--ease-out) .35s backwards; }
+.feature.in .ui-fragment [role=grid] [data-day] { animation: feature-cell .5s var(--ease-out) backwards; animation-delay: calc(.3s + var(--d, 0) * 3ms); }
+@keyframes feature-draw { from { stroke-dasharray: 1; stroke-dashoffset: 1; } to { stroke-dasharray: 1; stroke-dashoffset: 0; } }
+@keyframes feature-fade { from { opacity: 0; } }
+@keyframes feature-grow { from { transform: scaleY(0); } }
+@keyframes feature-cell { from { opacity: 0; transform: scale(.3); } }
+
+/* The map crop comes twice; the theme picks one (an <img> per theme, so the switch can) */
+.map-dark { display: none; }
+:root.dark .map-light { display: none; }
+:root.dark .map-dark { display: block; }
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) .map-light { display: none; }
+  :root:not(.light) .map-dark { display: block; }
+}
+
+/* ---------- Privacy (#privacy; content: #49) ---------- */
+.panel { background: var(--surface); border-radius: 24px; padding: 72px 40px; text-align: center; margin: var(--section-gap) 0; }
+.panel .h-panel { margin-bottom: 14px; }
+.panel .lede { max-width: 24em; margin: 0 auto; }
+
+/* ---------- Get started (#get; content: #49) ----------
+ * Four chips (what you need), then the steps stacked full width: icon and a line of text on the
+ * left, the commands on the right – one command per line, never wrapped (long ones scroll). */
+.start > .eyebrow, .start > .h-panel { text-align: center; }
+.start .h-panel { margin: 16px auto 28px; }
+
+.needs { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 44px; }
+.needs li, .needs a { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; color: var(--ink); }
+.needs li { background: var(--surface); border-radius: 999px; padding: 8px 14px 8px 11px; }
+.needs a { text-decoration: none; }
+.needs a::after { content: '↗'; color: var(--muted); font-size: 13px; transition: color .2s; }
+.needs a:hover::after { color: var(--brand); }
+.needs svg { width: 17px; height: 17px; color: var(--brand); flex: none; }
+
+.steps { display: grid; gap: 10px; }
+.steps > li { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 28px; align-items: center; background: var(--surface); border-radius: 16px; padding: 20px 22px; }
+.step-head { display: flex; gap: 16px; align-items: flex-start; }
+.step-ico { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; color: var(--brand); background: color-mix(in srgb, var(--brand) 14%, transparent); }
+.step-num { display: block; font: 500 12px/1 var(--font-mono); letter-spacing: .08em; color: var(--brand-ink); margin: 2px 0 6px; }
+.step-head h3 { font-size: 19px; font-weight: 700; line-height: 1.2; }
+.step-head p { color: var(--muted); font-size: 15px; line-height: 1.45; margin-top: 4px; }
+.step-head a, .start-note a { color: var(--ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; text-decoration-color: var(--brand); }
+.step-head a:hover, .start-note a:hover { text-decoration-thickness: 2px; }
+
+.cmd-block { display: flex; align-items: flex-start; gap: 8px; min-width: 0; background: var(--page); border-radius: 10px; padding: 10px 10px 10px 16px; }
+.cmd-lines { flex: 1; min-width: 0; display: grid; gap: 2px; overflow-x: auto; scrollbar-width: thin; padding: 2px 0; }
+.cmd-lines:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 4px; }
+.cmd-line, .cmd-note { display: block; font: 400 14.5px/1.6 var(--font-mono); white-space: pre; color: var(--ink); }
+.cmd-line::before { content: '$ '; color: var(--brand); user-select: none; }
+.cmd-note { color: var(--muted); }
+.copy {
+  flex: none; display: grid; place-items: center; width: 30px; height: 30px; padding: 0;
+  border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--muted); cursor: pointer;
+  transition: color .2s, background .2s;
+}
+.copy:hover { color: var(--ink); background: var(--fill); }
+.copy[hidden] { display: none; }
+.copy svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.copy .done-icon, .copy.copied .copy-icon { display: none; }
+.copy.copied .done-icon { display: block; }
+.copy.copied { color: var(--positive); }
+
+.start-note { display: flex; justify-content: center; align-items: flex-start; gap: 10px; margin-top: 22px; color: var(--muted); font-size: 15.5px; text-align: center; }
+.start-note svg { width: 18px; height: 18px; flex: none; margin-top: 2px; }
+
+/* Icons in this section: outlined, like the copy button */
+.needs svg, .step-ico svg, .start-note svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.step-ico svg { width: 22px; height: 22px; }
+
+@media (max-width: 860px) {
+  .steps > li { grid-template-columns: minmax(0, 1fr); gap: 16px; padding: 18px; }
+  .needs { margin-bottom: 32px; }
+}
+
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* ---------- Footer (content: #49) ---------- */
+.foot { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px 32px; padding: 110px 0 36px; color: var(--muted); font-size: 14px; }
+.foot .logo { font-size: 24px; }
+.foot-links { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 20px; }
+.foot-links a { text-decoration: none; }
+.foot-links a:hover, .foot-links a[aria-current="page"] { color: var(--ink); }
+
+/* ---------- Legal pages (legal-notice.html, privacy-policy.html; #55) ----------
+ * One reading column on the page background: eyebrow and heading as elsewhere, then plain prose.
+ * Links in the text are underlined in pink like the links in #get. */
+.legal { max-width: 44rem; padding-top: 56px; font-size: 17px; line-height: 1.6; }
+.legal .h-panel { margin: 16px 0 24px; }
+.legal h2 { font-size: clamp(22px, 2vw, 26px); font-weight: 800; letter-spacing: -.01em; line-height: 1.2; margin: 44px 0 12px; }
+.legal p, .legal ul, .legal address { margin-bottom: 14px; }
+.legal p, .legal li, .legal address { color: var(--muted); }
+.legal strong { color: var(--ink); font-weight: 700; }
+.legal .legal-lede { font-size: clamp(18px, 1.6vw, 21px); line-height: 1.5; color: var(--ink); }
+.legal address { font-style: normal; color: var(--ink); }
+.legal-list { display: grid; gap: 6px; }
+.legal-list li { position: relative; padding-left: 20px; }
+.legal-list li::before { content: ''; position: absolute; left: 2px; top: .7em; width: 8px; height: 3px; border-radius: 9px; background: var(--brand); }
+.legal-links { display: flex; flex-wrap: wrap; gap: 4px 20px; }
+.legal code { font-size: .85em; color: var(--ink); background: var(--fill); border-radius: var(--radius-sm); padding: 1px 6px; overflow-wrap: anywhere; }
+.legal a { color: var(--ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; text-decoration-color: var(--brand); overflow-wrap: anywhere; }
+.legal a:hover { text-decoration-thickness: 2px; }
+.legal .legal-note { margin-top: 44px; font-size: 15px; }
+
+/* ---------- Helpers ---------- */
+/* Fades an element out at the bottom – there is more below. Works on any background (mask). */
+.fade-bottom {
+  -webkit-mask-image: linear-gradient(to bottom, #000 var(--fade-from, 50%), transparent var(--fade-to, 96%));
+  mask-image: linear-gradient(to bottom, #000 var(--fade-from, 50%), transparent var(--fade-to, 96%));
+}
+.hero-shot.fade-bottom { --fade-from: 55%; --fade-to: 97%; }
+
+/* Scroll reveal (site.js): content is visible by default; the `js` class (set in <head>) hides
+ * .reveal blocks until they scroll into view (.in). A .slide-in child slides in from its outer
+ * side – from the right, or from the left inside .feature--flip. */
+.js .reveal { opacity: 0; transform: translateY(28px); transition: opacity .9s, transform .9s var(--ease-out); }
+.js .reveal .slide-in { transform: translateX(40px); transition: transform 1.2s var(--ease-out) .1s; }
+.js .feature--flip.reveal .slide-in { transform: translateX(-40px); }
+.js .reveal.in, .js .reveal.in .slide-in { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .js .reveal, .js .reveal .slide-in { opacity: 1; transform: none; }
+}

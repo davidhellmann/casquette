@@ -1,0 +1,13 @@
+---
+import Base from '../layouts/Base.astro';
+import { DashboardView } from '../components/dashboard/DashboardView';
+import { dashboardPayload } from '../lib/dashboard-payload.js';
+import { readPersonalJSON } from '../lib/personal-data.js';
+import { selectDataSource } from '../lib/data-source.js';
+const goals = readPersonalJSON('goals', [], { dir: selectDataSource().dataDir });
+const json = await dashboardPayload({ goals });
+---
+<Base active="dashboard" period>
+  <DashboardView client:load />
+  <script type="application/json" id="dash-data" set:html={json}></script>
+</Base>

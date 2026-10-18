@@ -1,0 +1,41 @@
+---
+import { BASE } from '../../components/app/nav';
+import Base from '../../layouts/Base.astro';
+import { GearView, type GearPayload } from '../../components/gear/GearView';
+import { kmPerBikeAndYear, kmPerYear } from '../../components/gear/gear-data.js';
+import { loadGear } from '../../lib/data.js';
+import { dkey } from '../../scripts/format.js';
+import { t } from '../../i18n/index.js';
+import { bikeColors } from '../../components/charts/categories';
+
+const gear = await loadGear();
+const bikes = gear.filter((g: any) => g.type === 'bike');
+const shoes = gear.filter((g: any) => g.type === 'shoe');
+const base = BASE;
+const colorOf = bikeColors(bikes.map((b: any) => b.id));
+const perYear = kmPerBikeAndYear(bikes);
+
+const payload: GearPayload = {
+  bikes: bikes.map((b: any) => ({
+    id: b.id,
+    name: b.name,
+    href: `${base}gear/${b.id}`,
+    sub: [b.frame_type, b.brand, b.model].filter(Boolean).join(' · ') || t('gear.bicycle'),
+    primary: !!b.primary,
+    retired: !!b.retired,
+    km: b.kmTotal,
+    rides: b.t.n,
+    hours: b.t.h,
+    elev: b.t.elev,
+    years: kmPerYear(b.rides),
+    lastRide: b.last ? dkey(b.last.d) : null,
+    costPerKm: b.costPerKm,
+  })),
+  shoes: shoes.map((s: any) => ({ id: s.id, name: s.name, sub: [s.brand, s.model].filter(Boolean).join(' · '), retired: !!s.retired, km: s.stravaKm })),
+  perYear: { ...perYear, bikes: perYear.bikes.map((b) => ({ ...b, color: colorOf[b.id] })) },
+  currentYear: new Date().getFullYear(),
+};
+---
+<Base title={t('gear.title')} active="gear">
+  <GearView client:load P={payload} />
+</Base>

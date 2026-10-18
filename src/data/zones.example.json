@@ -1,0 +1,8 @@
+{
+  "note": "Copy to zones.json to use your own zones. Without zones.json, HR zones come from Strava and power zones are Coggan. heart_rate: lower bounds of Z1–Z5 in bpm, each entry valid from its date (optional). power: lower bounds of Z1–Z7 in % of FTP (these are the Coggan values – edit them, or leave power out for Coggan). Apply with npm run build.",
+  "heart_rate": [
+    { "from": "2023-01-01", "bpm": [0, 125, 145, 160, 175] },
+    { "from": "2025-03-01", "bpm": [0, 130, 150, 165, 180] }
+  ],
+  "power": { "ftp_percent": [0, 55, 75, 90, 105, 120, 150] }
+}

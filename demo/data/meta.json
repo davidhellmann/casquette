@@ -1,0 +1,7 @@
+{
+  "note": "Synthetic demo data on real roads. Regenerate with `npm run demo:generate`.",
+  "routes": "Route geometry © OpenStreetMap contributors (ODbL, https://www.openstreetmap.org/copyright). Routed with BRouter (https://brouter.de); elevation from SRTM via BRouter.",
+  "seed": 13,
+  "generated_through": "2026-10-16",
+  "newest_day": "2026-10-10"
+}

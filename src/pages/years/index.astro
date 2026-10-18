@@ -1,0 +1,11 @@
+---
+import Base from '../../layouts/Base.astro';
+import { YearsView } from '../../components/years/YearsView';
+import { yearsIndexPayload } from '../../lib/year-payload.js';
+import { t } from '../../i18n/index.js';
+
+const payload = await yearsIndexPayload();
+---
+<Base title={t('years.title')} active="years">
+  <YearsView client:load P={payload} />
+</Base>

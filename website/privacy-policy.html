@@ -1,0 +1,142 @@
+<!doctype html>
+<!--
+  Privacy policy (#55) – a template. Every personal detail is a placeholder (SITE_LEGAL_* and
+  SITE_CABIN_HOST in double braces) that `npm run site:build` fills from environment variables at deploy time
+  (website/README.md); the build fails if one is missing or left over. Never put real details here.
+  The parts wrapped in if:cabin … end:cabin comment markers are published only when Cabin runs
+  (SITE_CABIN_HOST set). The custom events listed under Cabin (li[data-event]) must match the
+  data-cabin-event attributes in index.html – scripts/lib/site-template.test.js checks that.
+  Keep this page in step with what the site and the demo actually do: storage keys (src/lib/theme.ts,
+  period-store.js, components/app/*), third-party requests (map tiles: src/scripts/map.js).
+  GDPR, with the Austrian Data Protection Authority (DSB) as the supervisory authority.
+  NOT LEGAL ADVICE: written as a starting point; the operator checks it before publishing.
+-->
+<html lang="en" class="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy policy · Casquette</title>
+  <meta name="description" content="Privacy policy of the Casquette website and its live demo.">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#eef0f3" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0d1424" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="preload" href="fonts/gabarito-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/damion-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="site.css">
+  <script>
+    // The theme before the first paint: rc_site_theme – light, dark or auto – is the website's own
+    // key (the app keeps rc_theme and its own default). Dark by default (class="dark" above);
+    // auto lets the system decide (site.css).
+    try { var t = localStorage.getItem('rc_site_theme'), c = document.documentElement.classList; if (t === 'light' || t === 'auto') c.remove('dark'); if (t === 'light') c.add('light'); } catch (e) {}
+  </script>
+  <script src="site.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="wrap">
+    <div class="nav">
+      <a class="logo" href="./" aria-label="Casquette – home"><span class="logo-word" aria-hidden="true"><span>c</span>asquette<span class="logo-stop">.</span><svg class="logo-cap" viewBox="-2 -2 48 36" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21C6 10 14 4 23 4C32 4 37 10 37 18M6 21C14 23.5 28 23.5 37 18M37 18C39.5 17.4 41.5 17.8 42.5 19.2C40 22.6 33 25.2 25 25.6" stroke="currentColor" stroke-width="2.4"/><path d="M19.5 4.6C17.6 9.5 17.3 16.5 18.1 23.2" stroke="var(--brand)" stroke-width="3.12"/></svg></span></a>
+      <nav class="nav-links" aria-label="Main">
+        <div class="theme-switch" role="group" aria-label="Theme" hidden>
+          <button type="button" data-theme="light" aria-label="Light" aria-pressed="false"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="3.4"/><path d="M10 2v1.6M10 16.4V18M2 10h1.6M16.4 10H18M4.3 4.3l1.2 1.2M14.5 14.5l1.2 1.2M4.3 15.7l1.2-1.2M14.5 5.5l1.2-1.2"/></svg></button>
+          <button type="button" data-theme="dark" aria-label="Dark" aria-pressed="false"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16.5 12.2A7 7 0 0 1 7.8 3.5a7 7 0 1 0 8.7 8.7Z"/></svg></button>
+          <button type="button" data-theme="auto" aria-label="Auto" aria-pressed="true"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M10 3a7 7 0 0 1 0 14Z" fill="currentColor"/></svg></button>
+        </div>
+        <a class="nav-cta" href="./#get">Get started</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" class="wrap">
+    <article class="legal" aria-labelledby="legal-title">
+      <p class="eyebrow">the fine print</p>
+      <h1 id="legal-title" class="h-panel">Privacy policy</h1>
+      <p class="legal-lede">This website and its live demo set no cookies, need no account and keep no profile of you. This page explains which data is processed anyway, by whom and why.</p>
+
+      <h2>Data controller</h2>
+      <address class="legal-address">
+        {{SITE_LEGAL_NAME}}<br>
+        {{SITE_LEGAL_ADDRESS}}<br>
+        {{SITE_LEGAL_COUNTRY}}<br>
+        Email: <a href="mailto:{{SITE_LEGAL_EMAIL}}">{{SITE_LEGAL_EMAIL}}</a>
+      </address>
+
+      <h2>Hosting and server logs</h2>
+      <p>The website and the demo are static files hosted on <strong>GitHub Pages</strong>, a service of GitHub, Inc., 88 Colin P. Kelly Jr. Street, San Francisco, CA 94107, USA. When you open a page or file, your browser sends GitHub your IP address together with the usual request data: the address requested, time, referrer and browser details (user agent). GitHub states that the IP address of every visitor to a GitHub Pages site is logged and stored for security purposes. We have no access to these logs.</p>
+      <p>The purpose is to deliver the website securely and reliably. The legal basis is Article 6(1)(f) GDPR; our legitimate interest is offering the website and the demo without running a server of our own. GitHub may process the data in the USA. GitHub, Inc. is certified under the EU-US Data Privacy Framework, for which the European Commission has adopted an adequacy decision (Article 45 GDPR). How long GitHub keeps its logs is set out in its privacy statement.</p>
+      <ul class="legal-links">
+        <li><a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub General Privacy Statement</a></li>
+        <li><a href="https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages#data-collection">GitHub Pages: data collection</a></li>
+      </ul>
+
+      <h2>Fonts</h2>
+      <p>All fonts are served from this website itself. Your browser makes no requests to font services or other third parties for them.</p>
+
+      <h2>No cookies – what is stored in your browser</h2>
+      <p>No cookies are set. A few settings are kept in your browser’s <code>localStorage</code> so the website and the demo remember the choices you make. They never leave your browser, contain no identifier, are not read by us and stay until you clear your browser’s site data. Storing them is necessary for the functions you use, so no consent is needed (section 165(3) of the Austrian Telecommunications Act, TKG 2021).</p>
+      <ul class="legal-list">
+        <li><code>rc_site_theme</code> – light, dark or automatic theme of this website</li>
+        <li><code>rc_theme</code> – light, dark or automatic theme of the demo</li>
+        <li><code>rc_sidebar</code>, <code>rc_nav_open</code> – whether the demo’s sidebar and its submenus are open</li>
+        <li><code>rc_days</code>, <code>rc_basis</code> – the period and the zone basis (power or heart rate) chosen in the demo</li>
+        <li><code>rc_table_view</code>, <code>rc_table_group:…</code> – table or tile view and the grouping of the demo’s lists</li>
+        <!-- if:cabin --><li><code>cabin_blocked</code> – only if you opt out of Cabin Analytics (see below)</li><!-- end:cabin -->
+      </ul>
+
+      <!-- if:cabin -->
+      <h2>Cabin Analytics</h2>
+      <p>The website and the demo use <strong>Cabin Analytics</strong>, provided by Nic Mulvaney LTD, United Kingdom, to count visits in a privacy-friendly way. The script is loaded from <code>{{SITE_CABIN_HOST}}</code>. According to Cabin, it uses no cookies, no persistent identifiers and no fingerprinting, and it creates no visitor profiles.</p>
+      <p>On each visit Cabin receives the page address (including campaign parameters in it), the referring page, screen width, load time, time spent on the page, how far you scrolled, the time of the visit, and your browser, device, operating system and language as your browser reports them. Your IP address is transmitted with the request; Cabin states that it holds the address in memory only to look up your country and then discards it, without ever writing it to disk. Only aggregated statistics are stored.</p>
+      <p>We also count a few clicks as custom events. Each has a fixed name and carries nothing about you – no text you entered, no identifier:</p>
+      <ul class="legal-list">
+        <li data-event>See the demo</li>
+        <li data-event>Open GitHub</li>
+        <li data-event>Copy clone command</li>
+        <li data-event>Copy demo command</li>
+        <li data-event>Copy connect command</li>
+        <li data-event>Copy sync command</li>
+      </ul>
+      <p>Cabin stores and processes analytics data in Amazon Web Services’ Ireland (EU) region. Requests may first reach a collection endpoint in another region, which passes them on to Ireland without writing them to disk. The United Kingdom, where the provider is based, is recognised by the European Commission as providing an adequate level of data protection (Article 45 GDPR). The statistics are kept for as long as this website is registered with Cabin.</p>
+      <p>The legal basis is Article 6(1)(f) GDPR; our legitimate interest is understanding how the website is used while processing as little personal data as possible. To opt out, block <code>{{SITE_CABIN_HOST}}</code> with a content blocker, or run <code>cabin.blockMe(true)</code> in your browser’s developer console on this site, which stores <code>cabin_blocked</code> as described above.</p>
+      <ul class="legal-links">
+        <li><a href="https://docs.withcabin.com/privacy">Cabin: privacy</a></li>
+        <li><a href="https://withcabin.com/privacy">Cabin privacy policy</a></li>
+      </ul>
+      <!-- end:cabin -->
+
+      <h2>The live demo</h2>
+      <p>The demo under <code>/demo/</code> shows Casquette with synthetic rides – made-up data, no real person’s activities. It is a set of static files that runs entirely in your browser: there is no account, no sign-in, no connection to Strava, and nothing you do in it is sent to us.</p>
+      <p>Its map pages load map tiles from the OpenStreetMap Foundation, United Kingdom, at <code>tile.openstreetmap.org</code>. For this your browser sends the Foundation your IP address, the requested map section, the page it was requested from and your browser details. According to the Foundation, such data is stored in the United Kingdom and the Netherlands; the tiles are delivered through a global network of cache servers run by a content delivery network, which may also process the request outside the EU. The legal basis is Article 6(1)(f) GDPR; our legitimate interest is showing maps without an API key or a commercial map provider. The demo makes no other requests to third parties.</p>
+      <ul class="legal-links">
+        <li><a href="https://osmfoundation.org/wiki/Privacy_Policy">OpenStreetMap Foundation privacy policy</a></li>
+      </ul>
+
+      <h2>Contact by email</h2>
+      <p>This website has no contact form. Clicking an email link sends nothing to us; data is processed only if you choose to write an email. We then process your email address, your message and anything you include in it to answer you, together with our email provider. The legal basis is Article 6(1)(f) GDPR, our legitimate interest in answering enquiries, and Article 6(1)(c) GDPR where the law requires processing. Your email is deleted when it is no longer needed, unless the law requires us to keep it.</p>
+
+      <h2>Recipients and international transfers</h2>
+      <p>Recipients are GitHub (hosting, USA – EU-US Data Privacy Framework)<!-- if:cabin -->, Cabin (analytics, United Kingdom – adequacy decision; data stored in Ireland)<!-- end:cabin --> and, when you open the demo’s maps, the OpenStreetMap Foundation (map tiles, United Kingdom – adequacy decision). Where needed, emails are processed by our email provider, and data may be passed to IT or legal advisers or to authorities if the law requires it. We do not sell data or use it for advertising.</p>
+
+      <h2>Your rights</h2>
+      <p>Under the conditions of the GDPR you have the right to access your personal data (Article 15), to have it corrected (Article 16) or erased (Article 17), to restrict its processing (Article 18) and to receive it in a portable format (Article 20).</p>
+      <p><strong>You have the right to object, on grounds relating to your particular situation, at any time to processing based on Article 6(1)(f) GDPR (Article 21).</strong> We then stop the processing unless there are compelling legitimate grounds that override your interests, rights and freedoms, or the processing serves legal claims. Send requests to the email address above.</p>
+      <p>You also have the right to lodge a complaint with a supervisory authority. In Austria this is the <a href="https://www.dsb.gv.at">Austrian Data Protection Authority</a> (Datenschutzbehörde), Barichgasse 40–42, 1030 Vienna, <a href="mailto:dsb@dsb.gv.at">dsb@dsb.gv.at</a>.</p>
+
+      <p class="legal-note">We update this policy when the website, the demo or the services they use change.</p>
+    </article>
+  </main>
+
+  <footer class="wrap">
+    <div class="foot">
+      <a class="logo" href="./" aria-label="Casquette – home"><span class="logo-word" aria-hidden="true"><span>c</span>asquette<span class="logo-stop">.</span><svg class="logo-cap" viewBox="-2 -2 48 36" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21C6 10 14 4 23 4C32 4 37 10 37 18M6 21C14 23.5 28 23.5 37 18M37 18C39.5 17.4 41.5 17.8 42.5 19.2C40 22.6 33 25.2 25 25.6" stroke="currentColor" stroke-width="2.4"/><path d="M19.5 4.6C17.6 9.5 17.3 16.5 18.1 23.2" stroke="var(--brand)" stroke-width="3.12"/></svg></span></a>
+      <div class="foot-links">
+        <a href="legal-notice.html">Legal notice</a>
+        <a href="privacy-policy.html" aria-current="page">Privacy policy</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

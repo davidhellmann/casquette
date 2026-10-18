@@ -1,0 +1,85 @@
+<!doctype html>
+<!--
+  Legal notice (#55) – a template. Every personal detail is a placeholder (SITE_LEGAL_* in double braces) that
+  `npm run site:build` fills from environment variables at deploy time (website/README.md);
+  the build fails if one is missing or left over. Never put real details into this file.
+  Austrian law: § 5 ECG (E-Commerce Act) and § 25 MedienG (Media Act).
+  NOT LEGAL ADVICE: written as a starting point; the operator checks it before publishing.
+-->
+<html lang="en" class="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Legal notice · Casquette</title>
+  <meta name="description" content="Legal notice of the Casquette website: media owner, operator and contact.">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#eef0f3" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0d1424" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="preload" href="fonts/gabarito-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/damion-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="site.css">
+  <script>
+    // The theme before the first paint: rc_site_theme – light, dark or auto – is the website's own
+    // key (the app keeps rc_theme and its own default). Dark by default (class="dark" above);
+    // auto lets the system decide (site.css).
+    try { var t = localStorage.getItem('rc_site_theme'), c = document.documentElement.classList; if (t === 'light' || t === 'auto') c.remove('dark'); if (t === 'light') c.add('light'); } catch (e) {}
+  </script>
+  <script src="site.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="wrap">
+    <div class="nav">
+      <a class="logo" href="./" aria-label="Casquette – home"><span class="logo-word" aria-hidden="true"><span>c</span>asquette<span class="logo-stop">.</span><svg class="logo-cap" viewBox="-2 -2 48 36" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21C6 10 14 4 23 4C32 4 37 10 37 18M6 21C14 23.5 28 23.5 37 18M37 18C39.5 17.4 41.5 17.8 42.5 19.2C40 22.6 33 25.2 25 25.6" stroke="currentColor" stroke-width="2.4"/><path d="M19.5 4.6C17.6 9.5 17.3 16.5 18.1 23.2" stroke="var(--brand)" stroke-width="3.12"/></svg></span></a>
+      <nav class="nav-links" aria-label="Main">
+        <div class="theme-switch" role="group" aria-label="Theme" hidden>
+          <button type="button" data-theme="light" aria-label="Light" aria-pressed="false"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="3.4"/><path d="M10 2v1.6M10 16.4V18M2 10h1.6M16.4 10H18M4.3 4.3l1.2 1.2M14.5 14.5l1.2 1.2M4.3 15.7l1.2-1.2M14.5 5.5l1.2-1.2"/></svg></button>
+          <button type="button" data-theme="dark" aria-label="Dark" aria-pressed="false"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16.5 12.2A7 7 0 0 1 7.8 3.5a7 7 0 1 0 8.7 8.7Z"/></svg></button>
+          <button type="button" data-theme="auto" aria-label="Auto" aria-pressed="true"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M10 3a7 7 0 0 1 0 14Z" fill="currentColor"/></svg></button>
+        </div>
+        <a class="nav-cta" href="./#get">Get started</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" class="wrap">
+    <article class="legal" aria-labelledby="legal-title">
+      <p class="eyebrow">the fine print</p>
+      <h1 id="legal-title" class="h-panel">Legal notice</h1>
+
+      <h2>Media owner and operator</h2>
+      <address class="legal-address">
+        {{SITE_LEGAL_NAME}}<br>
+        {{SITE_LEGAL_ADDRESS}}<br>
+        {{SITE_LEGAL_COUNTRY}}<br>
+        Email: <a href="mailto:{{SITE_LEGAL_EMAIL}}">{{SITE_LEGAL_EMAIL}}</a>
+      </address>
+
+      <h2>About this website</h2>
+      <p>This website presents Casquette, an open-source training dashboard for your own Strava rides, and hosts a live demo of it with synthetic data. It is operated privately and on a non-commercial basis. {{SITE_LEGAL_NAME}} is the media owner, publisher and person responsible for its content. No other parties hold ownership interests, and there are no trust arrangements.</p>
+      <p><strong>Editorial line:</strong> information about Casquette – what it does, how to set it up and run it yourself – and a demo to try it. The website has no party-political agenda.</p>
+
+      <h2>Strava</h2>
+      <p>Casquette reads your own rides through the Strava API. It is an independent project and is not affiliated with, sponsored or endorsed by Strava, Inc. Strava is a trademark of Strava, Inc.</p>
+
+      <h2>Contact</h2>
+      <p>By email: <a href="mailto:{{SITE_LEGAL_EMAIL}}">{{SITE_LEGAL_EMAIL}}</a>. There is no contact form. How emails are handled is described in the <a href="privacy-policy.html">privacy policy</a>.</p>
+
+      <p class="legal-note">This notice provides information in particular in accordance with section 5 of the Austrian E-Commerce Act (ECG) and section 25 of the Austrian Media Act (MedienG), where applicable.</p>
+    </article>
+  </main>
+
+  <footer class="wrap">
+    <div class="foot">
+      <a class="logo" href="./" aria-label="Casquette – home"><span class="logo-word" aria-hidden="true"><span>c</span>asquette<span class="logo-stop">.</span><svg class="logo-cap" viewBox="-2 -2 48 36" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21C6 10 14 4 23 4C32 4 37 10 37 18M6 21C14 23.5 28 23.5 37 18M37 18C39.5 17.4 41.5 17.8 42.5 19.2C40 22.6 33 25.2 25 25.6" stroke="currentColor" stroke-width="2.4"/><path d="M19.5 4.6C17.6 9.5 17.3 16.5 18.1 23.2" stroke="var(--brand)" stroke-width="3.12"/></svg></span></a>
+      <div class="foot-links">
+        <a href="legal-notice.html" aria-current="page">Legal notice</a>
+        <a href="privacy-policy.html">Privacy policy</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,74 @@
+[
+  {
+    "id": "2023-10-26",
+    "date": "2023-10-26",
+    "ftp": 225,
+    "weight": 79.5,
+    "source": "manual",
+    "note": "Starting value"
+  },
+  {
+    "id": "2024-03-07",
+    "date": "2024-03-07",
+    "ftp": 232,
+    "weight": 78.6,
+    "source": "strava",
+    "note": "Change detected in Strava"
+  },
+  {
+    "id": "2024-07-19",
+    "date": "2024-07-19",
+    "ftp": 240,
+    "weight": 77.9,
+    "source": "manual",
+    "note": "FTP test (20 min)"
+  },
+  {
+    "id": "2024-11-29",
+    "date": "2024-11-29",
+    "ftp": 236,
+    "weight": 78.4,
+    "source": "manual",
+    "note": "FTP test (20 min)"
+  },
+  {
+    "id": "2025-04-12",
+    "date": "2025-04-12",
+    "ftp": 247,
+    "weight": 77,
+    "source": "strava",
+    "note": "Change detected in Strava"
+  },
+  {
+    "id": "2025-08-24",
+    "date": "2025-08-24",
+    "ftp": 255,
+    "weight": 76.1,
+    "source": "manual",
+    "note": "FTP test (20 min)"
+  },
+  {
+    "id": "2026-01-04",
+    "date": "2026-01-04",
+    "ftp": 251,
+    "weight": 76.6,
+    "source": "manual",
+    "note": "FTP test (20 min)"
+  },
+  {
+    "id": "2026-05-18",
+    "date": "2026-05-18",
+    "ftp": 262,
+    "weight": 75.2,
+    "source": "strava",
+    "note": "Change detected in Strava"
+  },
+  {
+    "id": "2026-09-29",
+    "date": "2026-09-29",
+    "ftp": 268,
+    "weight": 74.6,
+    "source": "manual",
+    "note": "FTP test (20 min)"
+  }
+]

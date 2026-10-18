@@ -1,0 +1,44 @@
+---
+import Base from '../../layouts/Base.astro';
+import { SegmentView, type SegmentPayload } from '../../components/segments/SegmentView';
+import { segmentPages } from '../../lib/segments.js';
+import { loadGear } from '../../lib/data.js';
+import { segmentUrl } from '../../lib/strava-links.js';
+import { t } from '../../i18n/index.js';
+
+export async function getStaticPaths() {
+  return (await segmentPages()).map((s) => ({ params: { id: s.id }, props: { seg: s } }));
+}
+const { seg } = Astro.props;
+const gearName = Object.fromEntries((await loadGear()).map((g) => [g.id, g.name]));
+const e = seg.efforts;
+const effort = (x) => ({ date: x.date, t: x.elapsed });
+// The three fastest attempts with second-by-second data: the map and the elevation profile use the first that loads
+const tracks = e.filter((x) => x.streams && x.si != null && x.ei != null).sort((a, b) => a.elapsed - b.elapsed).slice(0, 3).map((x) => ({ ride: x.ride, si: x.si, ei: x.ei }));
+
+const payload: SegmentPayload = {
+  id: seg.id,
+  name: seg.name,
+  tags: [seg.city, seg.indoor ? t('segments.virtual') : null, t('segments.cat')[seg.climb || 0] || null].filter(Boolean),
+  distance: seg.distance,
+  grade: seg.grade,
+  strava: segmentUrl(seg.id),
+  best: effort(seg.best),
+  bestSpeed: seg.bestSpeed,
+  median: seg.median,
+  last: effort(seg.last),
+  lastDelta: seg.lastDelta,
+  first: effort(seg.first),
+  improvement: seg.improvement,
+  bestW: seg.bestW,
+  bestWkg: seg.bestWkg,
+  prs: seg.prs,
+  efforts: e.map((x) => ({
+    ride: x.ride, name: x.rideName, date: x.date, t: x.elapsed, w: x.w, hr: x.hr, cad: x.cad, kg: x.kg, pr: x.pr, bike: gearName[x.gear] || null,
+  })),
+  tracks,
+};
+---
+<Base title={seg.name} active="segments">
+  <SegmentView client:load S={payload} />
+</Base>

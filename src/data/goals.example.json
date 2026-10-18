@@ -1,0 +1,47 @@
+[
+  {
+    "id": "year-km",
+    "label": "Distance per year",
+    "period": "year",
+    "metric": "distance",
+    "target": 5000
+  },
+  {
+    "id": "year-elevation",
+    "label": "Elevation per year",
+    "period": "year",
+    "metric": "elevation",
+    "target": 30000
+  },
+  {
+    "id": "month-hours",
+    "label": "Hours per month",
+    "period": "month",
+    "metric": "time",
+    "target": 25
+  },
+  {
+    "id": "week-z2",
+    "label": "Zone 2 per week",
+    "period": "week",
+    "metric": "zone_time",
+    "zone": 2,
+    "basis": "power",
+    "target": 3
+  },
+  {
+    "id": "week-rides",
+    "label": "Rides per week",
+    "period": "week",
+    "metric": "count",
+    "target": 3
+  },
+  {
+    "id": "month-long",
+    "label": "Long rides (≥ 80 km) per month",
+    "period": "month",
+    "metric": "long_rides",
+    "min_km": 80,
+    "target": 2
+  }
+]

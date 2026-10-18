@@ -1,0 +1,60 @@
+<!doctype html>
+<!--
+  The website's social image (website/og.png, 1200 × 630) – rendered by `npm run og` (scripts/og.mjs),
+  which serves website/ and loads this page on top of it. Real UI: the dashboard fragment from
+  website/ui/ (regenerate those first with `npm run fragments` when the app changed). The logo is
+  taken from index.html, so it is always the approved one.
+-->
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="/site.css">
+<link rel="stylesheet" href="/ui/ui.css">
+<style>
+  html, body { margin: 0; background: var(--page); }
+  .og { position: relative; width: 1200px; height: 630px; overflow: hidden; background: var(--page); color: var(--ink); font-family: var(--font); }
+  .og-text { position: absolute; left: 72px; top: 96px; width: 470px; }
+  .og .logo { font-size: 54px; margin-bottom: 56px; }
+  .eb { font: 400 34px/1 var(--font-logo); color: var(--brand); margin: 0 0 14px; }
+  .h { font-weight: 800; letter-spacing: -.022em; line-height: .96; font-size: 78px; margin: 0; }
+  .url { position: absolute; left: 72px; bottom: 56px; font: 500 22px/1 var(--font-mono); color: var(--muted); letter-spacing: .02em; }
+  .url b { color: var(--brand); font-weight: 500; }
+  /* The dashboard on its panel, flat, running off the right edge and fading out at the bottom */
+  /* og-panel, not .panel: site.css gives .panel section margins and padding */
+  .og-panel {
+    position: absolute; left: 620px; top: 96px; width: 700px; height: 560px; overflow: hidden;
+    background: var(--surface); border-radius: 24px;
+    -webkit-mask-image: linear-gradient(#000 55%, transparent); mask-image: linear-gradient(#000 55%, transparent);
+  }
+  .frag { position: absolute; left: 20px; top: 20px; transform: scale(.62); transform-origin: 0 0; }
+</style>
+</head>
+<body>
+<div class="og" id="og">
+  <div class="og-text">
+    <div class="logo" data-logo></div>
+    <p class="eb">ride. sync. read.</p>
+    <h1 class="h">Training dashboard for your rides.</h1>
+  </div>
+  <div class="url">casquette<b>.</b>es</div>
+  <div class="og-panel"><div class="frag" data-ui="dashboard"></div></div>
+</div>
+<script>
+  window.ogReady = Promise.all([
+    fetch('/index.html').then(function (r) { return r.text(); }).then(function (html) {
+      var logo = new DOMParser().parseFromString(html, 'text/html').querySelector('.logo-word');
+      if (!logo) throw new Error('no .logo-word in index.html');
+      document.querySelector('[data-logo]').appendChild(logo);
+    }),
+    fetch('/ui/dashboard.html').then(function (r) {
+      if (!r.ok) throw new Error('ui/dashboard.html: ' + r.status);
+      return r.text();
+    }).then(function (html) {
+      var slot = document.querySelector('[data-ui]');
+      slot.innerHTML = html;
+      slot.style.width = slot.querySelector('.ui-fragment').getAttribute('data-width') + 'px';
+    }),
+  ]).then(function () { return document.fonts.ready; });
+</script>
+</body>
+</html>

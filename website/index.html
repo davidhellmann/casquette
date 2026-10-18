@@ -1,0 +1,260 @@
+<!doctype html>
+<!--
+  Casquette promo one-pager (#43). Plain HTML/CSS/JS, no build step: upload the whole website/
+  folder to any static host. Opened directly from disk the page works, but the real UI pieces
+  (website/ui/, fetched by site.js) need a server – any static one, e.g. `python3 -m http.server` in website/.
+
+  REPOSITORY URL: lives only in the elements marked data-repo (nav GitHub link, clone command in
+  #get, footer links). Change it there.
+  LOGO: the approved "cap on the c" – same spec as the app (DESIGN.md → Brand); the markup below
+  and the .logo rules in site.css are checked against src/lib/brand.js by src/brand.test.js.
+  LEGAL PAGES AND ANALYTICS: legal-notice.html and privacy-policy.html are templates filled at deploy
+  time by `npm run site:build` (website/README.md), which also injects Cabin when SITE_CABIN_HOST is set.
+  The data-cabin-event attributes name the clicks Cabin counts; privacy-policy.html lists them – keep
+  both in step (scripts/lib/site-template.test.js checks it).
+  SOCIAL IMAGE: og.png is rendered by `npm run og` (scripts/og.mjs) from the real dashboard fragment;
+  social networks need absolute URLs, hence https://casquette.es/ in the meta tags.
+-->
+<html lang="en" class="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Casquette – training dashboard for your rides</title>
+  <meta name="description" content="A training dashboard for your Strava rides. Static, local, yours.">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#eef0f3" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0d1424" media="(prefers-color-scheme: dark)">
+  <link rel="canonical" href="https://casquette.es/">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://casquette.es/">
+  <meta property="og:site_name" content="Casquette">
+  <meta property="og:title" content="Casquette – training dashboard for your rides">
+  <meta property="og:description" content="A training dashboard for your Strava rides. Static, local, yours.">
+  <meta property="og:image" content="https://casquette.es/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Training dashboard for your rides – next to the Casquette dashboard with its key figures and the fitness chart.">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="preload" href="fonts/gabarito-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/damion-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="site.css">
+  <link rel="stylesheet" href="ui/ui.css">
+  <script>
+    // The theme before the first paint: rc_site_theme – light, dark or auto – is the website's own
+    // key (the app keeps rc_theme and its own default). Dark by default (class="dark" above);
+    // auto lets the system decide (site.css).
+    try { var t = localStorage.getItem('rc_site_theme'), c = document.documentElement.classList; if (t === 'light' || t === 'auto') c.remove('dark'); if (t === 'light') c.add('light'); } catch (e) {}
+    // Progressive enhancement flag for the scroll reveals (site.css). If site.js never runs,
+    // drop the flag again so nothing stays hidden.
+    document.documentElement.classList.add('js');
+    setTimeout(function () { if (!window.casquetteReady) document.documentElement.classList.remove('js'); }, 2000);
+  </script>
+  <script src="site.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="wrap" id="top">
+    <div class="nav">
+      <a class="logo" href="#top" aria-label="Casquette – top of page"><span class="logo-word" aria-hidden="true"><span>c</span>asquette<span class="logo-stop">.</span><svg class="logo-cap" viewBox="-2 -2 48 36" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21C6 10 14 4 23 4C32 4 37 10 37 18M6 21C14 23.5 28 23.5 37 18M37 18C39.5 17.4 41.5 17.8 42.5 19.2C40 22.6 33 25.2 25 25.6" stroke="currentColor" stroke-width="2.4"/><path d="M19.5 4.6C17.6 9.5 17.3 16.5 18.1 23.2" stroke="var(--brand)" stroke-width="3.12"/></svg></span></a>
+      <nav class="nav-links" aria-label="Main">
+        <a href="#features">Features</a>
+        <a href="#privacy">Privacy</a>
+        <a data-repo href="https://github.com/davidhellmann/casquette" data-cabin-event="Open GitHub">GitHub</a>
+        <div class="theme-switch" role="group" aria-label="Theme" hidden>
+          <button type="button" data-theme="light" aria-label="Light" aria-pressed="false"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="3.4"/><path d="M10 2v1.6M10 16.4V18M2 10h1.6M16.4 10H18M4.3 4.3l1.2 1.2M14.5 14.5l1.2 1.2M4.3 15.7l1.2-1.2M14.5 5.5l1.2-1.2"/></svg></button>
+          <button type="button" data-theme="dark" aria-label="Dark" aria-pressed="true"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16.5 12.2A7 7 0 0 1 7.8 3.5a7 7 0 1 0 8.7 8.7Z"/></svg></button>
+          <button type="button" data-theme="auto" aria-label="Auto" aria-pressed="false"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M10 3a7 7 0 0 1 0 14Z" fill="currentColor"/></svg></button>
+        </div>
+        <a class="nav-cta" href="#get">Get started</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- Hero: intro animation and live UI cards – #47. The H1 is split into words for the intro
+         (site.css → Hero). The stage is filled by site.js (→ Hero) with the real UI fragments named
+         in data-shot (website/ui/<name>.html): the dashboard, the training load card and the
+         training calendar. -->
+    <section id="hero" class="hero wrap" aria-labelledby="hero-title">
+      <p class="eyebrow">ride. sync. read.</p>
+      <h1 id="hero-title" class="h-hero"><span class="w" style="--i:0">Training</span> <span class="w" style="--i:1">dashboard</span> <span class="w" style="--i:2">for</span> <span class="w" style="--i:3">your</span> <span class="w" style="--i:4">rides.</span></h1>
+      <p class="lede">No feed, no kudos, no leaderboard. Just your training – form, load and every ride in detail, on your own computer.</p>
+      <div class="btns">
+        <a class="btn btn-primary" href="#get">Get started</a>
+        <a class="btn btn-secondary" href="demo/" data-cabin-event="See the demo">See the demo</a>
+      </div>
+      <div class="hero-stage" aria-hidden="true">
+        <div class="hero-shot fade-bottom"><div class="hero-panel"><div class="hero-fit" data-shot="dashboard"></div></div></div>
+        <div class="hero-card hero-card--load"><div class="hero-window"><div class="hero-fit" data-shot="load"></div></div></div>
+        <div class="hero-card hero-card--calendar"><div class="hero-window"><div class="hero-fit" data-shot="calendar"></div></div></div>
+      </div>
+    </section>
+
+    <!-- Feature sections: alternating, bleeding, fading shots – #48. Each shot is a real UI fragment
+         (ui/, `npm run fragments`): site.js fetches ui/<data-ui>.html into it shortly before it
+         scrolls into view; the map is an image crop (light/dark) and sits in the markup. -->
+    <div id="features">
+      <section id="dashboard" class="feature reveal" aria-labelledby="dashboard-title">
+        <div class="feature-text">
+          <p class="eyebrow">your form</p>
+          <h2 id="dashboard-title" class="h-section">Form, load, fitness.</h2>
+          <p class="lede">Pick a period and see what changed – hours, intensity, zones – and what it did to your form.</p>
+        </div>
+        <div class="feature-media">
+          <div class="feature-shot fade-bottom slide-in" data-ui="intensity" aria-hidden="true"></div>
+        </div>
+      </section>
+
+      <section id="ride" class="feature feature--flip reveal" aria-labelledby="ride-title">
+        <div class="feature-text">
+          <p class="eyebrow">every ride</p>
+          <h2 id="ride-title" class="h-section">Second by second.</h2>
+          <p class="lede">Power, heart rate, speed and elevation – coloured by zone and tied to the map. Hover the chart, see the spot.</p>
+        </div>
+        <div class="feature-media">
+          <div class="feature-shot fade-bottom slide-in" data-ui="ride" aria-hidden="true"></div>
+        </div>
+      </section>
+
+      <section id="year" class="feature reveal" aria-labelledby="year-title">
+        <div class="feature-text">
+          <p class="eyebrow">your year</p>
+          <h2 id="year-title" class="h-section">One page per year.</h2>
+          <p class="lede">Months, climbs, best efforts – the rides that mattered.</p>
+        </div>
+        <div class="feature-media">
+          <div class="feature-shot fade-bottom slide-in" data-ui="year" aria-hidden="true"></div>
+        </div>
+      </section>
+
+      <section id="map" class="feature feature--flip reveal" aria-labelledby="map-title">
+        <div class="feature-text">
+          <p class="eyebrow">every road</p>
+          <h2 id="map-title" class="h-section">All your roads, one map.</h2>
+          <p class="lede">Every track as a heatmap. Filter by year, bike or place – click a road and see every ride that took it.</p>
+        </div>
+        <div class="feature-media">
+          <div class="feature-shot fade-bottom slide-in" data-ui="map" aria-hidden="true">
+            <img class="map-light" src="ui/map-light.webp" width="1120" height="820" alt="" loading="lazy" decoding="async">
+            <img class="map-dark" src="ui/map-dark.webp" width="1120" height="820" alt="" loading="lazy" decoding="async">
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Privacy – #49 -->
+    <section id="privacy" class="wrap" aria-labelledby="privacy-title">
+      <div class="panel reveal">
+        <h2 id="privacy-title" class="h-panel">Your rides stay home.</h2>
+        <p class="lede">Every ride is a plain file on your computer. No sign-up, no cloud, no one else’s server. Delete the folder and it’s gone.</p>
+      </div>
+    </section>
+
+    <!-- Get started: requirements and steps – #49. Facts and commands follow the README
+         ("Quick start", "Building and hosting"); e2e-website checks the commands against it. -->
+    <section id="get" class="start wrap reveal" aria-labelledby="get-title">
+      <p class="eyebrow">get started</p>
+      <h2 id="get-title" class="h-panel">Four steps to your own rides.</h2>
+
+      <!-- What you need: four chips; the two you have to get are links -->
+      <ul class="needs" aria-label="What you need">
+        <li><a href="https://www.strava.com/subscribe"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg>Strava subscription</a></li>
+        <li><a href="https://nodejs.org/en/download"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l8 4.6v9.2l-8 4.6-8-4.6V7.4z"/><path d="M12 8v8"/></svg>Node.js 22.12+</a></li>
+        <li><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M7 10l3 2.5L7 15M12.5 15H17"/></svg>Git · terminal</li>
+        <li><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></svg>~10 min setup</li>
+      </ul>
+
+      <!-- The steps: icon and a line of text, the commands next to them – one command per line
+           (a .cmd-line each; the prompt is CSS, a .cmd-note is not copied). Long lines scroll inside
+           .cmd-lines, which is focusable for keyboard scrolling. site.js shows the copy
+           buttons where copying works. -->
+      <ol class="steps">
+        <li>
+          <div class="step-head">
+            <span class="step-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 20h14"/></svg></span>
+            <div>
+              <span class="step-num" aria-hidden="true">01</span>
+              <h3>Clone</h3>
+              <p>Get the code.</p>
+            </div>
+          </div>
+          <div class="cmd-block">
+            <div class="cmd-lines" tabindex="0">
+              <code class="cmd-line" data-repo>git clone https://github.com/davidhellmann/casquette.git</code>
+              <code class="cmd-line">cd casquette</code>
+            </div>
+            <button class="copy" type="button" aria-label="Copy the clone command" data-cabin-event="Copy clone command" hidden><svg class="copy-icon" viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/><path d="M10.5 3.5v-.5a1 1 0 0 0-1-1H3.5a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h.5"/></svg><svg class="done-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5"/></svg></button>
+          </div>
+        </li>
+        <li>
+          <div class="step-head">
+            <span class="step-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6.5 9.5-6.5 9.5 6.5 9.5 6.5-3.5 6.5-9.5 6.5S2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/></svg></span>
+            <div>
+              <span class="step-num" aria-hidden="true">02</span>
+              <h3>Look around</h3>
+              <p>A made-up rider with three years of rides – on localhost:4321.</p>
+            </div>
+          </div>
+          <div class="cmd-block">
+            <div class="cmd-lines" tabindex="0">
+              <code class="cmd-line">npm ci &amp;&amp; npm run dev</code>
+            </div>
+            <button class="copy" type="button" aria-label="Copy the demo command" data-cabin-event="Copy demo command" hidden><svg class="copy-icon" viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/><path d="M10.5 3.5v-.5a1 1 0 0 0-1-1H3.5a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h.5"/></svg><svg class="done-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5"/></svg></button>
+          </div>
+        </li>
+        <li>
+          <div class="step-head">
+            <span class="step-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3A4 4 0 0 0 13 5.3l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg></span>
+            <div>
+              <span class="step-num" aria-hidden="true">03</span>
+              <h3>Connect</h3>
+              <p>Create <a href="https://www.strava.com/settings/api">your API app</a> on Strava, put its ID and secret into <code class="cmd">.env</code>, sign in once.</p>
+            </div>
+          </div>
+          <div class="cmd-block">
+            <div class="cmd-lines" tabindex="0">
+              <code class="cmd-line">cp .env.example .env</code>
+              <code class="cmd-line">npm run strava:auth</code>
+            </div>
+            <button class="copy" type="button" aria-label="Copy the connect command" data-cabin-event="Copy connect command" hidden><svg class="copy-icon" viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/><path d="M10.5 3.5v-.5a1 1 0 0 0-1-1H3.5a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h.5"/></svg><svg class="done-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5"/></svg></button>
+          </div>
+        </li>
+        <li>
+          <div class="step-head">
+            <span class="step-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.5 11A7.5 7.5 0 0 0 6 7M4.5 4v3.5H8M4.5 13A7.5 7.5 0 0 0 18 17M19.5 20v-3.5H16"/></svg></span>
+            <div>
+              <span class="step-num" aria-hidden="true">04</span>
+              <h3>Sync</h3>
+              <p>The first full sync takes hours to days – Strava’s rate limits. Stop it any time; it picks up where it left off.</p>
+            </div>
+          </div>
+          <div class="cmd-block">
+            <div class="cmd-lines" tabindex="0">
+              <code class="cmd-line">npm run sync:all</code>
+              <span class="cmd-note"># later: npm run sync</span>
+            </div>
+            <button class="copy" type="button" aria-label="Copy the sync command" data-cabin-event="Copy sync command" hidden><svg class="copy-icon" viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/><path d="M10.5 3.5v-.5a1 1 0 0 0-1-1H3.5a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h.5"/></svg><svg class="done-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5"/></svg></button>
+          </div>
+        </li>
+      </ol>
+
+      <p class="start-note"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></svg><span>Putting it online? Only behind a password – it contains your GPS tracks, start and end points included. <a data-repo href="https://github.com/davidhellmann/casquette#building-and-hosting">Building and hosting</a> · All steps: <a data-repo href="https://github.com/davidhellmann/casquette#quick-start">the README</a></span></p>
+      <p class="sr-only" role="status" data-copy-status></p>
+    </section>
+  </main>
+
+  <footer class="wrap">
+    <div class="foot">
+      <a class="logo" href="#top" aria-label="Casquette – back to top"><span class="logo-word" aria-hidden="true"><span>c</span>asquette<span class="logo-stop">.</span><svg class="logo-cap" viewBox="-2 -2 48 36" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21C6 10 14 4 23 4C32 4 37 10 37 18M6 21C14 23.5 28 23.5 37 18M37 18C39.5 17.4 41.5 17.8 42.5 19.2C40 22.6 33 25.2 25 25.6" stroke="currentColor" stroke-width="2.4"/><path d="M19.5 4.6C17.6 9.5 17.3 16.5 18.1 23.2" stroke="var(--brand)" stroke-width="3.12"/></svg></span></a>
+      <div class="foot-links">
+        <a data-repo href="https://github.com/davidhellmann/casquette" data-cabin-event="Open GitHub">GitHub</a>
+        <a href="legal-notice.html">Legal notice</a>
+        <a href="privacy-policy.html">Privacy policy</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
