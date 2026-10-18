@@ -20,11 +20,12 @@ const startOf = (r) => r.start ?? +r.d;
  * @param opts.today last calendar day that can hold rides; later days are `future` (default: `to`)
  * @param opts.measure 'load' | 'km' – what decides the level of a ride day
  * @returns {{
- *   days: Record<string, { d: Date, rides: object[], n: number, value: number, sec: number }>,
+ *   days: Record<string, { d: Date, rides: object[], latest: object, n: number, value: number, sec: number }>,
  *   cells: { d: Date, key: string, week: number, day: object|undefined, level: number, outside: boolean, future: boolean }[],
  *   weeks: number, activeDays: number, longestStreak: number, currentStreak: number, weekStreak: number
  * }}
- * `days`: ride days from `from` to the earlier of `to` and `today`; rides of a day in chronological order.
+ * `days`: ride days from `from` to the earlier of `to` and `today`; rides of a day in chronological order,
+ *   `latest` = the day's most recent ride (the one a calendar cell opens).
  * `cells`: every day of the whole weeks (Monday–Sunday) covering `from`–`to`; `outside` = not in `from`–`to`.
  * Level 0 = no ride; ride days 1–4 by the quartiles of the positive day values (a day with 0 is level 1).
  * Streaks count consecutive ride days in the calendar: the longest and the current one
@@ -41,7 +42,7 @@ export function trainingCalendar(rides, { from, to, today = to, measure }) {
     const key = calendarDay(r.d);
     if (key < firstKey || key > lastKey) continue;
     const day = days[key] ||= { d: startOfDay(r.d), rides: [], n: 0, value: 0, sec: 0 };
-    day.rides.push(r); day.n++; day.value += valueOf(r); day.sec += r.moving_time || 0;
+    day.rides.push(r); day.latest = r; day.n++; day.value += valueOf(r); day.sec += r.moving_time || 0;
   }
 
   const values = Object.values(days).map((o) => o.value).filter((v) => v > 0).sort((a, b) => a - b);

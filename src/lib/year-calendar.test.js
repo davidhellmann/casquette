@@ -23,9 +23,9 @@ describe('yearCalendar', () => {
     expect(C.days.filter(Boolean)).toHaveLength(365);
   });
 
-  it('describes a ride day: kilometres, rides and names in order; it opens the first ride', () => {
+  it('describes a ride day: kilometres, rides and names in order; it opens the most recent ride', () => {
     expect(at(C, new Date(2025, 0, 1))).toEqual({
-      level: 1, title: 'Wed, 01/01/2025', detail: '2 rides · 40.0 km', notes: ['Ride 1', 'Evening spin'], href: '/casquette/rides/1',
+      level: 1, title: 'Wed, 01/01/2025', detail: '2 rides · 40.0 km', notes: ['Ride 1', 'Evening spin'], href: '/casquette/rides/2',
     });
     expect(at(C, new Date(2025, 0, 2))).toEqual({ level: 0, title: 'Thu, 02/01/2025', notes: ['Rest day'] });
   });

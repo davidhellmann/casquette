@@ -21,7 +21,7 @@ export function yearCalendar(calendar, year, { base }) {
       title,
       detail: t('year.calTip', { rides: t('common.rides', { n: nf(day.n) }), km: nf(day.value, 1) }),
       notes: day.rides.map((r) => trunc(r.name, 40)),
-      href: `${base}rides/${day.rides[0].id}`,
+      href: `${base}rides/${day.latest.id}`,
     };
   });
   const start = weekStart(new Date(year, 0, 1));

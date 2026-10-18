@@ -36,6 +36,7 @@ describe('trainingCalendar – grid', () => {
   it('collects the rides of a day in chronological order with the summed measure', () => {
     const day = yearCal().days['2025-01-01'];
     expect(day.rides.map((r) => r.id)).toEqual([1, 2]);
+    expect(day.latest.id).toBe(2); // a calendar cell opens the most recent ride of the day
     expect(day).toMatchObject({ n: 2, value: 40, sec: 7200 });
     const byLoad = trainingCalendar(year, { from: new Date(2025, 0, 1), to: new Date(2025, 11, 31), measure: 'load' });
     expect(byLoad.days['2025-06-02'].value).toBe(100);
