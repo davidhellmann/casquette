@@ -19,6 +19,7 @@ export default {
     prs: { one: '{n} PR', other: '{n} PRs' },
     clock: '{t}',
     restDay: 'Rest day',
+    ridesOn: 'Rides on {date}',
     allTime: 'All-time',
     indoor: 'Indoor',
     outdoor: 'Outdoor',
@@ -299,6 +300,7 @@ export default {
     },
     heat: {
       tip: '{rides} · {dur} · load {load}',
+      rideTip: '{dur} · load {load}',
       activeDays: 'active days',
       longest: 'longest streak (days)',
       current: 'current streak',
@@ -640,6 +642,7 @@ export default {
     calendar: 'Calendar',
     calendarSub: 'One tile per day · colour = kilometres · click opens the ride',
     calTip: '{rides} · {km} km',
+    calRideTip: '{km} km',
     calendarLabel: 'Calendar {y}',
     streakDays: 'longest streak (days)',
     bestWeekKm: 'km in the best week',

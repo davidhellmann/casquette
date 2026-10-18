@@ -17,8 +17,11 @@ export function calendarDays(H) {
     return {
       level, dim, title,
       detail: hm('tip', { rides: t('common.rides', { n: nf(rideDay.n) }), dur: fmtDur(rideDay.sec), load: nf(rideDay.load) }),
-      notes: rideDay.names.map((n) => trunc(n, 40)),
+      notes: rideDay.rides.slice(0, 3).map((r) => trunc(r.name, 40)),
       href: routes.ride(rideDay.id),
+      ...(rideDay.n > 1 && {
+        rides: rideDay.rides.map((r) => ({ href: routes.ride(r.id), name: r.name, detail: hm('rideTip', { dur: fmtDur(r.sec), load: nf(r.load) }) })),
+      }),
     };
   });
 }

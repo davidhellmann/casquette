@@ -110,7 +110,7 @@ Look here first. If something fits 80 %, extend it rather than writing a second 
 | Colour + shape of a series | `SERIES`, `zoneColor()`, `COMPARE_COLORS`, `barRadius()`, `niceTicks()`, `thin()` | `charts/series.ts` |
 | Bikes, terrains | `bikeColors()`, `terrainColor()` | `charts/categories.ts` |
 | Time in zones, zone bars | `TimeInZones` (stored seconds), `ZoneBars` (rows), `ZoneLabel`, `Bar`, `ShareStrip` | `charts/ZoneBars.tsx` |
-| Training calendar | `TrainingCalendar` + `CalendarStats` + `CalendarLegend` | `charts/TrainingCalendar.tsx` |
+| Training calendar | `TrainingCalendar` + `CalendarStats` + `CalendarLegend` (a day with several rides opens a `DropdownMenu` to choose one) | `charts/TrainingCalendar.tsx` |
 | Gauge, share ring | `FormGauge`, `PolarizationRing` | `charts/` |
 | Table | `DataTable` + `dataTableColumns<Row>()`, `numeric()`, `numSort`; ride lists: `RideList` + `rideRows()` (built on `rideColumns()`, `rideGrouping()`, `rideTiles()`, `WithUnit` – see Tables) | `app/DataTable.tsx`, `app/table-groups.ts`, `rides/RideList.tsx`, `rides/ride-list.js`, `rides/ride-columns.tsx` |
 | A ride's classification, TIZ basis, decoupling as text and tones | `rideClassification()`, `tizBasisLabel()`, `rideTimeInZones()`, `rideDecoupling()` + `DecouplingScale` (one scale, 0 – 1.5 × the drift limit), `zoneBg()`, `toneBg()`, `ZoneBadge` | `ride/ride-presentation.js`, `ride/DecouplingScale.tsx`, `rides/ride-columns.tsx` |

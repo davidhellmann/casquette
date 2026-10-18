@@ -25,7 +25,7 @@ const startOf = (r) => r.start ?? +r.d;
  *   weeks: number, activeDays: number, longestStreak: number, currentStreak: number, weekStreak: number
  * }}
  * `days`: ride days from `from` to the earlier of `to` and `today`; rides of a day in chronological order,
- *   `latest` = the day's most recent ride (the one a calendar cell opens).
+ *   `latest` = the day's most recent ride (the cell's link; several rides also get a menu).
  * `cells`: every day of the whole weeks (Monday–Sunday) covering `from`–`to`; `outside` = not in `from`–`to`.
  * Level 0 = no ride; ride days 1–4 by the quartiles of the positive day values (a day with 0 is level 1).
  * Streaks count consecutive ride days in the calendar: the longest and the current one

@@ -24,10 +24,15 @@ describe('yearCalendar', () => {
     expect(C.days.filter(Boolean)).toHaveLength(365);
   });
 
-  it('describes a ride day: kilometres, rides and names in order; it opens the most recent ride', () => {
+  it('describes a ride day: kilometres, rides and names in order; a menu lists the rides, the cell links the most recent', () => {
     expect(at(C, new Date(2025, 0, 1))).toEqual({
       level: 1, title: 'Wed, 01/01/2025', detail: '2 rides · 40.0 km', notes: ['Ride 1', 'Evening spin'], href: routes.ride(2),
+      rides: [
+        { href: routes.ride(1), name: 'Ride 1', detail: '10.0 km' },
+        { href: routes.ride(2), name: 'Evening spin', detail: '30.0 km' },
+      ],
     });
+    expect(at(C, new Date(2025, 5, 2))).not.toHaveProperty('rides');
     expect(at(C, new Date(2025, 0, 2))).toEqual({ level: 0, title: 'Thu, 02/01/2025', notes: ['Rest day'] });
   });
 

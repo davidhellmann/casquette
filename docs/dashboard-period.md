@@ -104,7 +104,7 @@ Goals still delegate to `evalGoal`, now with the same explicit clock.
   input order.
   The 52-week heatmap still spans 53 calendar weeks and the previous /52 denominator.
   Its levels are the quartiles of the positive day loads; a ride day with load 0 is
-  level 1. Rides of a day are listed in chronological order; the cell opens the most recent one.
+  level 1. Rides of a day are listed in chronological order; a day with one ride links to it, a day with several opens a menu to choose one.
 
 ## Regression and evidence
 

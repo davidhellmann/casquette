@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from './fixtures';
+import { expect, test, type Page } from './fixtures';
 
 const calendar = (page) => page.getByRole('grid', { name: 'Training calendar' });
 /** Monday = 0 … Sunday = 6, like the calendar rows. */
@@ -85,13 +85,73 @@ test('Enter or a click on a day with a ride opens the ride', async ({ page }) =>
   await expect(page).toHaveURL(/\/rides\/[^/]+\/?$/);
 });
 
+/**
+ * The demo dataset has one ride per day at most. The dashboard calendar is computed in the browser
+ * from #dash-data, so move the second-newest stat ride onto the newest one's day (an hour earlier):
+ * both entries then link to real ride pages. Returns their ids, earlier first.
+ */
+async function withTwoRidesOnOneDay(page: Page) {
+  const ids: string[] = [];
+  await page.route(/\/$/, async (route) => {
+    const html = await (await route.fetch()).text();
+    const out = html.replace(/(<script type="application\/json" id="dash-data">)([\s\S]*?)(<\/script>)/, (_, open, json, close) => {
+      const data = JSON.parse(json);
+      const stat = data.rides.filter((r) => r.stats !== false).sort((a, b) => b.start_local.localeCompare(a.start_local));
+      const [newest, moved] = stat;
+      moved.start_local = `${newest.start_local.slice(0, 10)}T00:30:00`;
+      moved.start = typeof newest.start === 'number' ? newest.start - 3600e3 : new Date(Date.parse(newest.start) - 3600e3).toISOString();
+      ids.push(moved.id, newest.id);
+      return open + JSON.stringify(data).replace(/</g, '\\u003c') + close;
+    });
+    await route.fulfill({ response: await route.fetch(), body: out, headers: { 'content-type': 'text/html; charset=utf-8' } });
+  });
+  await page.goto('/');
+  return ids;
+}
+
+test('a day with several rides opens a menu to choose one – by click or keyboard', async ({ page }) => {
+  const [earlier, later] = await withTwoRidesOnOneDay(page);
+  const grid = calendar(page);
+  const day = grid.locator('button[aria-haspopup="menu"]');
+  await expect(day).toHaveCount(1);
+  const label = (await day.getAttribute('aria-label'))!;
+
+  await day.click();
+  const menu = page.getByRole('menu');
+  await expect(menu).toHaveAccessibleName(`Rides on ${label}`);
+  await expect(page.getByRole('tooltip')).toBeHidden(); // the menu replaces the tooltip
+  const items = menu.getByRole('menuitem');
+  await expect(items).toHaveCount(2);
+  await expect(items.nth(0)).toHaveAttribute('href', new RegExp(`/rides/${earlier}$`));
+  await expect(items.nth(1)).toHaveAttribute('href', new RegExp(`/rides/${later}$`));
+  await expect(items.nth(1)).toContainText(/(\d+:\d\d h|\d+ min) · load \d+/);
+  const { violations } = await new AxeBuilder({ page }).include('[role="menu"]').analyze();
+  expect(violations.map((v) => v.id)).toEqual([]);
+  await page.keyboard.press('Escape');
+  await expect(menu).toBeHidden();
+  await expect(day).toBeFocused();
+
+  // Arrow keys still move through the grid from that day; Enter opens the menu, arrows pick a ride
+  await page.keyboard.press('ArrowLeft');
+  await expect(day).not.toBeFocused();
+  await page.keyboard.press('ArrowRight');
+  await expect(day).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(menu).toBeVisible();
+  await page.keyboard.press('End');
+  await expect(items.nth(1)).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(new RegExp(`/rides/${later}/?$`));
+});
+
 test('summary stats and the less → more legend sit under the grid', async ({ page }) => {
   await page.goto('/');
   const stats = page.getByTestId('calendar-stats');
   const stat = (label: string) => stats.locator('div').filter({ has: page.getByRole('term').getByText(label, { exact: true }) }).getByRole('definition');
   for (const label of ['active days', 'longest streak (days)', 'current streak', 'consecutive weeks with a ride', 'avg hours / week'])
     await expect(stat(label)).toHaveText(/^[\d,.]+$/);
-  const rideDays = await calendar(page).getByRole('link').count();
+  // Ride days are links, days with several rides menu buttons
+  const rideDays = await calendar(page).getByRole('link').count() + await calendar(page).getByRole('button').count();
   expect(rideDays).toBeGreaterThan(0);
   await expect(stat('active days')).toHaveText(String(rideDays));
   await expect(page.getByTestId('calendar-legend')).toHaveText(/less\s*more/);

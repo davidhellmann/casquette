@@ -23,6 +23,9 @@ export function yearCalendar(calendar, year) {
       detail: t('year.calTip', { rides: t('common.rides', { n: nf(day.n) }), km: nf(day.value, 1) }),
       notes: day.rides.map((r) => trunc(r.name, 40)),
       href: routes.ride(day.latest.id),
+      ...(day.n > 1 && {
+        rides: day.rides.map((r) => ({ href: routes.ride(r.id), name: r.name, detail: t('year.calRideTip', { km: nf((r.distance || 0) / 1000, 1) }) })),
+      }),
     };
   });
   const start = weekStart(new Date(year, 0, 1));

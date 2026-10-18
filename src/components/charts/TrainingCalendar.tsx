@@ -1,5 +1,15 @@
 import * as React from 'react';
 import { cn } from 'cn';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { t } from '@/i18n/index.js';
+
+/** One ride of a day with several rides – an entry of the cell's menu. */
+export interface CalendarRide {
+  href: string;
+  name: string;
+  /** Muted second line, e.g. "1:10 h · load 60". */
+  detail?: string;
+}
 
 /** One day of the calendar. */
 export interface CalendarDay {
@@ -11,8 +21,10 @@ export interface CalendarDay {
   detail?: string;
   /** Muted tooltip lines: ride names, or "Rest day". */
   notes?: string[];
-  /** Click / Enter opens this URL (the day's ride). */
+  /** Click / Enter opens this URL (the day's ride; with several rides the most recent one). */
   href?: string;
+  /** Two or more rides on the day: click / Enter opens a menu to choose one instead of following `href`. */
+  rides?: CalendarRide[];
   /** Outside the highlighted period – drawn faint. */
   dim?: boolean;
 }
@@ -36,14 +48,17 @@ const columns = (weeks: number) => ({ gridTemplateColumns: `1.75rem repeat(${wee
 /**
  * Training calendar (heatmap): one row per weekday, one column per week, colour = level.
  * An ARIA grid with a roving focus – arrow keys move by day/week, Home/End along the row,
- * Enter opens the day's ride. Hover or focus shows the day in a tooltip.
+ * Enter opens the day's ride – or, on a day with several rides, a menu to choose one. Hover or focus
+ * shows the day in a tooltip.
  */
 export function TrainingCalendar({ days, weeks, months, weekdays, label, className }: TrainingCalendarProps) {
   const last = days.findLastIndex(Boolean);
   const [focus, setFocus] = React.useState(last);
   const [focused, setFocused] = React.useState(false);
   const [hover, setHover] = React.useState<number | null>(null);
-  const shown = hover ?? (focused ? focus : null);
+  // A day's ride menu replaces the tooltip while it is open.
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  const shown = menuOpen ? null : hover ?? (focused ? focus : null);
   const tipId = React.useId();
   const wrap = React.useRef<HTMLDivElement>(null);
   const tip = React.useRef<HTMLDivElement>(null);
@@ -68,6 +83,8 @@ export function TrainingCalendar({ days, weeks, months, weekdays, label, classNa
   // Roving focus (APG grid): arrows move by day (up/down) and week (left/right) without wrapping,
   // Home/End to the ends of the row, Ctrl+Home/End to the first/last day.
   const onKeyDown = (e: React.KeyboardEvent) => {
+    // Keys inside a ride menu (rendered in a portal) bubble here through React – they are the menu's.
+    if (!e.currentTarget.contains(e.target as Node)) return;
     const row = focus % 7, inRow = (i: number) => i % 7 === row && !!days[i];
     const firstOf = (ok: (i: number) => boolean) => days.findIndex((d, i) => ok(i) && !!d);
     const lastOf = (ok: (i: number) => boolean) => days.findLastIndex((d, i) => ok(i) && !!d);
@@ -118,7 +135,7 @@ export function TrainingCalendar({ days, weeks, months, weekdays, label, classNa
                     'aria-label': day.title,
                     'aria-describedby': i === shown ? tipId : undefined,
                     className: cn(
-                      'block aspect-square rounded-[3px] outline-offset-1 hover:outline hover:outline-1 hover:outline-foreground/40 focus-visible:outline-2 focus-visible:outline-ring',
+                      'block aspect-square w-full rounded-[3px] outline-offset-1 hover:outline hover:outline-1 hover:outline-foreground/40 focus-visible:outline-2 focus-visible:outline-ring',
                       LEVEL[day.level],
                       day.dim && 'opacity-30',
                     ),
@@ -129,9 +146,29 @@ export function TrainingCalendar({ days, weeks, months, weekdays, label, classNa
                       role="gridcell"
                       onMouseEnter={() => setHover(i)}
                       onFocus={() => { setFocus(i); setFocused(true); }}
-                      {...(day.href ? {} : own)}
+                      {...(day.href || day.rides ? {} : own)}
                     >
-                      {day.href && <a href={day.href} {...own} />}
+                      {day.rides ? (
+                        <DropdownMenu onOpenChange={setMenuOpen}>
+                          <DropdownMenuTrigger asChild>
+                            {/* Arrow keys move through the grid; only Enter / Space / click open the menu. */}
+                            <button type="button" {...own} onKeyDown={(e) => { if (e.key.startsWith('Arrow')) e.preventDefault(); }} />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start" className="min-w-48 max-w-72" aria-labelledby={undefined} aria-label={t('common.ridesOn', { date: day.title })}>
+                            <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">{day.title}</DropdownMenuLabel>
+                            {day.rides.map((r) => (
+                              <DropdownMenuItem key={r.href} asChild>
+                                <a href={r.href} className="flex-col items-start gap-0">
+                                  <span className="max-w-full truncate">{r.name}</span>
+                                  {r.detail && <span className="text-xs text-muted-foreground">{r.detail}</span>}
+                                </a>
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      ) : (
+                        day.href && <a href={day.href} {...own} />
+                      )}
                     </div>
                   );
                 })}

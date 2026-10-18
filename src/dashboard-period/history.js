@@ -24,7 +24,8 @@ export function history(D, selectedDays) {
 
   const C = trainingCalendar(R, { from: D.heatStart, to: end, measure: 'load' });
   const day = Object.fromEntries(Object.entries(C.days).map(([key, o]) =>
-    [key, { load: o.value, sec: o.sec, n: o.n, names: o.rides.slice(0, 3).map(r => r.name), id: o.latest.id }]));
+    [key, { load: o.value, sec: o.sec, n: o.n, id: o.latest.id,
+      rides: o.rides.map(r => ({ id: r.id, name: r.name, sec: r.moving_time || 0, load: r.load || 0 })) }]));
   const cells = C.cells.map(({ d, week, key, level, future }) => ({ d, week, rideDay: day[key], future,
     dim: selectedDays !== 0 && D.days < 365 && d < D.periodStart, level }));
   const months = []; let lastM = -1;
