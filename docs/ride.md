@@ -294,12 +294,19 @@ Calendar views end at the calendar end (year review calendar, gear months, perfo
 running year is the year of the calendar end and compares year to date up to it.
 
 Each page has one payload module of the form `(dataset, params) → payload`, typed against its
-island's payload type (TypeScript, `src/lib/*-payload.ts`): `ride-payload.ts` (`RidePayload`),
+island's payload type (`src/lib/*-payload.ts`): `ride-payload.ts` (`RidePayload`),
 `gear-payload.ts` (`GearPayload`, `GearDetailPayload`), `segment-payload.ts` (`SegmentsPayload`,
 `SegmentPayload`), `performance-payload.ts` (`PerformancePayload`), `year-payload.ts` (`YearsPayload`,
 `YearPayload`) and `map-payload.ts` (`MapViewProps` plus the `#map-data` JSON). The dashboard and the
 ride log encode the dataset with `encodeDashboard`. The `.astro` pages only call the builder and
 render; internal links come from `src/lib/routes.ts`. Payload tests run over the in-memory dataset
-(`src/lib/dataset-fixture.ts`). TypeScript is not a dependency and the build does not type-check;
-to check the payload modules against the island types, install it without saving
-(`npm i --no-save typescript`) and run `npx tsc --noEmit -p .`.
+(`src/lib/dataset-fixture.ts`).
+
+Types: the build dataset is `BuildDataset` (with `BuildCalendar`, `DatasetGear`, `DataSource`) in
+`build-dataset.ts`; its rides are the ride module's `Ride`. A page payload type is declared once, by
+the island that renders it (`RidePayload` in `RideView.tsx` …) – the island owns the contract – and
+the builder imports it with `import type`. The dashboard payload's types live with its codec in
+`dashboard-payload.ts`: `DashboardRide` (what `decodeDashboard` returns, assignable to the dashboard
+period's `PeriodRide`) and `DecodedPeriod` (the islands' `D`). The content schemas' parsed entries are
+checked against `RideFrontmatter` and `GearFrontmatter` at compile time (`src/content-schemas.ts`).
+`npm run typecheck` checks all of it.

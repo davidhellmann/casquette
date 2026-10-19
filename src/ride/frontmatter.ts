@@ -4,8 +4,9 @@
  * The sync writes the ride file (scripts/shared/ride-file.ts) with every Strava field of the activity;
  * only the fields `processRide` reads are declared here, all others pass through untyped. The content
  * collection schema (src/content-schemas.ts) checks just the required fields and lets everything else
- * through (`looseObject`, `metrics` as a record of anything), so its inferred type is too loose to
- * derive this one from – callers hand the parsed frontmatter over as `RideFrontmatter`.
+ * through (`looseObject`, `metrics` only checked to be an object), so its inferred type is too loose to
+ * derive this one from; src/content-schemas.ts checks at compile time that a parsed ride entry is
+ * assignable to `RideFrontmatter`.
  * Unknown values are null or missing.
  */
 import type { PowerCurve, ZoneSet } from '../training/index.ts';
