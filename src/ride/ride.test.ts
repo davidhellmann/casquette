@@ -1,19 +1,19 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import { describe, expect, it } from 'vitest';
 import { athleteTimeline } from '../training/index.ts';
 import { processRide } from './index.ts';
+import type { RideFrontmatter } from './index.ts';
 
 const timeline = athleteTimeline({ history: [
   { date: '2024-01-01', ftp: 200, weight: 80 },
   { date: '2024-06-01', ftp: 300, weight: 75 },
 ] });
-const raw = (overrides = {}) => ({
+const raw = (overrides: Partial<RideFrontmatter> = {}) => ({
   id: 42, start_date_local: '2024-05-01T12:00:00', sport_type: 'Ride',
   moving_time: 3600, device_watts: true, average_watts: 180, average_heartrate: 150,
   suffer_score: 90, metrics: { np: 240, ftp_used: 400, tss: 999, intensity_factor: 9, efficiency_factor: 9 },
   ...overrides,
 });
-const process = (overrides) => {
+const process = (overrides?: Partial<RideFrontmatter>) => {
   const a = raw(overrides);
   return processRide(a, timeline.at(a.start_date_local));
 };
@@ -105,8 +105,8 @@ describe('Ride – public, pure processing', () => {
   it('returns codes only – no localised text – and names a ride without a name "Ride"', () => {
     const r = process({ name: '' });
     expect(r.name).toBe('Ride');
-    for (const key of ['clsP', 'clsH']) expect(Object.keys(r[key]).sort()).toEqual(['source', 'zone']);
-    for (const kind of ['power', 'hr']) expect(r.tizBasis[kind]).not.toHaveProperty('label');
+    for (const key of ['clsP', 'clsH'] as const) expect(Object.keys(r[key]).sort()).toEqual(['source', 'zone']);
+    for (const kind of ['power', 'hr'] as const) expect(r.tizBasis[kind]).not.toHaveProperty('label');
   });
 
   it('carries the ride page details: elevation range, perceived exertion, laps, splits and segment efforts', () => {
