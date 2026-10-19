@@ -1,12 +1,12 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import { describe, expect, it } from 'vitest';
-import { rideCurveData, zoneBands, zoneRuns } from './ride-data.ts';
+import { isLatLng, rideCurveData, zoneBands, zoneRuns, type RoutePoint } from './ride-data.ts';
+import type { LatLng } from './RideMap';
 
 const ZONES = [{ min: 0, max: 100 }, { min: 101, max: 200 }, { min: 201, max: null }];
 
 describe('route colouring', () => {
   it('splits the route into connected runs per zone', () => {
-    const pts = [[1, 1], [2, 2], [3, 3], [4, 4], [5, 5]];
+    const pts: LatLng[] = [[1, 1], [2, 2], [3, 3], [4, 4], [5, 5]];
     const runs = zoneRuns(pts, [50, 60, 150, 250, null], ZONES);
     expect(runs.map((r) => r.zone)).toEqual([1, 2, 3]);
     expect(runs[1].points[0]).toEqual([2, 2]);
@@ -15,6 +15,11 @@ describe('route colouring', () => {
 
   it('draws one run without values and skips points without a position', () => {
     expect(zoneRuns([[1, 1], null, [2, 2]], null, null)).toEqual([{ zone: 0, points: [[1, 1], [2, 2]] }]);
+  });
+
+  it('only draws (and marks on hover) points with a position', () => {
+    const points: (RoutePoint | undefined)[] = [[48.1, 11.5], null, [null, null], undefined];
+    expect(points.map((p) => isLatLng(p))).toEqual([true, false, false, false]);
   });
 });
 

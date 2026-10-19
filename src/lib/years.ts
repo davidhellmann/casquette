@@ -1,16 +1,23 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 /** Year reviews (server-side) over the build dataset (build-dataset.ts). */
 import { totals } from './build-dataset.ts';
+import type { BuildDataset } from './build-dataset.ts';
 import { bestCurve, calendarDay, records, sameDayLastYear, trainingCalendar, weekStart } from '../training/index.ts';
 import { tizTotal } from '../ride/index.ts';
+import type { Ride } from '../ride/index.ts';
 import { t } from '../i18n/index.ts';
 
-export const MONTHS = t('common.monthsShort');
-export const MONTHS_L = t('common.monthsLong');
-export const WEEKDAYS = t('common.weekdaysLong');
+export const MONTHS: readonly string[] = t('common.monthsShort');
+export const MONTHS_L: readonly string[] = t('common.monthsLong');
+export const WEEKDAYS: readonly string[] = t('common.weekdaysLong');
+
+/** Calendar day of a date that is valid by construction (a dataset ride's date, the calendar end). */
+const dayKey = (d: Date): string => calendarDay(d) ?? '';
+
+/** One year of stat rides with its totals, months, calendar, bikes, highlights and curves (`yearData`). */
+export type YearData = ReturnType<typeof yearData>;
 
 /** Years with stat rides, newest first. */
-export function yearList(data) {
+export function yearList(data: BuildDataset): number[] {
   return Array.from(new Set(data.calendar.statRides.map((r) => r.year))).sort((a, b) => b - a);
 }
 
@@ -18,7 +25,7 @@ export function yearList(data) {
  * One year of stat rides. The running year is the year of the calendar end: it counts up to the calendar
  * end and compares with the previous year up to the same date (year to date).
  */
-export function yearData(data, year) {
+export function yearData(data: BuildDataset, year: number) {
   const { statRides: all, end } = data.calendar;
   const rides = all.filter((r) => r.year === year);
   const prev = all.filter((r) => r.year === year - 1);
@@ -27,13 +34,13 @@ export function yearData(data, year) {
   // Athlete state at year end (running year: today) – for the FTP line, not for TIZ boundaries
   const athleteState = isCurrent ? data.athleteToday : data.athleteAt(new Date(year, 11, 31));
   // Previous year up to the same date (for fair comparisons in the running year)
-  const lastYearCut = calendarDay(sameDayLastYear(end));
-  const tpYtd = isCurrent ? totals(prev.filter((r) => calendarDay(r.d) <= lastYearCut)) : tp;
+  const lastYearCut = dayKey(sameDayLastYear(end));
+  const tpYtd = isCurrent ? totals(prev.filter((r) => dayKey(r.d) <= lastYearCut)) : tp;
 
   const months = MONTHS.map((_, m) => {
     const rs = rides.filter((r) => r.month === m);
     const tt = totals(rs);
-    const wR = rs.filter((r) => r.w != null);
+    const wR = rs.filter((r): r is Ride & { w: number } => r.w != null);
     const wT = wR.reduce((s, r) => s + r.moving_time, 0);
     return {
       m, rides: rs, t: tt,
@@ -44,19 +51,19 @@ export function yearData(data, year) {
   });
 
   // Weeks & streaks
-  const weekKm = {};
-  rides.forEach((r) => { const k = calendarDay(weekStart(r.d)); weekKm[k] = (weekKm[k] || 0) + r.distance / 1000; });
+  const weekKm: Record<string, number> = {};
+  rides.forEach((r) => { const k = dayKey(weekStart(r.d)); weekKm[k] = (weekKm[k] || 0) + r.distance / 1000; });
   const bestWeekK = Object.entries(weekKm).sort((a, b) => b[1] - a[1])[0];
   const calendar = trainingCalendar(rides, { from: new Date(year, 0, 1), to: new Date(year, 11, 31), today: end, measure: 'km' });
-  const wd = Array(7).fill(0); rides.forEach((r) => wd[(r.d.getDay() + 6) % 7]++);
+  const wd: number[] = Array(7).fill(0); rides.forEach((r) => wd[(r.d.getDay() + 6) % 7]++);
   const favWd = wd.indexOf(Math.max(...wd));
   const hours = rides.map((r) => r.d.getHours() + r.d.getMinutes() / 60);
 
   // Bikes
   const gear = data.gear;
-  const byGear = {};
+  const byGear: Record<string, number> = {};
   rides.forEach((r) => { if (r.gear_id) byGear[r.gear_id] = (byGear[r.gear_id] || 0) + r.distance / 1000; });
-  const bikes = Object.entries(byGear).map(([id, km]) => ({ id, km, name: (gear.find((g) => g.id === id) || {}).name || id, n: rides.filter((r) => r.gear_id === id).length })).sort((a, b) => b.km - a.km);
+  const bikes = Object.entries(byGear).map(([id, km]) => ({ id, km, name: gear.find((g) => g.id === id)?.name || id, n: rides.filter((r) => r.gear_id === id).length })).sort((a, b) => b.km - a.km);
 
   const best = records(rides);
   const highlights = {

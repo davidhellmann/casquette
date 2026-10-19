@@ -1,34 +1,44 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import { describe, expect, it } from 'vitest';
 import { processRide } from '../ride/index.ts';
+import type { Ride, RideFrontmatter, RideMetrics } from '../ride/index.ts';
 import { athleteTimeline } from '../training/index.ts';
+import type { AthleteState } from '../training/index.ts';
 import { decodeDashboard, encodeDashboard } from './dashboard-payload.ts';
+import type { DashboardRide } from './dashboard-payload.ts';
 import { evalGoal } from '../scripts/goals.ts';
+import type { Goal, GoalMetric } from '../scripts/goals.ts';
 import { rideChips, rideClassification, rideTimeInZones } from '../components/ride/ride-presentation.ts';
 
 const timeline = athleteTimeline({ history: [
   { date: '2023-01-01', ftp: 200, weight: 100 },
   { date: '2024-01-01', ftp: 300, weight: 75 },
 ] });
-const make = (id, date, overrides = {}) => {
-  const a = { id, start_date_local: `${date}T12:00:00`, sport_type: 'Ride',
+const make = (id: string, date: string, overrides: Partial<RideFrontmatter> = {}) => {
+  const a: RideFrontmatter = { id, start_date_local: `${date}T12:00:00`, sport_type: 'Ride',
     moving_time: 3600, distance: 90000, total_elevation_gain: 500,
     device_watts: true, average_watts: 200, average_heartrate: 140,
     metrics: { np: 200, ftp_used: 250, power_curve: { 60: 400 }, time_in_power_zones: [0, 1800], time_in_hr_zones: [0, 900] },
-    summary_polyline: 'not-for-dashboard', segment_efforts: [{ id: 1 }], ...overrides };
+    summary_polyline: 'not-for-dashboard', segment_efforts: [{ segment_id: 1 }], ...overrides };
   return processRide(a, timeline.at(a.start_date_local));
 };
 /** The round trip build → #dash-data → island. */
-const browser = (rides) => decodeDashboard(encodeDashboard({ rides })).rides;
+const browser = (rides: Ride[]) => decodeDashboard(encodeDashboard({ rides })).rides;
 /** The rides as they travel in #dash-data. */
-const wire = (rides) => JSON.parse(encodeDashboard({ rides })).rides;
+const wire = (rides: Ride[]) => JSON.parse(encodeDashboard({ rides })).rides;
+/** A transported ride by id (the test fails without it). */
+const byId = (rides: DashboardRide[], id: string) => {
+  const r = rides.find((x) => x.id === id);
+  if (!r) throw new Error(`No ride ${id}`);
+  return r;
+};
 
 describe('dashboard payload: round trip build → #dash-data → island', () => {
   it('carries the athlete, today\'s athlete state, goals and the stream count, and escapes "<"', () => {
-    const athlete = { profile: { first_name: '<Jane>' }, gear: [{ id: 'b1' }], synced_at: '2024-05-01T10:00:00Z', sync: { list_complete: true }, token: 'never sent' };
-    const athleteState = { ftp: 250, weight: 70, zones: { ftp: 250 } };
-    const goals = [{ metric: 'distance', period: 'year', target: 5000 }];
-    const rides = [make('a', '2024-05-01', { streams: true }), make('b', '2024-05-02')];
+    const athlete = { profile: { first_name: '<Jane>', last_name: null }, gear: [{ id: 'b1', name: 'Bike' }], synced_at: '2024-05-01T10:00:00Z', sync: { list_complete: true }, token: 'never sent' };
+    // Only the fields the payload carries through (the zones are not inspected)
+    const athleteState = { ftp: 250, weight: 70, zones: { ftp: 250 } } as unknown as AthleteState;
+    const goals: Goal[] = [{ metric: 'distance', period: 'year', target: 5000 }];
+    const rides = [make('a', '2024-05-01', { streams: '/streams/a.json' }), make('b', '2024-05-02')];
     const text = encodeDashboard({ rides, athlete, athleteState, goals });
     expect(text).not.toContain('<');
     const source = decodeDashboard(text);
@@ -47,9 +57,9 @@ describe('flat ride in the dashboard and in goals', () => {
     const rides = [make('old', '2023-05-01'), make('new', '2024-05-01')];
     const transported = browser(rides);
     for (const original of rides) {
-      const r = transported.find((r) => r.id === original.id);
-      for (const key of ['if_', 'tss', 'ef', 'load', 'ftp', 'kg', 'avg_wkg']) expect(r[key]).toEqual(original[key]);
-      for (const [key, basis] of [['clsP', 'power'], ['clsH', 'hr']]) {
+      const r = byId(transported, original.id);
+      for (const key of ['if_', 'tss', 'ef', 'load', 'ftp', 'kg', 'avg_wkg'] as const) expect(r[key]).toEqual(original[key]);
+      for (const [key, basis] of [['clsP', 'power'], ['clsH', 'hr']] as const) {
         expect(r[key]).toEqual(original[key]);
         expect(rideClassification(r, basis)).toEqual(rideClassification(original, basis));
       }
@@ -62,7 +72,7 @@ describe('flat ride in the dashboard and in goals', () => {
       expect(r).not.toHaveProperty('segs');
     }
     expect(transported.map((r) => [r.ftp, r.if_, r.tss, r.clsP.zone])).toEqual([[300, 2 / 3, 44, 2], [200, 1, 100, 4]]);
-    expect(transported[1].tizBasis.power).toMatchObject({ ftp: 250, zones: null });
+    expect(transported[1]?.tizBasis?.power).toMatchObject({ ftp: 250, zones: null });
   });
 
   it('keeps 0, missing NP and every zone fallback without substituting average power', () => {
@@ -80,11 +90,12 @@ describe('flat ride in the dashboard and in goals', () => {
     expect(rides[4]).toMatchObject({ clsP: { source: 'none', zone: null } });
   });
 
-  for (const [metric, extra, value] of [
+  const goalCases: [GoalMetric, Partial<Goal>, number][] = [
     ['distance', {}, 90], ['time', {}, 1], ['elevation', {}, 500], ['count', {}, 1],
     ['tss', {}, 44], ['long_rides', { min_km: 80 }, 1],
     ['zone_time', { basis: 'power', zone: 2 }, .5], ['zone_time', { basis: 'hr', zone: 2 }, .25],
-  ]) it(`evaluates ${metric} ${extra.basis || ''} in the same format, without e-bikes`, () => {
+  ];
+  for (const [metric, extra, value] of goalCases) it(`evaluates ${metric} ${extra.basis || ''} in the same format, without e-bikes`, () => {
     const rides = browser([make('old', '2023-05-01'), make('new', '2024-05-01'),
       make('ebike', '2024-05-01', { sport_type: 'EBikeRide' }),
       make('emtb', '2024-05-01', { sport_type: 'EMountainBikeRide' })]);
@@ -93,14 +104,14 @@ describe('flat ride in the dashboard and in goals', () => {
     const goal = evalGoal({ metric, period: 'year', target: value, ...extra }, rides, new Date('2024-05-03T12:00:00'));
     expect(goal.value).toBe(value);
     expect(goal.done).toBe(true);
-    expect(goal.hist.at(-1).v).toBe(metric === 'tss' ? 100 : value);
+    expect(goal.hist.at(-1)?.v).toBe(metric === 'tss' ? 100 : value);
     expect(goal.streak).toBe(2);
   });
 
   it('shows missing metrics differently from 0 and never lays ride zones over sync histograms', () => {
     const [zero] = browser([make('zero', '2024-05-01', { metrics: { np: 0 } })]);
     const [unknown] = browser([make('unknown', '2024-05-01', { metrics: {} })]);
-    const chips = (r) => Object.fromEntries(rideChips(r).map((c) => [c.label, c.value]));
+    const chips = (r: DashboardRide) => Object.fromEntries(rideChips(r).map((c) => [c.label, c.value]));
     expect(chips(zero)).toMatchObject({ 'IF · TSS': '0.00 · 0', EF: '0.000' });
     expect(chips(unknown)).toMatchObject({ 'IF · TSS': '– · –', EF: '–' });
     const [legacy] = browser([make('legacy', '2023-05-01')]);
@@ -112,20 +123,21 @@ describe('flat ride in the dashboard and in goals', () => {
   });
 
   it('takes #7 TIZ from the raw power distribution with the historical athlete state and stored HR boundaries', () => {
-    const metrics = { np: 200, power_distribution: { version: 1, method: 'right-sample-dt-0-10s', samples: [[200, 3600]] },
+    const metrics: RideMetrics = { np: 200, power_distribution: { version: 1, method: 'right-sample-dt-0-10s', samples: [[200, 3600]] },
       time_in_hr_zones: [60, 120], time_in_hr_zones_basis: { zones: [{ min: 0, max: 100 }, { min: 101, max: null }] } };
     const rides = [make('old', '2023-05-01', { metrics }), make('new', '2024-05-01', { metrics })];
     const transported = browser(rides);
     for (const r of transported) {
       const original = rides.find((x) => x.id === r.id);
-      expect(r.tizBasis.power).toMatchObject({ exact: true, source: 'distribution', ftp: original.ftp, zones: original.zones.power_zones });
+      if (!original) throw new Error(`No ride ${r.id}`);
+      expect(r.tizBasis?.power).toMatchObject({ exact: true, source: 'distribution', ftp: original.ftp, zones: original.zones.power_zones });
       expect(rideTimeInZones(r, 'power')).toEqual(rideTimeInZones(original, 'power'));
       expect(rideTimeInZones(r, 'hr')).toEqual(rideTimeInZones(original, 'hr'));
       expect(r).not.toHaveProperty('power_distribution');
     }
     expect(transported.map((r) => r.tizP)).toEqual([[0, 3600, 0, 0, 0, 0, 0], [0, 0, 0, 3600, 0, 0, 0]]);
     expect(evalGoal({ metric: 'zone_time', zone: 2, period: 'year', target: 1 }, transported, new Date('2024-05-03')).value).toBe(1);
-    expect(browser([make('legacy', '2024-05-01')])[0].tizBasis.power.exact).toBe(false);
+    expect(browser([make('legacy', '2024-05-01')])[0]?.tizBasis?.power?.exact).toBe(false);
   });
 
   it.each([0, 1, 1.5, 3599, 3600, 12345])('transports moving time in seconds only, hours stay exact (%s)', (seconds) => {
@@ -159,13 +171,14 @@ describe('flat ride in the dashboard and in goals', () => {
   });
 
   it('keeps place names for search without coordinates or other geo metadata', () => {
-    const ride = make('geo', '2024-05-01', { geo: { places: [{ name: 'Reno', lat: 39.5, lon: -119.8 }] } });
+    const places = [{ name: 'Reno', lat: 39.5, lon: -119.8 }];
+    const ride = make('geo', '2024-05-01', { geo: { places } });
     expect(browser([ride])[0].geo).toEqual({ places: [{ name: 'Reno' }] });
   });
 
   it('keeps week/month boundaries, goal history and projection', () => {
     const rides = browser([make('april', '2024-04-30'), make('may', '2024-05-01'), make('next', '2024-06-01')]);
-    for (const [period, value] of [['month', 1], ['week', 2]]) {
+    for (const [period, value] of [['month', 1], ['week', 2]] as const) {
       const result = evalGoal({ metric: 'count', period, target: 10 }, rides, new Date('2024-05-03T12:00:00'));
       expect(result.value).toBe(value);
       expect(result.projection).toBeCloseTo(value / result.frac);

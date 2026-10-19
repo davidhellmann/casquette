@@ -1,6 +1,6 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import { describe, expect, it } from 'vitest';
 import { createBuildDataset, memorySource } from './build-dataset.ts';
+import type { MemorySourceInput } from './build-dataset.ts';
 import { decodeDashboard, encodeDashboard } from './dashboard-payload.ts';
 import { dashboardPeriod } from '../dashboard-period/index.ts';
 import { calendarDay } from '../training/index.ts';
@@ -12,11 +12,11 @@ import { performancePayload } from './performance-payload.ts';
 import { ridePayload } from './ride-payload.ts';
 import { mapPayload } from './map-payload.ts';
 
-const pad = (n) => String(n).padStart(2, '0');
+const pad = (n: number) => String(n).padStart(2, '0');
 /** Written local start time of a host-local Date ('YYYY-MM-DDTHH:MM:SS'). */
-const local = (d) => `${calendarDay(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
+const local = (d: Date) => `${calendarDay(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
 /** A ride whose actual start is `start` and whose written local start time is `written` (default: the same wall time). */
-const ride = (id, start, { written = local(start), ...extra } = {}) => ({
+const ride = (id: string, start: Date, { written = local(start), ...extra }: { written?: string } & Record<string, unknown> = {}) => ({
   id, name: `Ride ${id}`, sport_type: 'Ride', start_date: start.toISOString(), start_date_local: written,
   distance: 20000, moving_time: 3600, gear_id: 'b1', device_watts: true, average_watts: 200,
   metrics: { np: 200, power_curve: { 60: 300 } },
@@ -26,8 +26,8 @@ const ride = (id, start, { written = local(start), ...extra } = {}) => ({
 });
 
 const NOW = new Date(2024, 5, 2, 12); // 2 June 2024, 12:00 build time
-const hours = (h) => new Date(+NOW + h * 3600000);
-const build = (source, now = NOW) => createBuildDataset(memorySource(source), { now });
+const hours = (h: number) => new Date(+NOW + h * 3600000);
+const build = (source: MemorySourceInput, now = NOW) => createBuildDataset(memorySource(source), { now });
 
 describe('build calendar – actual start decides, calendar end bounds the calendar views', () => {
   const rides = [
@@ -51,7 +51,7 @@ describe('build calendar – actual start decides, calendar end bounds the calen
     // Every ride: ride page, map, dashboard payload (the browser admits rides by its own clock)
     expect(data.rides.map((r) => r.id)).toEqual(['later-today', 'earlier-today', 'past']);
     expect(ridePayload(data, { id: 'later-today' }).name).toBe('Ride later-today');
-    expect(JSON.parse(mapPayload(data).json).routes.map((r) => r.i)).toEqual(['later-today', 'earlier-today', 'past']);
+    expect(JSON.parse(mapPayload(data).json).routes.map((r: { i: string }) => r.i)).toEqual(['later-today', 'earlier-today', 'past']);
     expect(decodeDashboard(encodeDashboard({ rides: data.rides })).rides).toHaveLength(3);
     // Counted nowhere at build time
     expect(data.gear[0]).toMatchObject({ t: { n: 2 }, kmTotal: 40 });
@@ -104,23 +104,23 @@ describe('build dataset – data source, demo clock and gear', () => {
     expect(data.streamIds()).toEqual(['d1']);
     expect(data.streams('d1')).toEqual({ time: [0, 1] });
     // The raw entry keeps the frontmatter as written (ride page: Markdown body, all data)
-    expect(data.entry('rides', 'd1').data.start_date_local).toBe('2024-05-20T10:00:00');
+    expect(data.entry('rides', 'd1')?.data.start_date_local).toBe('2024-05-20T10:00:00');
     expect(data.entry('rides', 'missing')).toBeNull();
   });
 
   it('never shifts real data and serves no streams paths for it (public/streams serves them)', async () => {
-    const data = await build({ meta: { newest_day: '2024-05-20' }, rides: [{ id: 'r1', start_date_local: '2024-05-20T10:00:00' }], streams: { r1: {} } });
+    const data = await build({ meta: { newest_day: '2024-05-20' }, rides: [{ id: 'r1', start_date_local: '2024-05-20T10:00:00' }], streams: { r1: { time: [] } } });
     expect(data.rides[0].start_local).toBe('2024-05-20T10:00:00');
     expect(data.streamIds()).toEqual([]);
   });
 
   it('bike pages and the dashboard garage use stat ride km for total, cost and ranking', async () => {
     const gear = [
-      { id: 'b1', type: 'bike', distance: 110000, custom: { price_eur: 1000 } },
-      { id: 'b2', type: 'bike', distance: 20000 },
-      { id: 'b3', type: 'bike', distance: 999999, retired: true },
+      { id: 'b1', name: 'B1', type: 'bike' as const, distance: 110000, custom: { price_eur: 1000 } },
+      { id: 'b2', name: 'B2', type: 'bike' as const, distance: 20000 },
+      { id: 'b3', name: 'B3', type: 'bike' as const, distance: 999999, retired: true },
     ];
-    const rides = [['human', 'Ride', 'b1', 10000], ['electric', 'EBikeRide', 'b1', 100000], ['human2', 'Ride', 'b2', 20000], ['emtb', 'EMountainBikeRide', 'b3', 999999]]
+    const rides = ([['human', 'Ride', 'b1', 10000], ['electric', 'EBikeRide', 'b1', 100000], ['human2', 'Ride', 'b2', 20000], ['emtb', 'EMountainBikeRide', 'b3', 999999]] as const)
       .map(([id, sport_type, gear_id, distance]) => ({ id, sport_type, gear_id, distance, start_date_local: '2024-06-01T12:00:00', start_date: '2024-06-01T10:00:00Z' }));
     const data = await build({ athlete: { gear }, gear, rides });
     expect(data.gear.map((g) => g.id)).toEqual(['b2', 'b1', 'b3']);
@@ -139,7 +139,7 @@ describe('build dataset – data source, demo clock and gear', () => {
   it('adds gear known only from the athlete and keeps the gear entries for the bike page body', async () => {
     const data = await build({ athlete: { gear: [{ id: 'g9', name: 'Shoes', type: 'shoe', distance: 5000 }] }, gear: [{ id: 'b1', name: 'Road bike' }] });
     expect(data.gear.map((g) => [g.id, g.type, g.stravaKm])).toEqual([['b1', 'bike', 0], ['g9', 'shoe', 5]]);
-    expect(data.entry('gear', 'b1').data.name).toBe('Road bike');
+    expect(data.entry('gear', 'b1')?.data.name).toBe('Road bike');
     expect(data.entry('gear', 'g9')).toBeNull();
   });
 });

@@ -1,10 +1,12 @@
 import * as React from 'react';
 import { PERIOD_EVENT, readPeriod } from '@/lib/period-store.ts';
+import type { PeriodChoice } from '@/lib/period-store.ts';
 import { decodeDashboard } from '@/lib/dashboard-payload.ts';
+import type { DashboardSource } from '@/lib/dashboard-payload.ts';
 import { dashboardPeriod } from '@/dashboard-period/index.ts';
 
-type Source = ReturnType<typeof decodeDashboard>;
-type Period = { days: number; basis: 'power' | 'hr' };
+type Source = DashboardSource;
+type Period = PeriodChoice;
 
 let cached: Source | null = null;
 /** The build payload in #dash-data (src/lib/dashboard-payload.ts), decoded once per page. */

@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import { expect, it } from 'vitest';
 import { BASE, routes } from './routes.ts';
 

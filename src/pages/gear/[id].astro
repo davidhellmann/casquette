@@ -1,4 +1,5 @@
 ---
+import type { InferGetStaticPropsType } from 'astro';
 import Base from '../../layouts/Base.astro';
 import { render } from 'astro:content';
 import { GearDetailView } from '../../components/gear/GearDetailView';
@@ -8,6 +9,7 @@ import { gearPayload } from '../../lib/gear-payload.ts';
 export async function getStaticPaths() {
   return (await getDataset()).gear.map((g) => ({ params: { id: g.id }, props: { id: g.id } }));
 }
+type Props = InferGetStaticPropsType<typeof getStaticPaths>;
 
 const { id } = Astro.props;
 const data = await getDataset();

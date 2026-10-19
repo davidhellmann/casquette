@@ -6,10 +6,11 @@ import { cn } from 'cn';
 import { goalCards } from './goals-data.ts';
 import { WithTip } from '@/components/app/KeyFigures';
 import { Section } from './parts';
+import type { Goal, GoalRide } from '@/scripts/goals.ts';
 
-type Goal = ReturnType<typeof goalCards>[number];
+type GoalCardData = ReturnType<typeof goalCards>[number];
 
-function GoalCard({ g }: { g: Goal }) {
+function GoalCard({ g }: { g: GoalCardData }) {
   return (
     <Card className="gap-2 px-5" data-slot="goal">
       <div className="flex items-start justify-between gap-3">
@@ -47,7 +48,7 @@ function GoalCard({ g }: { g: Goal }) {
 }
 
 /** Goals (independent of the period) – one card each, only when goals are set. */
-export function GoalCards({ goals, ridesAll, now }: { goals: any[]; ridesAll: any[]; now: Date }) {
+export function GoalCards({ goals, ridesAll, now }: { goals: readonly Goal[]; ridesAll: readonly GoalRide[]; now: Date }) {
   const cards = goalCards(goals, ridesAll, now);
   if (!cards.length) return null;
   return (

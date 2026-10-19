@@ -4,10 +4,14 @@
  */
 import type { YearPayload } from '../components/years/YearView';
 import type { YearsPayload } from '../components/years/YearsView';
+import type { Highlight } from '../components/years/year-parts';
 import type { BuildDataset } from './build-dataset.ts';
+import type { Ride } from '../ride/index.ts';
 import { routes } from './routes.ts';
 import { yearData, MONTHS, MONTHS_L, WEEKDAYS } from './years.ts';
+import type { YearData } from './years.ts';
 import { POWER_ZONE_NAMES, yearTotals } from '../training/index.ts';
+import type { BestCurve } from '../training/index.ts';
 import { yearCalendar } from './year-calendar.ts';
 import { rideRows } from '../components/rides/ride-list.ts';
 import { nf, fmtDateL, fmtTime } from '../scripts/format.ts';
@@ -15,7 +19,7 @@ import { t } from '../i18n/index.ts';
 
 const pct = (a: number, b: number) => (b ? ((a - b) / b) * 100 : null);
 const yt = (key: string, p?: Record<string, unknown>) => t('year.' + key, p);
-const watts = (best: Record<string, { w: number }>) => Object.fromEntries(Object.entries(best).map(([k, v]) => [k, v.w]));
+const watts = (best: BestCurve) => Object.fromEntries(Object.entries(best).map(([k, v]) => [k, v.w]));
 
 /** /years: every year with its totals and kilometres per month, newest first. The running year: that of the calendar end. */
 export function yearsIndexPayload(data: BuildDataset): YearsPayload {
@@ -31,7 +35,7 @@ export function yearsIndexPayload(data: BuildDataset): YearsPayload {
     };
   });
   const best = list.slice().sort((a, b) => b.km - a.km)[0] || null;
-  return { years: list, rides: rides.length, best: best && { year: best.year, km: best.km }, months: MONTHS, monthsLong: MONTHS_L };
+  return { years: list, rides: rides.length, best: best && { year: best.year, km: best.km }, months: [...MONTHS], monthsLong: [...MONTHS_L] };
 }
 
 /** /years/<year>: key figures, months, calendar, intensity, power curve, bikes, highlights and rides. */
@@ -42,9 +46,9 @@ export function yearPayload(data: BuildDataset, { year }: { year: number }): Yea
   const weeks = Y.isCurrent ? Math.max(1, (+data.calendar.now - +new Date(year, 0, 1)) / 604800000) : 52.14;
   const tip = yt(Y.isCurrent ? 'vsSameDay' : 'vsYear', { y: year - 1 });
   const hasPrev = Y.prev.length > 0;
-  const delta = (a, b) => (hasPrev ? pct(a, b) : null);
-  const per = (f) => Y.months.map((m) => f(m));
-  const activeDays = (rs) => new Set(rs.map((r) => r.d.toDateString())).size;
+  const delta = (a: number, b: number) => (hasPrev ? pct(a, b) : null);
+  const per = (f: (m: YearData['months'][number]) => number) => Y.months.map((m) => f(m));
+  const activeDays = (rs: readonly Ride[]) => new Set(rs.map((r) => r.d.toDateString())).size;
 
   const kpis: Omit<YearPayload['kpis'][number], 'tip'>[] = [
     { key: 'km', label: yt('km'), value: tt.km, unit: 'km', pct: delta(tt.km, tp.km), secondary: yt('prevVal', { y: year - 1, v: `${nf(tp.km)} km` }), spark: per((m) => m.t.km), series: 'distance', fromZero: true },
@@ -72,7 +76,7 @@ export function yearPayload(data: BuildDataset, { year }: { year: number }): Yea
 
   const outdoor = Y.rides.filter((r) => !r.indoor);
   const outdoorSec = outdoor.reduce((a, r) => a + r.moving_time, 0);
-  const clock = (h) => t('common.clock', { t: `${Math.floor(h)}:${String(Math.round((h % 1) * 60)).padStart(2, '0')}` });
+  const clock = (h: number) => t('common.clock', { t: `${Math.floor(h)}:${String(Math.round((h % 1) * 60)).padStart(2, '0')}` });
   const glance = [
     { label: yt('bestMonth'), value: Y.bestMonth && Y.bestMonth.t.km ? `${MONTHS_L[Y.bestMonth.m]} · ${nf(Y.bestMonth.t.km)} km` : '–' },
     { label: yt('bestWeek'), value: Y.bestWeek ? `${nf(Y.bestWeek.km)} km` : '–', sub: Y.bestWeek ? yt('from', { d: fmtDateL(Y.bestWeek.start) }) : undefined },
@@ -86,12 +90,13 @@ export function yearPayload(data: BuildDataset, { year }: { year: number }): Yea
 
   const H = Y.highlights;
   const time = fmtTime;
-  const hl = (key, label, r, v) => ({ key, label, value: r ? v(r) : '–', ride: r ? { href: routes.ride(r.id), name: r.name } : null });
+  const hl = (key: string, label: string, r: Ride | null, v: (r: Ride) => string): Highlight =>
+    ({ key, label, value: r ? v(r) : '–', ride: r ? { href: routes.ride(r.id), name: r.name } : null });
   const highlights = [
     hl('longest', yt('hl.longest'), H.longest, (r) => `${nf(r.distance / 1000, 1)} km`),
     hl('climb', yt('hl.climb'), H.climb, (r) => `${nf(r.elev)} ${t('units.elev')}`),
     hl('fastest', yt('hl.fastest'), H.fastest, (r) => `${nf(r.speed * 3.6, 1)} km/h`),
-    hl('np', yt('hl.np'), H.np, (r) => `${Math.round(r.np)} W`),
+    hl('np', yt('hl.np'), H.np, (r) => `${Math.round(r.np ?? 0)} W`), // a record NP is positive
     hl('hardest', yt('hl.hardest'), H.hardest, (r) => (r.tss != null ? `${nf(r.tss)} TSS` : `${nf(r.re)}${t('dash.records.effort')}`)),
     hl('prs', yt('hl.prs'), H.prs, (r) => t('common.prs', { n: r.pr })),
     hl('earliest', yt('hl.earliest'), H.earliest, (r) => t('common.clock', { t: time(r.d) })),

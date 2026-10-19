@@ -1,16 +1,18 @@
 import * as React from 'react';
-import { Area, CartesianGrid, ComposedChart, Line, ReferenceLine, Scatter, XAxis, YAxis, useActiveTooltipDataPoints } from 'recharts';
+import { Area, CartesianGrid, ComposedChart, Line, ReferenceLine, Scatter, XAxis, YAxis, useActiveTooltipDataPoints, type ScatterShapeProps } from 'recharts';
 import { ChartCard } from '@/components/app/ChartCard';
 import { DeltaBadge } from '@/components/app/DeltaBadge';
 import { EmptyState } from '@/components/app/EmptyState';
 import { ChartContainer, ChartTooltip, type ChartConfig } from '@/components/ui/chart';
 import { SERIES, niceTicks, zoneColor } from '@/components/charts/series';
-import { SeriesLegend, TooltipBox } from '@/components/charts/chart-parts';
+import { SeriesLegend, TooltipBox, activeRow } from '@/components/charts/chart-parts';
 import { nf } from '@/scripts/format.ts';
 import { t } from '@/i18n/index.ts';
 import { curveValue, efficiency, periodCurve } from './progress-data.ts';
 import { type Basis } from './parts';
 import { routes } from '@/lib/routes.ts';
+import type { DecodedPeriod } from '@/lib/dashboard-payload.ts';
+import type { AthleteZones } from '@/training/index.ts';
 
 const cd = (key: string) => t('dash.card.' + key);
 
@@ -25,7 +27,7 @@ function ActiveRide({ onChange }: { onChange: (id: string | null) => void }) {
  * EF per ride (dots in its zone colour) and the rolling trend. A click opens the ride; on the
  * keyboard the arrow keys move between rides (Recharts accessibility layer) and Enter opens one.
  */
-export function EfficiencyCard({ D, basis }: { D: any; basis: Basis }) {
+export function EfficiencyCard({ D, basis }: { D: DecodedPeriod; basis: Basis }) {
   const E = efficiency(D, basis);
   const active = React.useRef<string | null>(null);
   const setActive = React.useCallback((id: string | null) => { active.current = id; }, []);
@@ -56,7 +58,7 @@ export function EfficiencyCard({ D, basis }: { D: any; basis: Basis }) {
             className="aspect-auto h-[260px] w-full rounded-md has-[.recharts-surface:focus-visible]:ring-[3px] has-[.recharts-surface:focus-visible]:ring-ring/50 [&_.recharts-surface]:cursor-pointer"
             onKeyDown={(e) => { if (e.key === 'Enter') open(active.current); }}>
             <ComposedChart data={E.rows} margin={{ top: 8, right: 4, bottom: 0, left: 4 }}
-              onClick={(e: any) => open(E.rows[e?.activeIndex ?? e?.activeTooltipIndex]?.id)}>
+              onClick={(e) => open(activeRow(E.rows, e)?.id)}>
               <ActiveRide onChange={setActive} />
               <defs>
                 <linearGradient id="fill-ef" x1="0" y1="0" x2="0" y2="1">
@@ -71,7 +73,7 @@ export function EfficiencyCard({ D, basis }: { D: any; basis: Basis }) {
               <ChartTooltip cursor={{ stroke: 'var(--border)' }} content={<Tip />} />
               <Area dataKey="trend" type={SERIES.efficiencyTrend.curve} stroke="var(--color-trend)" strokeWidth={2.25} fill="url(#fill-ef)" dot={false} activeDot={{ r: 3.5 }} isAnimationActive={false} />
               <Scatter dataKey="ef" isAnimationActive={false}
-                shape={(p: any) => <circle cx={p.cx} cy={p.cy} r={E.rows.length > 150 ? 2.5 : 3.5} fill={zoneColor(p.payload.zone)} stroke="var(--card)" strokeWidth={1} />} />
+                shape={(p: ScatterShapeProps) => <circle cx={p.cx} cy={p.cy} r={E.rows.length > 150 ? 2.5 : 3.5} fill={zoneColor(p.payload.zone)} stroke="var(--card)" strokeWidth={1} />} />
             </ComposedChart>
           </ChartContainer>
         </>
@@ -81,7 +83,7 @@ export function EfficiencyCard({ D, basis }: { D: any; basis: Basis }) {
 }
 
 /** Power curve of the period vs. all-time and the period's 2nd half, today's FTP as a line. */
-export function PeriodCurveCard({ D, zones, kg }: { D: any; zones: any; kg: number }) {
+export function PeriodCurveCard({ D, zones, kg }: { D: DecodedPeriod; zones: AthleteZones; kg: number }) {
   const P = periodCurve(D, { ftp: zones.ftp, kg });
   const sub = cd(D.hasPrevious ? 'curveSub' : 'curveSubAll');
   const config = {

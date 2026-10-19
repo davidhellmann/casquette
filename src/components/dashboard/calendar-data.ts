@@ -1,16 +1,18 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 /**
  * The training calendar of the dashboard: D.heatmap (src/dashboard-period/history.ts) turned into
  * the days, month labels and summary stats the TrainingCalendar component draws. Pure.
  */
 import { fmtDur, nf, trunc, fmtWeekdayDate, fmtMonthShort } from '../../scripts/format.ts';
 import { t } from '../../i18n/index.ts';
+import type { TParams } from '../../i18n/index.ts';
 import { routes } from '../../lib/routes.ts';
+import type { DashboardCalendar } from '../../dashboard-period/index.ts';
+import type { CalendarDay } from '../charts/TrainingCalendar';
 
-const hm = (key, x) => t('dash.heat.' + key, x);
+const hm = (key: string, x?: TParams) => t('dash.heat.' + key, x);
 
 /** One entry per cell (week by week, Monday first); null for days still to come. */
-export function calendarDays(H) {
+export function calendarDays(H: Pick<DashboardCalendar, 'cells'>): (CalendarDay | null)[] {
   return H.cells.map(({ d, rideDay, future, dim, level }) => {
     if (future) return null;
     const title = fmtWeekdayDate(d);
@@ -27,9 +29,9 @@ export function calendarDays(H) {
   });
 }
 
-export const calendarMonths = (H) => H.months.map(({ week, d }) => ({ week, label: fmtMonthShort(d) }));
+export const calendarMonths = (H: Pick<DashboardCalendar, 'months'>): { week: number; label: string }[] => H.months.map(({ week, d }) => ({ week, label: fmtMonthShort(d) }));
 
-export const calendarStats = (H) => [
+export const calendarStats = (H: DashboardCalendar): { value: string; label: string }[] => [
   { value: nf(H.activeDays), label: hm('activeDays') },
   { value: nf(H.longest), label: hm('longest') },
   { value: nf(H.current), label: hm('current') },

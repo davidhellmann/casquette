@@ -1,16 +1,16 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 /**
  * A small demo-like build dataset for the payload tests: synthetic rides, gear, history and streams of a
  * fictional rider (no personal data), served by the in-memory data source.
  */
 import { createBuildDataset, memorySource } from './build-dataset.ts';
+import type { BuildDataset, MemorySourceInput } from './build-dataset.ts';
 
 /** Build clock of the fixture: 15 June 2024, 18:00 local time. */
 export const NOW = new Date(2024, 5, 15, 18);
 
-const pad = (n) => String(n).padStart(2, '0');
+const pad = (n: number) => String(n).padStart(2, '0');
 /** A ride starting at the host-local wall time `y-m-d h:00` (written local start time and actual start agree). */
-const ride = (id, [y, m, d, h], extra) => {
+const ride = (id: string, [y, m, d, h]: [number, number, number, number], extra: Record<string, unknown>) => {
   const start = new Date(y, m - 1, d, h);
   return {
     id, name: `Demo ride ${id.slice(-1)}`, sport_type: 'Ride', start_date: start.toISOString(),
@@ -21,7 +21,7 @@ const ride = (id, [y, m, d, h], extra) => {
   };
 };
 
-export const RIDES = [
+export const RIDES: MemorySourceInput['rides'] = [
   ride('demo-0001', [2023, 5, 10, 9], {
     metrics: { np: 220, power_curve: { 5: 800, 60: 400, 1200: 270 } },
     summary_polyline: '_p~iF~ps|U_ulLnnqC_mqNvxq`@',
@@ -45,7 +45,7 @@ export const RIDES = [
   ride('demo-0005', [2024, 6, 15, 20], { metrics: { np: 400, power_curve: { 60: 999 } } }),
 ];
 
-export const SOURCE = {
+export const SOURCE: MemorySourceInput = {
   demo: false,
   athlete: {
     profile: { first_name: 'Jane', last_name: 'Rider', weight: 70 }, zones: { ftp: 250 },
@@ -62,4 +62,4 @@ export const SOURCE = {
 };
 
 /** The fixture's build dataset (fresh copy each time). */
-export const fixtureDataset = () => createBuildDataset(memorySource(structuredClone(SOURCE)), { now: NOW });
+export const fixtureDataset = (): Promise<BuildDataset> => createBuildDataset(memorySource(structuredClone(SOURCE)), { now: NOW });

@@ -32,8 +32,9 @@ let cached: Source | null = null;
 /** The build payload in #map-data, decoded once per page. */
 function readSource(): Source {
   if (!cached) {
-    const D = JSON.parse(document.getElementById('map-data')?.textContent || '{}');
-    cached = { routes: prepareRoutes(D.routes) as Route[], bikes: D.bikes || [], places: D.places || [] };
+    // Parse seam: the text is what mapPayload wrote (src/lib/map-payload.ts)
+    const D: Partial<MapData> = JSON.parse(document.getElementById('map-data')?.textContent || '{}');
+    cached = { routes: prepareRoutes(D.routes), bikes: D.bikes || [], places: D.places || [] };
   }
   return cached;
 }
@@ -86,7 +87,7 @@ export function MapView({ years, bikes, types }: MapViewProps) {
   }, [S, G]);
 
   const P = S?.places || [];
-  const base = React.useMemo(() => (S ? filterRoutes(S.routes, filters) as Route[] : []), [S, filters]);
+  const base = React.useMemo(() => (S ? filterRoutes(S.routes, filters) : []), [S, filters]);
   const shown = React.useMemo(() => base.filter((r) => geoMatch(P, G, r)), [base, G]);
   const browser = React.useMemo(() => placesBrowser(P, base, G, q), [base, G, q]);
   const rides = React.useMemo(() => shown.slice().sort((a, b) => (a.d < b.d ? 1 : -1)), [shown]);

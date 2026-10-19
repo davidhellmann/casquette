@@ -1,4 +1,5 @@
 import { cn } from 'cn';
+import type { MouseHandlerDataParam } from 'recharts';
 
 /** Shared pieces around the Recharts charts: the series legend and the tooltip body. */
 
@@ -41,4 +42,10 @@ export function TooltipBox({ title, subtitle, lines, footer, className }: { titl
       {footer && <div className="text-muted-foreground">{footer}</div>}
     </div>
   );
+}
+
+/** The data row under the pointer of a chart click (Recharts' active index), if any. */
+export function activeRow<T>(rows: readonly T[], e: MouseHandlerDataParam): T | undefined {
+  const i = e.activeIndex ?? e.activeTooltipIndex;
+  return i == null ? undefined : rows[Number(i)];
 }

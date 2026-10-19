@@ -15,6 +15,8 @@ import { routes } from '@/lib/routes.ts';
 import { historySince } from './history-data.ts';
 import { footer } from './nutrition-data.ts';
 import { Section, type Basis } from './parts';
+import type { DashboardSource, DecodedPeriod } from '@/lib/dashboard-payload.ts';
+import type { AthleteState } from '@/training/index.ts';
 
 const s = (key: string, x?: Record<string, unknown>) => t('dash.sec.' + key, x);
 
@@ -22,11 +24,11 @@ const s = (key: string, x?: Record<string, unknown>) => t('dash.sec.' + key, x);
  * Every dashboard card below the fitness chart and the training calendar, for the period (`D`) and
  * zone basis chosen in the page header (#32).
  */
-export function DashboardCards({ D, source, basis }: { D: any; source: any; basis: Basis }) {
-  const { athleteState } = source.athlete, zones = athleteState.zones, kg = athleteState.weight;
+export function DashboardCards({ D, source, athleteState, basis }: { D: DecodedPeriod; source: DashboardSource; athleteState: AthleteState; basis: Basis }) {
+  const zones = athleteState.zones, kg = athleteState.weight;
   // The ride in the analysis: the newest of the period until another is picked
   const [picked, setPicked] = React.useState<string | null>(null);
-  const selected = D.rides.some((r: any) => r.id === picked) ? picked : D.rides[0]?.id ?? null;
+  const selected = D.rides.some((r) => r.id === picked) ? picked : D.rides[0]?.id ?? null;
   const cell = selected ? D.fueling[selected]?.cell ?? null : null;
   return (
     <>
@@ -86,7 +88,7 @@ export function DashboardCards({ D, source, basis }: { D: any; source: any; basi
 }
 
 /** Rides and streams in the collection and the last sync – the last line of the dashboard. */
-export function DashboardFooter({ source }: { source: any }) {
+export function DashboardFooter({ source }: { source: DashboardSource }) {
   return (
     <footer className="pt-6 pb-2 text-center font-mono text-[11px] leading-relaxed text-muted-foreground" data-testid="dashboard-footer">
       {footer(source).map((line) => <p key={line}>{line}</p>)}

@@ -1,16 +1,18 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { bestCurve } from '../training/index.ts';
+import type { AthleteHistoryEntry, PowerCurve } from '../training/index.ts';
+import type { Ride } from '../ride/index.ts';
 import { decodeDashboard, encodeDashboard } from './dashboard-payload.ts';
 import { createBuildDataset, memorySource } from './build-dataset.ts';
+import type { AthleteSource, BuildDataset, DataSource } from './build-dataset.ts';
 import { yearData } from './years.ts';
 import { segmentPayload } from './segment-payload.ts';
 import { performancePayload } from './performance-payload.ts';
 
 const NOW = new Date(2025, 0, 15, 12);
-const wire = (rides) => JSON.parse(encodeDashboard({ rides })).rides;
+const wire = (rides: Ride[]) => JSON.parse(encodeDashboard({ rides })).rides;
 
-const ride = (id, date, watts, best) => ({
+const ride = (id: string, date: string, watts: number, best: PowerCurve) => ({
   id, start_date_local: `${date}T12:00:00Z`, sport_type: 'Ride', device_watts: true,
   average_watts: watts, moving_time: 3600, gear_id: 'bike',
   metrics: { np: watts, power_curve: best },
@@ -18,17 +20,21 @@ const ride = (id, date, watts, best) => ({
 });
 
 // Real synced data (not the demo dataset): no demo date shift.
-let fixtures;
+let fixtures: { athlete: AthleteSource; history: AthleteHistoryEntry[]; rides: ReturnType<typeof ride>[]; zonesFile: unknown };
 beforeEach(() => {
   fixtures = {
-    athlete: { profile: { weight: 60 }, zones: { ftp: 300 }, gear: [{ id: 'bike' }] },
+    athlete: { profile: { weight: 60 }, zones: { ftp: 300 }, gear: [{ id: 'bike', name: 'Bike' }] },
     history: [{ date: '2020-01-01', ftp: 200, weight: 100 }, { date: '2024-01-01', ftp: 300, weight: 60 }],
     rides: [ride('old', '2021-06-01', 200, { 60: 400, 1200: 250 }), ride('new', '2024-06-01', 180, { 60: 300, 1200: 300 })],
     zonesFile: null,
   };
 });
-const dataset = (source = memorySource(fixtures)) => createBuildDataset(source, { now: NOW });
-const byId = (data, id) => data.rides.find((r) => r.id === id);
+const dataset = (source: DataSource = memorySource(fixtures)) => createBuildDataset(source, { now: NOW });
+const byId = (data: BuildDataset, id: string) => {
+  const r = data.rides.find((x) => x.id === id);
+  if (!r) throw new Error(`No ride ${id}`);
+  return r;
+};
 
 describe('Athlete state – central build integration with synthetic data', () => {
   it('hands the athlete state to the dashboard payload and the year page as athleteState', async () => {
@@ -70,8 +76,8 @@ describe('Athlete state – central build integration with synthetic data', () =
     const before = byId(await dataset(), 'old');
     fixtures.history.push({ date: '2021-01-01', weight: 80 });
     const after = byId(await dataset(), 'old');
-    expect(before.w / before.kg).toBe(2);
-    expect(after.w / after.kg).toBe(2.5);
+    expect((before.w ?? NaN) / before.kg).toBe(2);
+    expect((after.w ?? NaN) / after.kg).toBe(2.5);
     expect(after.w).toBe(before.w);
     expect(after.ftp).toBe(before.ftp);
   });
@@ -99,7 +105,7 @@ describe('Athlete state – central build integration with synthetic data', () =
     expect(segmentPayload(data, { id: '42' }).efforts).toHaveLength(2);
     const performance = performancePayload(data);
     expect(performance.curves.all[60]).toBe(400);
-    expect(performance.profile.find((y) => y.year === 2021).vals[1]).toMatchObject({ w: 400, id: 'old' });
+    expect(performance.profile.find((y) => y.year === 2021)?.vals[1]).toMatchObject({ w: 400, id: 'old' });
   });
 
   it('does not invent today\'s body weight for unknown best origins', async () => {
@@ -113,7 +119,7 @@ describe('Athlete state – central build integration with synthetic data', () =
   it('uses the effort\'s body weight for the segment best, not the latest ride\'s', async () => {
     const segment = segmentPayload(await dataset(), { id: '42' });
     expect(segment).toMatchObject({ bestW: 200, bestWkg: 2 });
-    expect(segment.efforts.map((e) => e.w / e.kg)).toEqual([2, 3]);
+    expect(segment.efforts.map((e) => (e.w ?? NaN) / e.kg)).toEqual([2, 3]);
   });
 
   it('uses the underlying effort\'s body weight for historical eFTP bests', async () => {
@@ -124,17 +130,17 @@ describe('Athlete state – central build integration with synthetic data', () =
 
   it('also computes the yearly performance profile with the body weight of each best', async () => {
     const p = performancePayload(await dataset());
-    expect(p.profile.find((y) => y.year === 2021).vals[1]).toMatchObject({ w: 400, wkg: 4, id: 'old' });
+    expect(p.profile.find((y) => y.year === 2021)?.vals[1]).toMatchObject({ w: 400, wkg: 4, id: 'old' });
     // Body weight can change within a year: no blanket mid-year value.
     fixtures.history.push({ date: '2021-06-15', weight: 80 });
     const changed = performancePayload(await dataset());
-    expect(changed.profile.find((y) => y.year === 2021).vals[1].wkg).toBe(4);
+    expect(changed.profile.find((y) => y.year === 2021)?.vals[1]?.wkg).toBe(4);
   });
 
   it('applies the zones file to every ride: dated HR zones on its HR distribution, custom power bounds', async () => {
     fixtures.zonesFile = { heart_rate: [{ bpm: [0, 120, 140, 160, 180] }, { from: '2024-01-01', bpm: [0, 130, 150, 170, 190] }], power: { ftp_percent: [0, 50, 70, 90, 110, 130, 150] } };
     const hr_distribution = { version: 1, method: 'right-sample-dt-0-10s', samples: [[125, 60], [155, 30]] };
-    for (const r of fixtures.rides) r.metrics.hr_distribution = hr_distribution;
+    for (const r of fixtures.rides) Object.assign(r.metrics, { hr_distribution });
     const data = await dataset();
     const [recent, old] = data.rides;
     expect(old.tizH).toEqual([0, 60, 30, 0, 0]);

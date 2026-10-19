@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -9,13 +8,15 @@ import { describe, expect, it } from 'vitest';
 // (e.g. a ZIP download).
 
 const ROOT = path.resolve(import.meta.dirname, '..');
-let tracked = null;
+let tracked: string[] = [];
+let isCheckout = false;
 try {
   tracked = execFileSync('git', ['ls-files', '--cached'], { cwd: ROOT, encoding: 'utf8' }).split('\n').filter(Boolean);
+  isCheckout = true;
 } catch { /* not a git checkout */ }
 
 const KEEP = /(^|\/)\.gitkeep$/;
-const FORBIDDEN = [
+const FORBIDDEN: [RegExp, string][] = [
   [/^src\/content\/rides\//, 'synced rides'],
   [/^src\/content\/gear\//, 'synced gear'],
   [/^public\/streams\//, 'ride streams (GPS)'],
@@ -26,7 +27,7 @@ const FORBIDDEN = [
   [/^(dist|dist-e2e|dist-fragments|dist-site|dist-demo|test-results|playwright-report|\.scratch|\.claude)\//, 'build output and local scratch'],
 ];
 
-describe.skipIf(!tracked)('repository hygiene', () => {
+describe.skipIf(!isCheckout)('repository hygiene', () => {
   it('tracks no personal data, secrets, caches or build output', () => {
     const hits = tracked
       .filter((file) => !KEEP.test(file) && file !== '.env.example')

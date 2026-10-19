@@ -1,20 +1,20 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 /**
  * Goal cards of the dashboard (src/data/goals.json, independent of the period): each goal evaluated
  * with evalGoal (src/scripts/goals.ts) and turned into what its card shows. Pure. *Html = i18n markup.
  */
 import { DEC, UNIT, evalGoal, fmtP } from '../../scripts/goals.ts';
+import type { Goal, GoalRide } from '../../scripts/goals.ts';
 import { nf } from '../../scripts/format.ts';
 import { t } from '../../i18n/index.ts';
 
-export function goalCards(goals, ridesAll, now) {
-  return (goals || []).filter((g) => g && g.target > 0).map((g) => {
+export function goalCards(goals: readonly (Goal | null)[] | null | undefined, ridesAll: readonly GoalRide[], now: Date) {
+  return (goals || []).filter((g): g is Goal => !!g && g.target > 0).map((g) => {
     const e = evalGoal(g, ridesAll, now), u = UNIT[g.metric] || '', dec = DEC[g.metric] ?? 0;
     const pct = Math.min(100, (e.value / g.target) * 100);
-    const daysLeft = Math.max(0, Math.ceil((e.P.end - now) / 86400000));
+    const daysLeft = Math.max(0, Math.ceil((+e.P.end - +now) / 86400000));
     return {
       id: g.id ?? g.label,
-      eyebrow: [t('goals.period.' + g.period), g.metric === 'zone_time' ? `Z${g.zone || 2} ${t(g.basis === 'hr' ? 'basis.hr' : 'basis.power')}` : null].filter(Boolean).join(' · '),
+      eyebrow: [t(`goals.period.${g.period}`), g.metric === 'zone_time' ? `Z${g.zone || 2} ${t(g.basis === 'hr' ? 'basis.hr' : 'basis.power')}` : null].filter(Boolean).join(' · '),
       label: g.label,
       note: g.metric === 'zone_time' ? t('zones.legacyNote') : null,
       status: e.done ? { up: true, text: t('goals.reached') }
@@ -26,9 +26,9 @@ export function goalCards(goals, ridesAll, now) {
       meta: [
         e.done ? t('goals.done') : t('goals.left', { v: nf(Math.max(0, g.target - e.value), dec), u, days: t('common.days', { n: daysLeft }) }),
         e.projection != null && g.period !== 'week' ? t('goals.projection', { v: nf(e.projection, dec), u }) : null,
-      ].filter(Boolean),
+      ].filter((x): x is string => !!x),
       history: [
-        ...e.hist.map((h) => ({ hit: h.hit, tip: `${fmtP(g, h.start)}: ${nf(h.v, dec)} ${u}`.trim() })),
+        ...e.hist.map((h): { hit: boolean; current?: boolean; tip: string } => ({ hit: h.hit, tip: `${fmtP(g, h.start)}: ${nf(h.v, dec)} ${u}`.trim() })),
         { hit: e.done, current: true, tip: t('goals.running', { p: fmtP(g, e.P.start), v: nf(e.value, dec), u }).trim() },
       ],
       streak: e.streak > 1 ? t('goals.streak', { n: e.streak }) : null,

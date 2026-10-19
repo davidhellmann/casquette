@@ -28,7 +28,7 @@ function historyColumns(): DataTableColumn<HistoryEntry & { i: number }>[] {
         </>
       ),
     }),
-  ]) as DataTableColumn<HistoryEntry & { i: number }>[];
+  ]);
 }
 
 /** FTP / weight entries of the athlete history, newest first. */
@@ -77,7 +77,7 @@ function profileColumns(durations: string[], colMax: number[]): DataTableColumn<
         ) : '–';
       },
     })),
-  ]) as DataTableColumn<ProfileYear>[];
+  ]);
 }
 
 /** Best W/kg per year and duration; the cell tint grows towards the best year of each column. */

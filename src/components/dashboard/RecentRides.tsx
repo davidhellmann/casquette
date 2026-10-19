@@ -7,11 +7,12 @@ import { rideRows } from '@/components/rides/ride-list.ts';
 import { Button } from '@/components/ui/button';
 import { routes } from '@/lib/routes.ts';
 import { t } from '@/i18n/index.ts';
+import type { DecodedPeriod } from '@/lib/dashboard-payload.ts';
 
 const COLUMNS: RideColumnId[] = ['date', 'name', 'km', 'time', 'elev', 'w', 'zone', 'tss'];
 
 /** The latest rides of the period, with a link to the full ride log. */
-export function RecentRides({ D, basis }: { D: any; basis: 'power' | 'hr' }) {
+export function RecentRides({ D, basis }: { D: DecodedPeriod; basis: 'power' | 'hr' }) {
   const rows = React.useMemo(() => rideRows(D.log.slice(0, 10), { basis }), [D, basis]);
   return (
     <ChartCard

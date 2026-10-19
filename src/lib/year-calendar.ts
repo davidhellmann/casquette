@@ -1,20 +1,33 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 /**
  * The training calendar of a year review as the TrainingCalendar component draws it: one cell per day
  * from the Monday before 1 January to the Sunday after 31 December. Days, levels and streaks come
  * from `trainingCalendar` (src/training/training-calendar.ts, measure 'km'); this only adds text and links.
  */
 import { daysBetween, weekStart } from '../training/index.ts';
+import type { TrainingCalendar } from '../training/index.ts';
+import type { CalendarDay } from '../components/charts/TrainingCalendar';
 import { routes } from './routes.ts';
 import { nf, trunc, fmtWeekdayDate, fmtMonthShort } from '../scripts/format.ts';
 import { t } from '../i18n/index.ts';
 
-/**
- * @param calendar `trainingCalendar(rides, { from: 1 Jan, to: 31 Dec, today: calendar end, measure: 'km' })`
- * @returns {{ days: (object|null)[], weeks: number, months: { week: number, label: string }[] }}
- */
-export function yearCalendar(calendar, year) {
-  const days = calendar.cells.map(({ d, day, level, outside, future }) => {
+/** What the year calendar reads of a ride. */
+export interface YearCalendarRide {
+  id: string | number;
+  name: string;
+  /** Metres. */
+  distance?: number | null;
+}
+
+/** The year review's calendar as the TrainingCalendar component draws it. */
+export interface YearCalendar {
+  days: (CalendarDay | null)[];
+  weeks: number;
+  months: { week: number; label: string }[];
+}
+
+/** `calendar`: `trainingCalendar(rides, { from: 1 Jan, to: 31 Dec, today: calendar end, measure: 'km' })`. */
+export function yearCalendar(calendar: TrainingCalendar<YearCalendarRide>, year: number): YearCalendar {
+  const days = calendar.cells.map(({ d, day, level, outside, future }): CalendarDay | null => {
     if (outside || future) return null;
     const title = fmtWeekdayDate(d);
     if (!day) return { level: 0, title, notes: [t('common.restDay')] };

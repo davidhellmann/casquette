@@ -5,18 +5,78 @@
 import type { SegmentsPayload } from '../components/segments/SegmentsView';
 import type { SegmentPayload } from '../components/segments/SegmentView';
 import type { BuildDataset } from './build-dataset.ts';
+import type { Ride } from '../ride/index.ts';
 import { segmentUrl } from './strava-links.ts';
 import { rideDate } from '../training/index.ts';
 import { t } from '../i18n/index.ts';
 
-/** Segments with their own page: ridden at least twice. */
-const hasPage = (g) => g.n >= 2;
+/** One effort on a segment, with what the pages show of its ride. */
+interface SegmentEffort {
+  ride: string;
+  rideName: string;
+  d: Date;
+  date: string;
+  year: number;
+  /** Seconds; efforts without a positive time are dropped. */
+  elapsed: number;
+  moving: number | null;
+  w: number | null;
+  /** Body weight on the ride date (athlete state) – for W/kg. */
+  kg: number;
+  hr: number | null;
+  hrMax: number | null;
+  cad: number | null;
+  pr: number | null;
+  kom: number | null;
+  ach: string[];
+  /** Start and end index into the ride's streams. */
+  si: number | null;
+  ei: number | null;
+  streams: boolean;
+  gear: string | null;
+  indoor: boolean;
+}
 
-const cache = new WeakMap<BuildDataset, any[]>();
+/** A segment (GLOSSARY) with its efforts in date order and its bests. */
+interface Segment {
+  id: string;
+  name: string;
+  /** Metres. */
+  distance: number;
+  /** Average grade in %. */
+  grade: number | null;
+  /** Climb category 0–5. */
+  climb: number;
+  city: string | null;
+  efforts: SegmentEffort[];
+  n: number;
+  best: SegmentEffort | null;
+  last: SegmentEffort | null;
+  first: SegmentEffort | null;
+  /** Median time in seconds. */
+  median: number | null;
+  /** km/h of the best time. */
+  bestSpeed: number | null;
+  bestW: number | null;
+  bestWkg: number | null;
+  /** First vs. best time in %. */
+  improvement: number | null;
+  /** Last vs. best time in %. */
+  lastDelta: number | null;
+  prs: number;
+  isClimb: boolean;
+  indoor: boolean;
+}
+
+/** Segments with their own page: ridden at least twice. */
+const hasPage = (g: Segment) => g.n >= 2;
+
+const cache = new WeakMap<BuildDataset, Segment[]>();
 /** Every segment with its efforts (date order) and bests, most ridden first; aggregated once per dataset. */
-function segments(data: BuildDataset) {
-  if (!cache.has(data)) cache.set(data, aggregate(data.calendar.statRides));
-  return cache.get(data);
+function segments(data: BuildDataset): Segment[] {
+  let segs = cache.get(data);
+  if (!segs) { segs = aggregate(data.calendar.statRides); cache.set(data, segs); }
+  return segs;
 }
 
 /** Ids of the segments with their own page. */
@@ -42,39 +102,44 @@ export function segmentsIndexPayload(data: BuildDataset): SegmentsPayload {
 /** /segments/<id>: a segment ridden at least twice, its attempts and the fastest attempts with streams. */
 export function segmentPayload(data: BuildDataset, { id }: { id: string }): SegmentPayload {
   const seg = segments(data).find((g) => g.id === String(id) && hasPage(g));
-  if (!seg) throw new Error(`No segment page ${id}`);
-  const gearName = Object.fromEntries(data.gear.map((g) => [g.id, g.name]));
+  // With at least two efforts (a page) best, last, first, median and best speed are always known
+  const { best, last, first, median, bestSpeed } = seg ?? {};
+  if (!seg || !best || !last || !first || median == null || bestSpeed == null) throw new Error(`No segment page ${id}`);
+  const gearName: Record<string, string> = Object.fromEntries(data.gear.map((g) => [g.id, g.name]));
   const e = seg.efforts;
-  const effort = (x) => ({ date: x.date, t: x.elapsed });
+  const effort = (x: SegmentEffort) => ({ date: x.date, t: x.elapsed });
   // The three fastest attempts with second-by-second data: the map and the elevation profile use the first that loads
-  const tracks = e.filter((x) => x.streams && x.si != null && x.ei != null).sort((a, b) => a.elapsed - b.elapsed).slice(0, 3).map((x) => ({ ride: x.ride, si: x.si, ei: x.ei }));
+  const tracks = e.flatMap((x) => (x.streams && x.si != null && x.ei != null ? [{ ride: x.ride, si: x.si, ei: x.ei, elapsed: x.elapsed }] : []))
+    .sort((a, b) => a.elapsed - b.elapsed).slice(0, 3).map(({ ride, si, ei }) => ({ ride, si, ei }));
+  const cat: readonly string[] = t('segments.cat');
   return {
     id: seg.id,
     name: seg.name,
-    tags: [seg.city, seg.indoor ? t('segments.virtual') : null, t('segments.cat')[seg.climb || 0] || null].filter(Boolean),
+    tags: [seg.city, seg.indoor ? t('segments.virtual') : null, cat[seg.climb || 0] || null].filter((x): x is string => !!x),
     distance: seg.distance,
     grade: seg.grade,
     strava: segmentUrl(seg.id),
-    best: effort(seg.best),
-    bestSpeed: seg.bestSpeed,
-    median: seg.median,
-    last: effort(seg.last),
+    best: effort(best),
+    bestSpeed,
+    median,
+    last: effort(last),
     lastDelta: seg.lastDelta,
-    first: effort(seg.first),
+    first: effort(first),
     improvement: seg.improvement,
     bestW: seg.bestW,
     bestWkg: seg.bestWkg,
     prs: seg.prs,
     efforts: e.map((x) => ({
-      ride: x.ride, name: x.rideName, date: x.date, t: x.elapsed, w: x.w, hr: x.hr, cad: x.cad, kg: x.kg, pr: x.pr, bike: gearName[x.gear] || null,
+      ride: x.ride, name: x.rideName, date: x.date, t: x.elapsed, w: x.w, hr: x.hr, cad: x.cad, kg: x.kg, pr: x.pr,
+      bike: (x.gear != null && gearName[x.gear]) || null,
     })),
     tracks,
   };
 }
 
 /** Segment efforts of the rides → segments with their efforts in date order and their bests. */
-function aggregate(rides) {
-  const map = new Map();
+function aggregate(rides: readonly Ride[]): Segment[] {
+  const map = new Map<string, Pick<Segment, 'id' | 'name' | 'distance' | 'grade' | 'climb' | 'city'> & { efforts: (Omit<SegmentEffort, 'elapsed'> & { elapsed: number | null })[] }>();
   for (const r of rides) {
     for (const s of r.segs) {
       if (s.segment_id == null) continue;
@@ -85,8 +150,9 @@ function aggregate(rides) {
         map.set(id, g);
       }
       g.efforts.push({
-        ride: r.id, rideName: r.name, d: r.d, date: rideDate(r), year: r.year,
-        elapsed: s.elapsed_time, moving: s.moving_time,
+        // Never '' in practice: every dataset ride has a valid ride date
+        ride: r.id, rideName: r.name, d: r.d, date: rideDate(r) ?? '', year: r.year,
+        elapsed: s.elapsed_time ?? null, moving: s.moving_time ?? null,
         w: s.device_watts === false ? null : s.average_watts ?? null,
         kg: r.kg, // body weight on the ride date (athlete state) – for W/kg
         hr: s.average_heartrate ?? null, hrMax: s.max_heartrate ?? null, cad: s.average_cadence ?? null,
@@ -95,10 +161,10 @@ function aggregate(rides) {
       });
     }
   }
-  return Array.from(map.values()).map((g) => {
-    const e = g.efforts.filter((x) => x.elapsed > 0).sort((a, b) => a.d - b.d);
-    const best = e.reduce((m, x) => (!m || x.elapsed < m.elapsed ? x : m), null);
-    const bestWE = e.reduce((m, x) => (x.w != null && x.w > 0 && (!m || x.w > m.w) ? x : m), null);
+  return Array.from(map.values()).map((g): Segment => {
+    const e = g.efforts.filter((x): x is SegmentEffort => x.elapsed != null && x.elapsed > 0).sort((a, b) => +a.d - +b.d);
+    const best = e.reduce<SegmentEffort | null>((m, x) => (!m || x.elapsed < m.elapsed ? x : m), null);
+    const bestWE = e.reduce<(SegmentEffort & { w: number }) | null>((m, x) => (x.w != null && x.w > 0 && (!m || x.w > m.w) ? { ...x, w: x.w } : m), null);
     const last = e[e.length - 1] || null, first = e[0] || null;
     const times = e.map((x) => x.elapsed).sort((a, b) => a - b);
     const median = times.length ? times[Math.floor(times.length / 2)] : null;

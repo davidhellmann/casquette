@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 /**
  * Data source selection: real synced data or the shipped demo data – never both.
  *
@@ -15,8 +14,8 @@ import path from 'node:path';
 export const DEMO_DIR = 'demo';
 
 /** True if `dir` (recursively) contains at least one ride Markdown file. */
-function hasRideFiles(dir) {
-  let entries;
+function hasRideFiles(dir: string): boolean {
+  let entries: fs.Dirent[];
   try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return false; }
   for (const e of entries) {
     if (e.isFile() && e.name.endsWith('.md')) return true;
@@ -25,11 +24,18 @@ function hasRideFiles(dir) {
   return false;
 }
 
-/**
- * @returns {{ demo: boolean, ridesDir: string, gearDir: string, streamsDir: string, dataDir: string }}
- *   absolute folders for rides, gear, streams and JSON data (athlete, goals, fitness history).
- */
-export function selectDataSource({ root = process.cwd(), env = process.env } = {}) {
+/** The selected data source: absolute folders for rides, gear, streams and JSON data (athlete, goals, fitness history). */
+export interface DataSourceDirs {
+  demo: boolean;
+  ridesDir: string;
+  gearDir: string;
+  streamsDir: string;
+  dataDir: string;
+}
+
+export function selectDataSource(
+  { root = process.cwd(), env = process.env }: { root?: string; env?: Record<string, string | undefined> } = {},
+): DataSourceDirs {
   const realRides = path.join(root, 'src/content/rides');
   if (env.DATA_SOURCE !== 'demo' && hasRideFiles(realRides)) {
     return {

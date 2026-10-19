@@ -4,7 +4,6 @@
  * formatted here. Build time.
  */
 import type { RidePayload } from '../components/ride/RideView';
-import type { LatLng } from '../components/ride/RideMap';
 import type { BuildDataset } from './build-dataset.ts';
 import { routes } from './routes.ts';
 import { activityUrl, segmentUrl } from './strava-links.ts';
@@ -12,10 +11,10 @@ import { rideClassification, tizBasisLabel } from '../components/ride/ride-prese
 import { decodePolyline } from '../scripts/polyline.ts';
 import { curveLabel, fmtLongDate, fmtTime } from '../scripts/format.ts';
 import { bestCurve, fuel } from '../training/index.ts';
+import type { BestCurve } from '../training/index.ts';
 import { t } from '../i18n/index.ts';
 
-const watts = (best: Record<string, { w: number }>) => Object.fromEntries(Object.entries(best).map(([k, v]) => [k, v.w]));
-const pick = (o: Record<string, any>, keys: string[]): any => Object.fromEntries(keys.map((k) => [k, o[k] ?? null]));
+const watts = (best: BestCurve) => Object.fromEntries(Object.entries(best).map(([k, v]) => [k, v.w]));
 const link = (r: { id: string; name: string } | undefined) => (r ? { href: routes.ride(r.id), name: r.name } : null);
 
 /**
@@ -35,9 +34,9 @@ export function ridePayload(data: BuildDataset, { id }: { id: string }): RidePay
   const st = data.streams(r.id);
   const gear = data.gear.find((g) => g.id === r.gear_id);
   const hasLatlng = !!st?.latlng;
-  const points = hasLatlng ? null : decodePolyline(r.polyline) as LatLng[];
+  const points = hasLatlng ? null : decodePolyline(r.polyline);
   const mapKey = hasLatlng ? (st.watts ? 'watts' : st.heart_rate ? 'heart_rate' : null) : null;
-  const newBests = Object.entries(r.best || {}).filter(([k, w]: [string, any]) => w && (!allBest[k] || w > allBest[k].w)).map(([k]) => +k);
+  const newBests = Object.entries(r.best || {}).filter(([k, w]) => w && (!allBest[k] || w > allBest[k].w)).map(([k]) => +k);
   const f = fuel(r.moving_time, r.clsP.zone);
 
   return {
@@ -84,14 +83,26 @@ export function ridePayload(data: BuildDataset, { id }: { id: string }): RidePay
       year: watts(yearBest),
       allTime: watts(allBest),
       wkg: {
-        own: Object.fromEntries(Object.entries(r.best || {}).map(([k, w]: [string, any]) => [k, +(w / KG).toFixed(2)])),
+        // A missing value divides as 0 (as before typing)
+        own: Object.fromEntries(Object.entries(r.best || {}).map(([k, w]) => [k, +((w ?? 0) / KG).toFixed(2)])),
         year: data.curveWkg(yearBest),
         allTime: data.curveWkg(allBest),
       },
     },
     analysis: { if_: r.if_, vi: r.vi, ef: r.ef, rpe: r.rpe, dec: r.dec, fuel: { during: f.during, ml: f.ml, after: f.after } },
-    laps: r.laps.length > 1 ? r.laps.map((l, n) => ({ ...pick(l, ['name', 'distance', 'moving_time', 'average_speed', 'average_watts', 'average_heartrate', 'max_heartrate', 'average_cadence', 'total_elevation_gain']), index: l.lap_index ?? n + 1 })) : [],
-    segments: r.segs.map((s, n) => ({ ...pick(s, ['name', 'distance', 'average_grade', 'elapsed_time', 'average_watts', 'average_heartrate', 'pr_rank']), key: `${n}`, href: segmentUrl(s.segment_id) })),
-    splits: r.splits.length > 1 && !r.indoor ? r.splits.map((s) => pick(s, ['split', 'moving_time', 'average_speed', 'elevation_difference', 'average_heartrate'])) : [],
+    laps: r.laps.length > 1 ? r.laps.map((l, n) => ({
+      name: l.name ?? null, distance: l.distance ?? null, moving_time: l.moving_time ?? null, average_speed: l.average_speed ?? null,
+      average_watts: l.average_watts ?? null, average_heartrate: l.average_heartrate ?? null, max_heartrate: l.max_heartrate ?? null,
+      average_cadence: l.average_cadence ?? null, total_elevation_gain: l.total_elevation_gain ?? null, index: l.lap_index ?? n + 1,
+    })) : [],
+    segments: r.segs.map((s, n) => ({
+      name: s.name ?? null, distance: s.distance ?? null, average_grade: s.average_grade ?? null, elapsed_time: s.elapsed_time ?? null,
+      average_watts: s.average_watts ?? null, average_heartrate: s.average_heartrate ?? null, pr_rank: s.pr_rank ?? null,
+      key: `${n}`, href: segmentUrl(s.segment_id),
+    })),
+    splits: r.splits.length > 1 && !r.indoor ? r.splits.map((s) => ({
+      split: s.split ?? null, moving_time: s.moving_time ?? null, average_speed: s.average_speed ?? null,
+      elevation_difference: s.elevation_difference ?? null, average_heartrate: s.average_heartrate ?? null,
+    })) : [],
   };
 }

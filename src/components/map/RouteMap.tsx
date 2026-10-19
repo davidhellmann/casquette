@@ -4,6 +4,7 @@ import { t } from '@/i18n/index.ts';
 import { NO_BIKE_COLOR } from '@/components/charts/categories';
 import { homeRoutes } from './map-data.ts';
 import { useLeaflet, withColors } from './use-leaflet';
+import type * as Leaflet from 'leaflet';
 
 export type ColourMode = 'mono' | 'year' | 'bike';
 export interface Route { i: string; n: string; d: string; y: number; g: string | null; k: number; t: string; ll: [number, number][]; bb: [number, number, number, number]; pl?: number[] }
@@ -28,14 +29,14 @@ export interface RouteMapProps {
 }
 
 const TOL = 10; // px around the click that count as "passes here"
-function segDist2(p: any, a: any, b: any) {
+function segDist2(p: Leaflet.Point, a: Leaflet.Point, b: Leaflet.Point) {
   const dx = b.x - a.x, dy = b.y - a.y, l = dx * dx + dy * dy;
   let k = l ? ((p.x - a.x) * dx + (p.y - a.y) * dy) / l : 0;
   k = Math.max(0, Math.min(1, k));
   const x = a.x + k * dx - p.x, y = a.y + k * dy - p.y;
   return x * x + y * y;
 }
-function spotSearch(map: any, latlng: any, list: Route[]) {
+function spotSearch(map: Leaflet.Map, latlng: Leaflet.LatLng, list: Route[]) {
   const cp = map.latLngToLayerPoint(latlng);
   const mpp = (40075016.686 * Math.cos((latlng.lat * Math.PI) / 180)) / 2 ** (map.getZoom() + 8);
   const pad = ((TOL * mpp) / 111320) * 1.6;
@@ -61,7 +62,7 @@ export function RouteMap({ routes, candidates, colour, years, bikeColor, fit, sp
   const { lf, theme } = useLeaflet(el, {
     canvas: true,
     init: ({ L, map }) => {
-      map.on('click', (e: any) => {
+      map.on('click', (e: Leaflet.LeafletMouseEvent) => {
         const ids = spotSearch(map, e.latlng, latest.current.candidates);
         latest.current.onSpot(ids, [e.latlng.lat, e.latlng.lng]);
       });

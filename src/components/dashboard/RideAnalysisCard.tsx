@@ -16,9 +16,11 @@ import { analysisStreams, rideAnalysis } from './ride-analysis-data.ts';
 import { WithTip } from '@/components/app/KeyFigures';
 import { BasisToggle, type Basis } from './parts';
 import { useChartStreams } from '@/components/app/use-chart-streams';
+import type { ChartStreams } from '@/lib/chart-streams.ts';
 import { DecouplingScale } from '@/components/ride/DecouplingScale';
+import type { DecodedPeriod } from '@/lib/dashboard-payload.ts';
 
-function StreamChart({ streams }: { streams: unknown }) {
+function StreamChart({ streams }: { streams: ChartStreams | null | undefined }) {
   if (streams === undefined) return <Skeleton className="h-[300px] rounded-md" />;
   const S = analysisStreams(streams);
   if ('empty' in S) return <EmptyState className="h-[300px]">{S.empty}</EmptyState>;
@@ -72,7 +74,7 @@ const mini = 'mb-2 flex items-center justify-between gap-2 font-mono text-[10.5p
  * time in zone, aerobic decoupling and what to eat. `id` / `onSelect` – the selection lives in the
  * dashboard, so the fuelling matrix can highlight the ride's cell.
  */
-export function RideAnalysisCard({ D, id, onSelect, basis }: { D: any; id: string | null; onSelect: (id: string) => void; basis: Basis }) {
+export function RideAnalysisCard({ D, id, onSelect, basis }: { D: DecodedPeriod; id: string | null; onSelect: (id: string) => void; basis: Basis }) {
   const A = id ? rideAnalysis(D, id, { basis }) : null;
   const streams = useChartStreams(A ? A.id : null);
   const [tab, setTab] = React.useState<Basis>('power');

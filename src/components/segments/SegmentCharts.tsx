@@ -13,11 +13,12 @@ type AttemptRow = Attempt & { i: number; best: number };
 
 /** Tooltip lines every attempt shares: power, heart rate, PR rank. */
 function extraLines(a: Attempt): TooltipLine[] {
-  return [
+  const lines: (TooltipLine | null)[] = [
     a.w ? { label: t('metric.watts'), color: 'var(--power)', value: `${Math.round(a.w)} W` } : null,
     a.hr ? { label: t('segments.attemptCols.hr'), color: 'var(--heart-rate)', value: `${Math.round(a.hr)} bpm` } : null,
     a.pr ? { label: 'PR', color: 'var(--brand)', value: t('segments.prRank', { n: a.pr }) } : null,
-  ].filter((l): l is TooltipLine => l != null);
+  ];
+  return lines.filter((l): l is TooltipLine => l != null);
 }
 
 const attemptConfig = {

@@ -1,4 +1,5 @@
 ---
+import type { InferGetStaticPropsType } from 'astro';
 import Base from '../../layouts/Base.astro';
 import { YearView } from '../../components/years/YearView';
 import { getDataset } from '../../lib/data.ts';
@@ -9,6 +10,8 @@ export async function getStaticPaths() {
   const years = yearList(await getDataset());
   return years.map((y) => ({ params: { year: String(y) }, props: { year: y, years } }));
 }
+type Props = InferGetStaticPropsType<typeof getStaticPaths>;
+
 const { year, years } = Astro.props;
 const payload = yearPayload(await getDataset(), { year });
 ---

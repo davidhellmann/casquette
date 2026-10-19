@@ -5,6 +5,7 @@
 import type { GearPayload } from '../components/gear/GearView';
 import type { GearDetailPayload, GearRecord } from '../components/gear/GearDetailView';
 import type { BuildDataset } from './build-dataset.ts';
+import type { Ride } from '../ride/index.ts';
 import { routes } from './routes.ts';
 import { gearUrl } from './strava-links.ts';
 import { rideRows } from '../components/rides/ride-list.ts';
@@ -19,7 +20,8 @@ function purchaseDate(value: unknown): Date | null {
   const d = value instanceof Date ? new Date(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()) : calendarDate(String(value ?? ''));
   return isNaN(+d) ? null : d;
 }
-const recordValue: Record<GearRecord['key'], (r: any) => number> = { longest: (r) => r.distance, climb: (r) => r.elev, fastest: (r) => r.speed, np: (r) => r.np };
+/** The value of a record ride (`records`): positive by construction, so a record's NP is never null. */
+const recordValue: Record<GearRecord['key'], (r: Ride) => number> = { longest: (r) => r.distance, climb: (r) => r.elev, fastest: (r) => r.speed, np: (r) => r.np ?? 0 };
 
 /** /gear: bikes (active first, then by kilometres) and shoes, kilometres per bike and year. */
 export function gearIndexPayload(data: BuildDataset): GearPayload {
@@ -44,7 +46,7 @@ export function gearIndexPayload(data: BuildDataset): GearPayload {
       costPerKm: b.costPerKm,
     })),
     shoes: shoes.map((s) => ({ id: s.id, name: s.name, sub: [s.brand, s.model].filter(Boolean).join(' · '), retired: !!s.retired, km: s.stravaKm })),
-    perYear: { bikes: perYear.bikes.map((b) => ({ ...b, color: colorOf[b.id] })), rows: perYear.rows as GearPayload['perYear']['rows'] },
+    perYear: { bikes: perYear.bikes.map((b) => ({ ...b, color: colorOf[b.id] })), rows: perYear.rows },
     currentYear: data.calendar.end.getFullYear(),
   };
 }

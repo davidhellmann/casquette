@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import { expect, it } from 'vitest';
 import { decodeDashboard, encodeDashboard } from '../../lib/dashboard-payload.ts';
 import { createBuildDataset, memorySource } from '../../lib/build-dataset.ts';
@@ -9,7 +8,7 @@ import { fitnessChartData } from './fitness-data.ts';
 it('returns exactly the same CTL/ATL today on the dashboard and on /performance, even after rest days', async () => {
   const now = new Date(2024, 8, 15, 12);
   // Load from Relative Effort only, a known 0 TSS beside Relative Effort, a TSS, and a late-evening ride
-  const ride = (id, start_date_local, extra) => ({ id, start_date_local, sport_type: 'Ride', moving_time: 3600, ...extra });
+  const ride = (id: string, start_date_local: string, extra: Record<string, unknown>) => ({ id, start_date_local, sport_type: 'Ride', moving_time: 3600, ...extra });
   const rides = [
     ride('0', '2024-08-01T23:30:00', { suffer_score: 200 }),
     ride('1', '2024-09-02T08:00:00', { suffer_score: 60, device_watts: true, weighted_average_watts: 10 }),
@@ -22,6 +21,7 @@ it('returns exactly the same CTL/ATL today on the dashboard and on /performance,
   const D = dashboardPeriod(decodeDashboard(encodeDashboard({ rides: data.rides })).rides, { days: 90, basis: 'power', now });
   const dashboard = D.fitness.at(-1);
   const today = performancePayload(data).ctl.at(-1);
+  if (!dashboard || !today) throw new Error('no fitness series');
   expect(today.date).toBe('2024-09-15');
   expect(dashboard.day).toBe('2024-09-15');
   expect(today.ctl).toBeGreaterThan(0);

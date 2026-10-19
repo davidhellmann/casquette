@@ -1,4 +1,5 @@
 import * as React from 'react';
+import type * as Leaflet from 'leaflet';
 import { THEME_EVENT } from '@/lib/theme.ts';
 
 /**
@@ -7,7 +8,7 @@ import { THEME_EVENT } from '@/lib/theme.ts';
  * size in sync with the container and re-renders on theme changes.
  */
 
-export interface LeafletMap { L: any; map: any }
+export interface LeafletMap { L: typeof Leaflet; map: Leaflet.Map }
 
 export interface LeafletOptions<T> {
   /** Draw vectors on one canvas (thousands of routes) instead of SVG. */
@@ -26,20 +27,21 @@ export function useLeaflet<T extends object = {}>(el: React.RefObject<HTMLDivEle
   initRef.current = init;
 
   React.useEffect(() => {
-    let map: any, ro: ResizeObserver | undefined, gone = false;
+    let map: Leaflet.Map | undefined, ro: ResizeObserver | undefined, gone = false;
     import('@/scripts/map.ts').then(({ L, addTiles }) => {
       if (gone || !el.current) return;
-      map = L.map(el.current, { zoomControl: true, attributionControl: true, preferCanvas: canvas, scrollWheelZoom: !scrollZoomOnClick });
-      addTiles(map);
-      map.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
+      const m = L.map(el.current, { zoomControl: true, attributionControl: true, preferCanvas: canvas, scrollWheelZoom: !scrollZoomOnClick });
+      map = m;
+      addTiles(m);
+      m.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
       if (scrollZoomOnClick) {
-        map.on('click', () => map.scrollWheelZoom.enable());
-        map.on('mouseout', () => map.scrollWheelZoom.disable());
+        m.on('click', () => m.scrollWheelZoom.enable());
+        m.on('mouseout', () => m.scrollWheelZoom.disable());
       }
-      ro = new ResizeObserver(() => map.invalidateSize());
+      ro = new ResizeObserver(() => m.invalidateSize());
       ro.observe(el.current);
-      const extra = initRef.current?.({ L, map }) ?? ({} as T);
-      setLf({ L, map, ...extra });
+      const extra = initRef.current?.({ L, map: m }) ?? ({} as T);
+      setLf({ L, map: m, ...extra });
     });
     const onTheme = () => setTheme((n) => n + 1);
     window.addEventListener(THEME_EVENT, onTheme);

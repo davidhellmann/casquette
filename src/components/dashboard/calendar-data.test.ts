@@ -1,14 +1,15 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import { describe, expect, it } from 'vitest';
 import { calendarDays, calendarMonths, calendarStats } from './calendar-data.ts';
 import { routes } from '../../lib/routes.ts';
+import type { DashboardCalendar, DashboardCalendarDay } from '../../dashboard-period/index.ts';
 
 // A hand-made D.heatmap (shape from src/dashboard-period/history.ts): one ride day, one rest day, one future day.
-const ride = { load: 87.4, sec: 8100, n: 2, id: 42, rides: [
-  { id: 41, name: 'Morning Ride', sec: 3600, load: 40 },
-  { id: 42, name: 'A very long ride name that keeps going and going on', sec: 4500, load: 47.4 },
+const ride: DashboardCalendarDay = { load: 87.4, sec: 8100, n: 2, id: '42', rides: [
+  { id: '41', name: 'Morning Ride', sec: 3600, load: 40 },
+  { id: '42', name: 'A very long ride name that keeps going and going on', sec: 4500, load: 47.4 },
 ] };
-const H = {
+const H: DashboardCalendar = {
+  day: {},
   cells: [
     { d: new Date(2025, 2, 3), week: 0, rideDay: ride, future: false, dim: false, level: 3 },
     { d: new Date(2025, 2, 4), week: 0, rideDay: undefined, future: false, dim: true, level: 0 },
@@ -36,7 +37,7 @@ describe('calendarDays', () => {
   it('a day with one ride links straight to it, without a menu', () => {
     const one = { ...H, cells: [{ ...H.cells[0], rideDay: { ...ride, n: 1, rides: ride.rides.slice(1) } }] };
     expect(calendarDays(one)[0]).not.toHaveProperty('rides');
-    expect(calendarDays(one)[0].href).toBe(routes.ride(42));
+    expect(calendarDays(one)[0]?.href).toBe(routes.ride(42));
   });
   it('marks a day without rides as a rest day', () => {
     expect(calendarDays(H)[1]).toEqual({ level: 0, dim: true, title: 'Tue, 04/03/2025', notes: ['Rest day'] });

@@ -122,7 +122,7 @@ export function rideColumns({ longDate, only }: { longDate: boolean; only?: Ride
     col.accessor('zone', { id: 'zone', meta: { label: L('zone') }, ...numSort, cell: (c) => <ZoneBadge zone={c.getValue()} title={c.row.original.zoneBy} /> }),
     col.accessor('tss', { id: 'tss', meta: numeric(L('tss')), ...numSort, cell: (c) => dash(c.getValue()) }),
     col.accessor('fuel', { id: 'fuel', meta: numeric(L('fuel')), ...numSort, cell: (c) => dash(c.getValue(), (v) => <WithUnit value={v} unit="g/h" />) }),
-  ]) as DataTableColumn<RideRow>[];
+  ]);
   return only ? all.filter((c) => only.includes(c.id as RideColumnId)) : all;
 }
 

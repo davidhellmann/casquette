@@ -16,7 +16,7 @@ import { useIslandReady } from '@/lib/island-ready';
 
 export interface GearRecord {
   key: 'longest' | 'climb' | 'fastest' | 'np';
-  ride: { href: string; name: string; date: string; value: number } | null;
+  ride: { href: string; name: string; date: string | null; value: number } | null;
 }
 
 /** Build payload of /gear/<id> (src/pages/gear/[id].astro). */

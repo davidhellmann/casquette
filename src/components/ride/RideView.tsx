@@ -10,7 +10,9 @@ import { EmptyState } from '@/components/app/EmptyState';
 import { ZoneBadge } from '@/components/rides/ride-columns';
 import { fmtClock, fmtDur, nf } from '@/scripts/format.ts';
 import { t } from '@/i18n/index.ts';
+import type { ZoneSet } from '@/training/index.ts';
 import { RideMap, type LatLng, type RideMapHandle } from './RideMap';
+import { isLatLng } from './ride-data.ts';
 import { StreamCharts, type StreamZones } from './StreamCharts';
 import { TimeInZones } from '@/components/charts/ZoneBars';
 import { RideCurveChart, type RideCurveProps } from './RideCurveChart';
@@ -20,7 +22,7 @@ import { useChartStreams } from '@/components/app/use-chart-streams';
 import { rideDecoupling, toneBg, zoneBg } from './ride-presentation.ts';
 import { DecouplingScale } from './DecouplingScale';
 
-type Zones = { min: number | null; max: number | null }[];
+type Zones = ZoneSet;
 interface Link { href: string; name: string }
 
 /** Build payload of /rides/<id> (src/lib/ride-payload.ts). Locale-dependent texts are formatted at build time. */
@@ -60,7 +62,7 @@ export interface RidePayload {
   };
   /** Zones that colour the power and heart-rate streams. */
   streamZones: StreamZones;
-  tiz: Record<'power' | 'hr', { seconds: number[] | null; zones: Zones | null; label: string }>;
+  tiz: Record<'power' | 'hr', { seconds: readonly number[] | null; zones: Zones | null; label: string }>;
   year: number;
   ftp: number;
   curve: Omit<RideCurveProps, 'yearLabel' | 'ftp'>;
@@ -231,13 +233,14 @@ export function RideView({ R }: { R: RidePayload }) {
   useIslandReady();
   const stream = useChartStreams(R.map.streams ? R.id : null);
   const mapRef = React.useRef<RideMapHandle>(null);
-  const latlng: LatLng[] | null = stream?.latlng ?? null;
+  const latlng = stream?.latlng ?? null;
   const points = latlng ?? R.map.points;
-  const values = latlng && R.map.key ? stream[R.map.key] ?? null : null;
+  const values = latlng && stream && R.map.key ? stream[R.map.key] ?? null : null;
   const routeZones = values ? R.map.zones : null;
   const routeExpected = !!(R.map.points || (R.map.streams && stream === undefined));
   const onHover = React.useCallback((i: number | null) => {
-    mapRef.current?.mark(i != null && latlng ? latlng[i] ?? null : null);
+    const p = i != null && latlng ? latlng[i] : null;
+    mapRef.current?.mark(isLatLng(p) ? p : null);
   }, [latlng]);
   const mapSub = R.map.key === 'watts' ? t('ride.byPowerZone') : R.map.key === 'heart_rate' ? t('ride.byHrZone') : t('ride.routeSub');
   const prs = R.segments.filter((s) => s.pr_rank).length;
