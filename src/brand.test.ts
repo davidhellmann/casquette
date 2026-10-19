@@ -7,10 +7,10 @@ import { CAP, WORDMARK, capPlacement } from './lib/brand.ts';
 // Refs #27: every brand consumer exists and is generated from the one brand source
 // (src/lib/brand.ts) – after changing the logo, `npm run brand` regenerates them all.
 const ROOT = path.resolve(import.meta.dirname, '..');
-const read = (file) => fs.readFileSync(path.join(ROOT, file));
+const read = (file: string) => fs.readFileSync(path.join(ROOT, file));
 
 /** Width and height from a PNG's IHDR chunk. */
-const pngSize = (buf) => ({ width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) });
+const pngSize = (buf: Buffer) => ({ width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) });
 
 describe('brand assets', () => {
   it.each(Object.entries(brandFiles()))('%s is up to date with the brand source', (file, content) => {
@@ -71,8 +71,8 @@ describe('the approved logo', () => {
 describe('the website logo', () => {
   const html = read('website/index.html').toString();
   const css = read('website/site.css').toString();
-  const rule = (selector) => css.match(new RegExp(`\\n${selector.replace('.', '\\.')} \\{([^}]*)\\}`))?.[1] ?? '';
-  const em = (v) => `${Math.round(v * 10000) / 10000}em`;
+  const rule = (selector: string) => css.match(new RegExp(`\\n${selector.replace('.', '\\.')} \\{([^}]*)\\}`))?.[1] ?? '';
+  const em = (v: number) => `${Math.round(v * 10000) / 10000}em`;
 
   it('is set in the app\'s Damion file', () => {
     expect(read('website/fonts/damion-latin.woff2').equals(read('node_modules/@fontsource/damion/files/damion-latin-400-normal.woff2'))).toBe(true);

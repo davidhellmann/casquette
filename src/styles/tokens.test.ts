@@ -5,10 +5,10 @@ import { expect, it } from 'vitest';
 // The new UI's tokens (app.css): every colour has a light and a dark value, and every
 // Tailwind colour utility resolves to a defined token – so no component needs a hex value.
 const css = fs.readFileSync(path.resolve(import.meta.dirname, 'app.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
-const block = (selector) => css.match(new RegExp(`(?:^|\\n)${selector}\\s*\\{([^}]*)\\}`))?.[1] ?? '';
-const names = (body) => [...body.matchAll(/(--[\w-]+)\s*:/g)].map((m) => m[1]);
+const block = (selector: string) => css.match(new RegExp(`(?:^|\\n)${selector}\\s*\\{([^}]*)\\}`))?.[1] ?? '';
+const names = (body: string) => [...body.matchAll(/(--[\w-]+)\s*:/g)].map((m) => m[1]);
 /** Tokens whose light value is another token (`--category-1: var(--brand)`) follow that token's theme. */
-const aliases = (body) => [...body.matchAll(/(--[\w-]+)\s*:\s*var\(--[\w-]+\)\s*;/g)].map((m) => m[1]);
+const aliases = (body: string) => [...body.matchAll(/(--[\w-]+)\s*:\s*var\(--[\w-]+\)\s*;/g)].map((m) => m[1]);
 
 const light = names(block(':root'));
 const dark = names(block('\\.dark'));
