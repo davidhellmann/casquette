@@ -1,6 +1,6 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import { describe, expect, it } from 'vitest';
 import { computeMetrics, to1Hz } from './metrics.ts';
+import type { RawStreams } from './metrics.ts';
 import { powerDistribution } from '../../src/ride/distribution.ts';
 import { rideFrontmatter } from './ride-file.ts';
 import { athleteTimeline, rideLoad } from '../../src/training/index.ts';
@@ -9,12 +9,13 @@ import { processRide } from '../../src/ride/index.ts';
 const activity = { id: '7', start_date_local: '2024-05-01T12:00:00', moving_time: 3600, device_watts: true, average_watts: 180, weighted_average_watts: 240, weight_kg: 80, average_heartrate: 150 };
 const athleteState = (ftp = 200, weight = 80) => athleteTimeline({ history: [{ date: '2024-01-01', ftp, weight }] }).at(activity.start_date_local);
 const forbidden = ['intensity_factor', 'tss', 'avg_wkg', 'np_wkg', 'ftp_used'];
-const streams = { time: { data: [0, 1, 4, 7, 30, 32, 32, 34] }, watts: { data: [100, 0, 151, 151, 900, 201, 999, null] } };
+const streams: RawStreams = { time: { data: [0, 1, 4, 7, 30, 32, 32, 34] }, watts: { data: [100, 0, 151, 151, 900, 201, 999, null] } };
 
 describe('sync → frontmatter → ride', () => {
   it('persists only independent metrics, identical for a different FTP/weight', () => {
     const a = computeMetrics(activity, streams);
-    const b = computeMetrics({ ...activity, weight_kg: 50 }, streams);
+    const lighter = { ...activity, weight_kg: 50 };
+    const b = computeMetrics(lighter, streams);
     forbidden.forEach((key) => expect(a).not.toHaveProperty(key));
     expect(a).not.toHaveProperty('time_in_power_zones');
     expect(a).toEqual(b);
@@ -26,7 +27,7 @@ describe('sync → frontmatter → ride', () => {
     const metrics = computeMetrics(activity, streams);
     const fm = rideFrontmatter({ id: '7', summary: activity, metrics });
     // Right-hand samples over 0 < dt <= 10 s: the 23 s step, the dt = 0 sample and the missing value add nothing.
-    for (const [ftp, tiz] of [[150, [1, 0, 0, 6, 0, 2, 0]], [200, [1, 0, 6, 2, 0, 0, 0]], [300, [7, 2, 0, 0, 0, 0, 0]]]) {
+    for (const [ftp, tiz] of [[150, [1, 0, 0, 6, 0, 2, 0]], [200, [1, 0, 6, 2, 0, 0, 0]], [300, [7, 2, 0, 0, 0, 0, 0]]] as const) {
       const r = processRide(fm, athleteState(ftp));
       expect(r.tizP).toEqual(tiz);
       expect(r.tizBasis.power).toMatchObject({ source: 'distribution', ftp, zones: athleteState(ftp).zones.power_zones, exact: true });
@@ -42,8 +43,8 @@ describe('sync → frontmatter → ride', () => {
     expect(metrics).not.toHaveProperty('time_in_hr_zones_basis');
     expect(metrics.hr_distribution).toEqual({ version: 1, method: 'right-sample-dt-0-10s', samples: [[0, 1], [131, 6], [150, 2], [181, 2]] });
     const fm = rideFrontmatter({ id: '7', summary: activity, metrics });
-    const zonesFile = (bpm) => ({ heart_rate: [{ from: '2024-01-01', bpm }] });
-    for (const [bpm, tiz] of [[[0, 130, 150, 165, 180], [1, 6, 2, 0, 2]], [[0, 140, 160, 170, 185], [7, 2, 0, 2, 0]]]) {
+    const zonesFile = (bpm: readonly number[]) => ({ heart_rate: [{ from: '2024-01-01', bpm }] });
+    for (const [bpm, tiz] of [[[0, 130, 150, 165, 180], [1, 6, 2, 0, 2]], [[0, 140, 160, 170, 185], [7, 2, 0, 2, 0]]] as const) {
       const state = athleteTimeline({ zonesFile: zonesFile(bpm) }).at(activity.start_date_local);
       const r = processRide(fm, state);
       expect(r.tizH).toEqual(tiz);
@@ -57,13 +58,13 @@ describe('sync → frontmatter → ride', () => {
     const t = [0, 0.5, 2, 12, 23, 24];
     const w = [0, 110.5, 111, 150.5, 900, 151];
     const metrics = computeMetrics(activity, { time: { data: t }, watts: { data: w } });
-    expect(metrics.power_distribution.samples).toEqual([[110.5, 0.5], [111, 1.5], [150.5, 10], [151, 1]]);
-    for (const [ftp, tiz] of [[100, [0, 0, 0, 0, 2, 10, 1]], [200, [0.5, 11.5, 1, 0, 0, 0, 0]], [301, [13, 0, 0, 0, 0, 0, 0]]]) {
+    expect(metrics.power_distribution?.samples).toEqual([[110.5, 0.5], [111, 1.5], [150.5, 10], [151, 1]]);
+    for (const [ftp, tiz] of [[100, [0, 0, 0, 0, 2, 10, 1]], [200, [0.5, 11.5, 1, 0, 0, 0, 0]], [301, [13, 0, 0, 0, 0, 0, 0]]] as const) {
       expect(processRide({ ...activity, metrics }, athleteState(ftp)).tizP).toEqual(tiz);
     }
   });
 
-  it.each(['streams', 'summary'])('also cleans an old %s cache without losing independent data', (source) => {
+  it.each(['streams', 'summary'] as const)('also cleans an old %s cache without losing independent data', (source) => {
     const metrics = Object.freeze({ source, np: 240, intensity_factor: 9, tss: 999, avg_wkg: 99, np_wkg: 99, ftp_used: 400,
       power_curve: { 60: 300 }, hr_curve: { 60: 170 }, variability_index: 1.2, decoupling_pct: 3,
       time_in_power_zones: [60, 120], time_in_hr_zones: [100, 80], computed_at: '2024-05-02' });
@@ -123,8 +124,8 @@ describe('sync → frontmatter → ride', () => {
     expect(r.np).toBeNull();
     expect(r.load).toBe(99);
     expect(metrics.power_curve).not.toHaveProperty('60');
-    expect(metrics.power_curve[1]).toBe(200);
-    expect(metrics.power_curve[30]).toBe(kind === 'sparse' ? undefined : 200);
+    expect(metrics.power_curve?.[1]).toBe(200);
+    expect(metrics.power_curve?.[30]).toBe(kind === 'sparse' ? undefined : 200);
   });
 
   it('uses only complete NP windows from sufficiently long measured sections', () => {
@@ -132,7 +133,7 @@ describe('sync → frontmatter → ride', () => {
     const metrics = computeMetrics(activity, { time: { data: watts.map((_, i) => i) }, watts: { data: watts } });
     const r = processRide(rideFrontmatter({ id: '7', summary: activity, metrics }), athleteState());
     expect(r.np).toBe(Math.round((200 ** 4 / 2) ** .25));
-    expect(metrics.power_curve[60]).toBe(200);
+    expect(metrics.power_curve?.[60]).toBe(200);
     expect(metrics.power_curve).not.toHaveProperty('120');
   });
 
@@ -155,6 +156,6 @@ describe('stream sampling rule (one owner: src/ride/distribution.ts)', () => {
   });
 
   it('the distribution counts the same intervals; the sample after a gap and the first sample add nothing', () => {
-    expect(powerDistribution(time, watts).samples).toEqual([[100, 1], [200, 2], [260, 1]]);
+    expect(powerDistribution(time, watts)?.samples).toEqual([[100, 1], [200, 2], [260, 1]]);
   });
 });

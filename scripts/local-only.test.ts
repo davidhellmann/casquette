@@ -1,11 +1,10 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import fs from 'node:fs';
 import path from 'node:path';
 import { expect, it } from 'vitest';
 
 // Refs #11: Casquette is a local tool – no npm command commits, pushes, deploys or schedules runs.
 const root = path.resolve(import.meta.dirname, '..');
-const { scripts } = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+const { scripts }: { scripts: Record<string, string> } = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 
 it('exposes the manual sync entry points', () => {
   expect(scripts).toMatchObject({
@@ -24,7 +23,7 @@ it('has no npm command that publishes data or installs a scheduled sync', () => 
 });
 
 it('ships no script that runs git', () => {
-  const files = fs.readdirSync(path.join(root, 'scripts'), { recursive: true })
+  const files = fs.readdirSync(path.join(root, 'scripts'), { recursive: true, encoding: 'utf8' })
     .filter((f) => /\.ts$/.test(f));
   const withGit = files.filter((f) => /['"`]git['"`]/.test(fs.readFileSync(path.join(root, 'scripts', f), 'utf8')));
   expect(withGit).toEqual([]);

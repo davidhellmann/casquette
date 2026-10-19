@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck – typed in phase B of docs/adr/0004
 /**
  * Resolve places and countries for all outdoor rides (no time limit, 0 Strava calls).
  *   npm run geo

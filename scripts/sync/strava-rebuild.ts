@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-// @ts-nocheck – typed in phase B of docs/adr/0004
+import { errorMessage } from '../shared/env.ts';
 import { rebuild } from './lib/rebuild.ts';
 
 try {
   console.log(`✅ ${rebuild()} Markdown files rewritten offline.`);
 } catch (error) {
-  console.error('❌', error.message);
+  console.error('❌', errorMessage(error));
   process.exitCode = 1;
 }
