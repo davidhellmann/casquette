@@ -46,5 +46,5 @@ export function monthColumns(maxKm: number): DataTableColumn<YearMonth>[] {
           : '–';
       },
     }),
-  ]) as DataTableColumn<YearMonth>[];
+  ]);
 }

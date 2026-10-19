@@ -41,24 +41,24 @@ describe('segmentTrack', () => {
   // A stream thinned from 1000 to 10 points: segment indexes refer to the original 1000
   const stream = {
     points: 10, original_points: 1000,
-    latlng: Array.from({ length: 10 }, (_, i) => [48 + i / 100, 11 + i / 100]),
+    latlng: Array.from({ length: 10 }, (_, i): [number, number] => [48 + i / 100, 11 + i / 100]),
     altitude: [500, 510, 520, 530, 540, 550, 560, 570, 580, 590],
     distance: [0, 100, 200, 300, 400, 500, 600, 700, 800, 900],
   };
 
   it('cuts the segment out of the thinned stream: route and elevation profile from its start', () => {
     const tr = segmentTrack(stream, { si: 300, ei: 590 }, 300);
-    expect(tr.latlng).toEqual([[48.03, 11.03], [48.04, 11.04], [48.05, 11.05], [48.06, 11.06]]);
-    expect(tr.profile).toEqual([{ km: 0, alt: 530 }, { km: 0.1, alt: 540 }, { km: 0.2, alt: 550 }, { km: 0.3, alt: 560 }]);
+    expect(tr?.latlng).toEqual([[48.03, 11.03], [48.04, 11.04], [48.05, 11.05], [48.06, 11.06]]);
+    expect(tr?.profile).toEqual([{ km: 0, alt: 530 }, { km: 0.1, alt: 540 }, { km: 0.2, alt: 550 }, { km: 0.3, alt: 560 }]);
   });
   it('spreads the profile over the segment distance when the stream has no distance', () => {
     const tr = segmentTrack({ ...stream, distance: undefined }, { si: 300, ei: 590 }, 400);
-    expect(tr.profile.map((p) => p.km)).toEqual([0, 0.1, 0.2, 0.3]);
+    expect(tr?.profile.map((p) => p.km)).toEqual([0, 0.1, 0.2, 0.3]);
   });
   it('has no route without at least two GPS points, no profile without altitude', () => {
     expect(segmentTrack({ ...stream, latlng: undefined }, { si: 0, ei: 900 }, 900)).toBeNull();
     expect(segmentTrack(stream, { si: 300, ei: 300 }, 0)).toBeNull();
-    expect(segmentTrack({ ...stream, altitude: undefined }, { si: 300, ei: 590 }, 300).profile).toEqual([]);
+    expect(segmentTrack({ ...stream, altitude: undefined }, { si: 300, ei: 590 }, 300)?.profile).toEqual([]);
   });
 });
 

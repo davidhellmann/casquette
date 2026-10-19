@@ -3,10 +3,12 @@ import { Heart, Zap } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SegmentedToggle } from './SegmentedToggle';
 import { PERIODS } from '@/dashboard-period/index.ts';
-import { PERIOD_EVENT, readPeriod, writePeriod } from '@/lib/period-store.ts';
+import { PERIOD_EVENT, isPeriod, readPeriod, writePeriod, type PeriodChoice } from '@/lib/period-store.ts';
 import { t } from '@/i18n/index.ts';
 
-type Period = { days: number; basis: 'power' | 'hr' };
+type Period = PeriodChoice;
+/** Store the period of a select value (always one of PERIODS). */
+const choose = (v: string) => { const days = +v; if (isPeriod(days)) writePeriod({ days }); };
 
 /** Period (7 days … all time) and zone basis (power / heart rate) for the page header. */
 export function PeriodControl() {
@@ -22,14 +24,14 @@ export function PeriodControl() {
 
   return (
     <div className="flex items-center gap-2" data-testid="period-control">
-      <SegmentedToggle value={days} onChange={(v) => writePeriod({ days: +v })} label={t('period.label')} className="hidden lg:flex"
-        options={PERIODS.map((d: number) => ({ value: String(d), label: t(`period.long.${d}`) }))} />
-      <Select value={days} onValueChange={(v) => writePeriod({ days: +v })}>
+      <SegmentedToggle value={days} onChange={choose} label={t('period.label')} className="hidden lg:flex"
+        options={PERIODS.map((d) => ({ value: String(d), label: t(`period.long.${d}`) }))} />
+      <Select value={days} onValueChange={choose}>
         <SelectTrigger size="sm" aria-label={t('period.label')} className="w-28 lg:hidden">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {PERIODS.map((d: number) => <SelectItem key={d} value={String(d)}>{t(`period.long.${d}`)}</SelectItem>)}
+          {PERIODS.map((d) => <SelectItem key={d} value={String(d)}>{t(`period.long.${d}`)}</SelectItem>)}
         </SelectContent>
       </Select>
       <SegmentedToggle value={period.basis} onChange={(v) => writePeriod({ basis: v })} label={t('basis.label')} options={[

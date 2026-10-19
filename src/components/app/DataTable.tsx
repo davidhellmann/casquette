@@ -18,6 +18,7 @@ import {
   type Column,
   type ColumnDef,
   type Row,
+  type RowData,
   type SortingState,
 } from '@tanstack/react-table';
 import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Columns3, LayoutList, Search, Table2 } from 'lucide-react';
@@ -42,8 +43,11 @@ export interface DataTableColumnMeta {
   numeric?: boolean;
   /** Extra classes for the column's cells (header and body). */
   className?: string;
-  /** Inline style of a body cell, e.g. a tint that encodes the value – colours only as `var(--token)`. */
-  cellStyle?: (row: any) => React.CSSProperties | undefined;
+  /**
+   * Inline style of a body cell, e.g. a tint that encodes the value – colours only as `var(--token)`.
+   * Called with the row of the column's table; method syntax, because the meta type does not know the row type.
+   */
+  cellStyle?(row: unknown): React.CSSProperties | undefined;
 }
 
 /** Features of every DataTable: sorting, global search, column visibility, pagination. */
@@ -60,10 +64,10 @@ export const dataTableFeatures = tableFeatures({
   paginatedRowModel: createPaginatedRowModel(),
 });
 type Features = typeof dataTableFeatures;
-export type DataTableColumn<T> = ColumnDef<Features, T, any>;
+export type DataTableColumn<T extends RowData> = ColumnDef<Features, T, unknown>;
 
 /** Column helper typed for DataTable – `const col = dataTableColumns<Ride>()`. */
-export const dataTableColumns = <T,>() => createColumnHelper<Features, T>();
+export const dataTableColumns = <T extends RowData>() => createColumnHelper<Features, T>();
 
 /** Column meta of a numeric column: right-aligned, tabular figures (`className` e.g. for responsive hiding). */
 export const numeric = (label: string, className?: string): DataTableColumnMeta => ({ label, numeric: true, ...(className ? { className } : {}) });
@@ -88,7 +92,7 @@ export interface DataTableTiles<T> {
   render: (row: T) => React.ReactNode;
 }
 
-export interface DataTableProps<T> {
+export interface DataTableProps<T extends RowData> {
   /** Accessible name of the table. */
   label: string;
   columns: DataTableColumn<T>[];
@@ -124,12 +128,12 @@ const GROUPS = ['none', 'week', 'month'] as const;
 /** One Table/Tiles choice for every ride list. */
 export const VIEW_STORAGE_KEY = 'rc_table_view';
 
-const meta = (column: Column<Features, any, any>) => column.columnDef.meta as DataTableColumnMeta | undefined;
+const meta = <T extends RowData>(column: Column<Features, T, unknown>): DataTableColumnMeta | undefined => column.columnDef.meta;
 const ARIA_SORT = { asc: 'ascending', desc: 'descending' } as const;
 // Header labels: small uppercase mono, muted (DESIGN.md "Tables")
 const LABEL = 'font-mono text-[10.5px] font-normal tracking-[0.08em] uppercase';
 
-function SortHeader({ column }: { column: Column<Features, any, any> }) {
+function SortHeader<T extends RowData>({ column }: { column: Column<Features, T, unknown> }) {
   const m = meta(column);
   if (!column.getCanSort()) return <>{m?.label}</>;
   const dir = column.getIsSorted();
@@ -164,7 +168,7 @@ function GroupName<T>({ g }: { g: RowGroup<T> }) {
  * column menu and pagination, numeric columns right-aligned with tabular figures, row links.
  * Ride lists add a Table/Tiles view: the table is flat and sortable, the tiles come by date and can be grouped by week or month.
  */
-export function DataTable<T>({
+export function DataTable<T extends RowData>({
   label, columns, data, getRowId, rowHref, initialSorting = [], searchText, searchLabel = t('table.search'), searchPlaceholder,
   pageSize = 25, columnToggle = false, grouping, tiles, storageId, empty, summary, className,
 }: DataTableProps<T>) {

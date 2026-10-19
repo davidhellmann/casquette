@@ -87,7 +87,7 @@ const columns = col.columns([
   col.accessor('bestOn', { id: 'bestOn', meta: { label: L('bd') }, ...numSort, cell: (c) => isoDate(c.getValue()) }),
   col.accessor('last', { id: 'last', meta: { label: L('l') }, ...numSort, cell: (c) => isoDate(c.getValue()) }),
   col.accessor('lastDelta', { id: 'lastDelta', meta: numeric(L('ld')), ...numSort, sortDescFirst: false, cell: (c) => <DeltaToBest pct={c.getValue()} /> }),
-]) as DataTableColumn<SegmentRow>[];
+]);
 
 const getRowId = (r: SegmentRow) => r.id;
 const rowHref = (r: SegmentRow) => (r.page ? href(r.id) : undefined);

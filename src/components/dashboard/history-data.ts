@@ -4,15 +4,17 @@
  */
 import { fmtDateL, fmtDur, nf, trunc, fmtDayMonth, fmtMonthShort } from '../../scripts/format.ts';
 import { t } from '../../i18n/index.ts';
+import type { TParams } from '../../i18n/index.ts';
+import type { DashboardRide, DecodedPeriod } from '../../lib/dashboard-payload.ts';
 
-const rides = (n) => t('common.rides', { n: nf(n) });
+const rides = (n: number) => t('common.rides', { n: nf(n) });
 
 /** Rides since the first year – the subline of the history cards. */
-export const historySince = (D) => t('common.sinceYear', { rides: rides(D.ridesAll.length), year: D.oldest.getFullYear() });
+export const historySince = (D: DecodedPeriod): string => t('common.sinceYear', { rides: rides(D.ridesAll.length), year: D.oldest.getFullYear() });
 
 /** All-time totals with a fun comparison each, the best year and the longest ride. */
-export function allTime(D) {
-  const R = D.ridesAll, { km, h, elev, best, longest } = D.history, a = (key, x) => t('dash.allTime.' + key, x);
+export function allTime(D: DecodedPeriod) {
+  const R = D.ridesAll, { km, h, elev, best, longest } = D.history, a = (key: string, x?: TParams) => t('dash.allTime.' + key, x);
   return {
     items: [
       { key: 'km', value: nf(km), label: a('km'), sub: a('kmSub', { n: nf(km / 40075, 1) }) },
@@ -26,7 +28,7 @@ export function allTime(D) {
 }
 
 /** Kilometres (bars) and hours (line) per year; the current year highlighted. */
-export function yearsCompared(D) {
+export function yearsCompared(D: DecodedPeriod) {
   const { years, cy } = D.history;
   if (!years.length) return null;
   return years.map((y) => ({
@@ -36,7 +38,7 @@ export function yearsCompared(D) {
 }
 
 /** Cumulative kilometres per day of the year for the last six years; this year so far vs. last year. */
-export function kilometreRace(D) {
+export function kilometreRace(D: DecodedPeriod) {
   const { cumulative, cy, labels, ytdNow, ytdPrev, ytdDelta } = D.history;
   if (!cumulative.length) return null;
   return {
@@ -46,22 +48,24 @@ export function kilometreRace(D) {
       month: d.getDate() === 1 ? fmtMonthShort(d) : null,
       ...Object.fromEntries(cumulative.map(({ y, data }) => [`y${y}`, data[i]])),
     })),
-    ytd: ytdPrev ? { pct: ytdNow >= ytdPrev ? Math.abs(ytdDelta) : -Math.abs(ytdDelta), text: t('dash.card.ytdPill', { v: nf(Math.abs(ytdDelta)) }),
+    // ytdDelta is known exactly when there is a previous year (ytdPrev > 0)
+    ytd: ytdPrev && ytdDelta != null ? { pct: ytdNow >= ytdPrev ? Math.abs(ytdDelta) : -Math.abs(ytdDelta), text: t('dash.card.ytdPill', { v: nf(Math.abs(ytdDelta)) }),
       tip: t('dash.card.ytdTip', { cy, now: nf(ytdNow), py: cy - 1, prev: nf(ytdPrev) }) } : null,
   };
 }
 
 /** The eight records of the period – each with its ride, or empty. */
-export function records(D) {
-  const rec = D.records, k = (key) => t('dash.records.' + key), elev = t('units.elev');
-  return [
+export function records(D: DecodedPeriod) {
+  const rec = D.records, k = (key: string) => t('dash.records.' + key), elev = t('units.elev');
+  const kinds: { key: string; label: string; r: DashboardRide | null; f: (r: DashboardRide) => string }[] = [
     { key: 'distance', label: k('longest'), r: rec.longest, f: (r) => `${nf(r.distance / 1000, 1)} km` },
     { key: 'time', label: k('longestTime'), r: rec.longestTime, f: (r) => fmtDur(r.moving_time) },
     { key: 'elev', label: k('elev'), r: rec.climb, f: (r) => `${nf(r.elev)} ${elev}` },
-    { key: 'np', label: k('np'), r: rec.np, f: (r) => `${Math.round(r.np)} W` },
+    { key: 'np', label: k('np'), r: rec.np, f: (r) => `${Math.round(r.np ?? 0)} W` }, // a record NP is positive
     { key: 'load', label: k('load'), r: rec.load, f: (r) => nf(r.load) + (r.tss != null ? ' TSS' : k('effort')) },
     { key: 'speed', label: k('speed'), r: rec.fastest, f: (r) => `${nf(r.speed * 3.6, 1)} km/h` },
     { key: 'prs', label: k('prs'), r: rec.prs, f: (r) => t('common.prs', { n: r.pr }) },
     { key: 'hr', label: k('hr'), r: rec.maxHr, f: (r) => `${r.hr_max} bpm` },
-  ].map(({ r, f, ...x }) => (r ? { ...x, id: r.id, value: f(r), name: r.name, date: fmtDateL(r.d) } : { ...x, id: null, value: '–', name: null, date: t('common.noData') }));
+  ];
+  return kinds.map(({ r, f, ...x }) => (r ? { ...x, id: r.id, value: f(r), name: r.name, date: fmtDateL(r.d) } : { ...x, id: null, value: '–', name: null, date: t('common.noData') }));
 }

@@ -16,9 +16,10 @@ import { analysisStreams, rideAnalysis } from './ride-analysis-data.ts';
 import { WithTip } from '@/components/app/KeyFigures';
 import { BasisToggle, type Basis } from './parts';
 import { useChartStreams } from '@/components/app/use-chart-streams';
+import type { ChartStreams } from '@/lib/chart-streams.ts';
 import { DecouplingScale } from '@/components/ride/DecouplingScale';
 
-function StreamChart({ streams }: { streams: unknown }) {
+function StreamChart({ streams }: { streams: ChartStreams | null | undefined }) {
   if (streams === undefined) return <Skeleton className="h-[300px] rounded-md" />;
   const S = analysisStreams(streams);
   if ('empty' in S) return <EmptyState className="h-[300px]">{S.empty}</EmptyState>;

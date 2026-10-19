@@ -5,14 +5,17 @@
  */
 import { nf, zr } from '../../scripts/format.ts';
 import { HR_ZONE_NAMES, POWER_ZONE_NAMES } from '../../training/index.ts';
+import type { AthleteZones, Basis, Range } from '../../training/index.ts';
 import { LOCALE, t } from '../../i18n/index.ts';
+import type { TParams } from '../../i18n/index.ts';
+import type { DashboardSource, DecodedPeriod } from '../../lib/dashboard-payload.ts';
 
-const n = (key, x) => t('dash.nutrition.' + key, x);
+const n = (key: string, x?: TParams) => t('dash.nutrition.' + key, x);
 
 /** Daily needs for the athlete's weight at the period's load, and what the rides burned and needed. */
-export function nutrition(D, kg) {
+export function nutrition(D: DecodedPeriod, kg: number | null | undefined) {
   const S = D.S, { dailyHours, fuel, fluid } = D.nutrition, { category, perKg, amounts } = D.dailyNeeds;
-  const range = (r, f) => (r ? `${f(r[0])}–${f(r[1])}` : '–');
+  const range = (r: Range | undefined, f: (v: number) => string | number) => (r ? `${f(r[0])}–${f(r[1])}` : '–');
   return {
     subHtml: n('sub', { kg, cat: n('category.' + category), min: nf(dailyHours * 60) }),
     macros: [
@@ -32,9 +35,10 @@ export function nutrition(D, kg) {
 }
 
 /** Today's power or HR zones as ranges on one scale; Z2 is the focus zone. */
-export function zoneTable(zones, basis) {
-  const isP = basis !== 'hr', zs = isP ? zones.power_zones : zones.heart_rate_zones, names = isP ? POWER_ZONE_NAMES : HR_ZONE_NAMES;
-  const top = (zs[zs.length - 1].min || 1) * (isP ? 1.25 : 1.08), pct = (v) => Math.round((v / zones.ftp) * 100);
+export function zoneTable(zones: Pick<AthleteZones, 'ftp' | 'power_zones' | 'heart_rate_zones'>, basis: Basis) {
+  const isP = basis !== 'hr', zs = isP ? zones.power_zones : zones.heart_rate_zones;
+  const names: readonly string[] = isP ? POWER_ZONE_NAMES : HR_ZONE_NAMES;
+  const top = (zs[zs.length - 1].min || 1) * (isP ? 1.25 : 1.08), pct = (v: number) => Math.round((v / zones.ftp) * 100);
   return zs.map((z, i) => {
     const lo = z.min || 0, hi = z.max != null ? z.max : top;
     return {
@@ -46,13 +50,13 @@ export function zoneTable(zones, basis) {
 }
 
 /** Subline of the zones card: where the zones of the basis come from (zones file, Strava or default). */
-export const zonesSub = (zones, basis) => (basis === 'hr'
+export const zonesSub = (zones: Pick<AthleteZones, 'ftp'> & { source?: Partial<AthleteZones['source']> | null }, basis: Basis): string => (basis === 'hr'
   ? t('dash.zonesCard.hrSource.' + (zones.source?.hr ?? 'default'))
   : t('dash.zonesCard.powerSub', { ftp: zones.ftp, src: t('dash.zonesCard.powerSource.' + (zones.source?.power ?? 'default')) }));
 
 /** Active bikes by distance, with the distance ridden in the period. */
-export function garage(D) {
-  const { active, retired, total, max } = D.garage, g = (key, x) => t('dash.garage.' + key, x);
+export function garage(D: DecodedPeriod) {
+  const { active, retired, total, max } = D.garage, g = (key: string, x?: TParams) => t('dash.garage.' + key, x);
   return {
     subHtml: g('sub', { active: active.length, retired: retired.length, km: nf(total / 1000) }),
     bikes: active.map((b) => ({
@@ -66,7 +70,7 @@ export function garage(D) {
 }
 
 /** Footer line: rides and streams in the collection, sync state, last sync. */
-export function footer(source) {
+export function footer(source: Pick<DashboardSource, 'athlete' | 'rides' | 'streamsCount'>): string[] {
   const ath = source.athlete;
   return [
     t('dash.footer', { rides: t('common.rides', { n: nf(source.rides.length) }), streams: nf(source.streamsCount || 0) }) + (ath.sync && !ath.sync.list_complete ? t('dash.footerSyncing') : ''),

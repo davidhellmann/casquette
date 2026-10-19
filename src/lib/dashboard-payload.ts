@@ -9,7 +9,8 @@ import { calendarDate } from '../training/index.ts';
 import type { AthleteState } from '../training/index.ts';
 import type { RideClassification, Ride, TizBasis } from '../ride/index.ts';
 import type { Goal } from '../scripts/goals.ts';
-import type { DatasetAthlete } from './build-dataset.ts';
+import type { DashboardPeriod } from '../dashboard-period/index.ts';
+import type { AthleteGear, DatasetAthlete } from './build-dataset.ts';
 
 /** Ride fields the islands read – no renaming, no domain calculation. */
 const FIELDS = ['id', 'name', 'sport_type', 'start_local', 'start', 'indoor', 'stats', 'gear_id',
@@ -49,6 +50,9 @@ export interface DashboardInput {
   athleteState?: AthleteState | null;
   goals?: readonly Goal[];
 }
+
+/** The dashboard period (`D`) the islands compute over the decoded rides and the athlete's gear. */
+export type DecodedPeriod = DashboardPeriod<DashboardRide, AthleteGear>;
 
 /** Island-side result of `decodeDashboard`. */
 export interface DashboardSource {

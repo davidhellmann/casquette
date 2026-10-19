@@ -34,7 +34,7 @@ function lapColumns(): DataTableColumn<Lap>[] {
     lap.accessor((l) => v(l.max_heartrate), { id: 'maxHr', meta: numeric(L[7]), ...numSort, cell: (c) => round(c.getValue()) }),
     lap.accessor((l) => v(l.average_cadence), { id: 'cad', meta: numeric(L[8]), ...numSort, cell: (c) => round(c.getValue()) }),
     lap.accessor((l) => v(l.total_elevation_gain), { id: 'elev', meta: numeric(L[9]), ...numSort, cell: (c) => nf(c.getValue()) }),
-  ]) as DataTableColumn<Lap>[];
+  ]);
 }
 
 // PR rank 1–3 as a small badge; literal class names for Tailwind
@@ -70,7 +70,7 @@ function segmentColumns(): DataTableColumn<SegmentEffort>[] {
         return r ? <span className={cn('inline-flex size-5 items-center justify-center rounded-sm font-mono text-[11px] font-medium', RANK[r] || RANK[3])}>{r}</span> : '';
       },
     }),
-  ]) as DataTableColumn<SegmentEffort>[];
+  ]);
 }
 
 const split = dataTableColumns<Split>();
@@ -82,7 +82,7 @@ function splitColumns(): DataTableColumn<Split>[] {
     split.accessor((s) => v(s.average_speed), { id: 'speed', meta: numeric(L[2]), ...numSort, cell: (c) => nf((c.getValue() || 0) * 3.6, 1) }),
     split.accessor((s) => v(s.elevation_difference), { id: 'elev', meta: numeric(L[3]), ...numSort, cell: (c) => `${nf(c.getValue(), 0)} m` }),
     split.accessor((s) => v(s.average_heartrate), { id: 'hr', meta: numeric(L[4]), ...numSort, cell: (c) => round(c.getValue()) }),
-  ]) as DataTableColumn<Split>[];
+  ]);
 }
 
 const none = t('common.noData');

@@ -18,7 +18,8 @@ export interface PeriodChoice {
 const get = (k: string, d: string): string => { try { return localStorage.getItem(k) ?? d; } catch { return d; } };
 const put = (k: string, v: string | number) => { try { localStorage.setItem(k, String(v)); } catch {} };
 
-const isPeriod = (v: number): v is PeriodDays => (PERIODS as readonly number[]).includes(v);
+/** A selectable period (days; 0 = all time). */
+export const isPeriod = (v: number): v is PeriodDays => (PERIODS as readonly number[]).includes(v);
 const isBasis = (v: string): v is Basis => (BASES as readonly string[]).includes(v);
 
 /** Defaults: 30 days, power. */

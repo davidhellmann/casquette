@@ -105,7 +105,7 @@ function attemptColumns(distance: number, bestTime: number): DataTableColumn<Seg
     col.accessor((r) => ((r.t - bestTime) / bestTime) * 100, { id: 'delta', meta: numeric(C('delta')), sortFn: 'basic', sortDescFirst: false, cell: (c) => <DeltaToBest pct={c.getValue()} /> }),
     col.accessor((r) => nullsLast(r.pr), { id: 'pr', meta: { label: C('pr') }, sortFn: 'basic', sortDescFirst: false, sortUndefined: 'last', cell: (c) => <PrRank rank={c.getValue()} /> }),
     col.accessor((r) => r.bike || '', { id: 'bike', meta: { label: C('bike') }, sortFn: 'text', sortDescFirst: false, cell: (c) => c.getValue() || '–' }),
-  ]) as DataTableColumn<SegmentAttempt>[];
+  ]);
 }
 
 /** Seconds gained: "7 s", "2:54" from a minute on. */

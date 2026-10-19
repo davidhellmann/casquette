@@ -5,9 +5,11 @@
  */
 import { curveLabel, fmtDate, fmtDateL, nf, trunc } from '../../scripts/format.ts';
 import { t } from '../../i18n/index.ts';
+import type { BestCurve, Basis } from '../../training/index.ts';
+import type { DecodedPeriod } from '../../lib/dashboard-payload.ts';
 
 /** EF (NP per heartbeat) of each ride, coloured by its zone, plus the rolling 5-ride average. */
-export function efficiency(D, basis) {
+export function efficiency(D: DecodedPeriod, basis: Basis) {
   const L = D.S.efList;
   if (L.length < 2) return null;
   const trend = D.S.efTrend;
@@ -15,17 +17,17 @@ export function efficiency(D, basis) {
     trend: trend == null ? null : { pct: trend, tip: t('dash.card.efTip') },
     rows: L.map((r, i) => ({
       id: r.id, label: fmtDate(r.d), name: trunc(r.name, 40), date: fmtDateL(r.d),
-      ef: +r.ef.toFixed(3), trend: D.S.efRolling[i],
+      ef: +(r.ef ?? 0).toFixed(3), trend: D.S.efRolling[i], // efList holds rides with EF only
       zone: Math.min((basis === 'hr' ? r.clsH : r.clsP).zone || 1, 7),
     })),
   };
 }
 
 /** Best power per duration (≥ 5 s): period, all-time, 2nd half of the period and today's FTP. */
-export function periodCurve(D, { ftp, kg }) {
+export function periodCurve(D: DecodedPeriod, { ftp, kg }: { ftp: number; kg: number }) {
   const S = D.S, W = D.curves.wkg, secs = D.curves.seconds;
   if (!secs.length) return null;
-  const w = (curve, s) => (curve[s] ? curve[s].w : null);
+  const w = (curve: BestCurve, s: number) => (curve[s] ? curve[s].w : null);
   return {
     // "All time" selected: the period curve is the all-time curve, no comparison is drawn
     compare: D.hasPrevious,
@@ -40,4 +42,4 @@ export function periodCurve(D, { ftp, kg }) {
 }
 
 /** One value of the curve tooltip: watts and W/kg. */
-export const curveValue = (w, wkg) => (w == null ? '–' : `${w} W · ${nf(wkg, 2)} W/kg`);
+export const curveValue = (w: number | null | undefined, wkg: number | null | undefined): string => (w == null ? '–' : `${w} W · ${nf(wkg, 2)} W/kg`);

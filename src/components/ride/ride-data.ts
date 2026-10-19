@@ -5,6 +5,12 @@
 import { zoneIdx } from '../../training/index.ts';
 import type { LatLng } from './RideMap';
 
+/** A route point: from the summary polyline, or from the chart streams (null or unknown coordinates where a sample has no position). */
+export type RoutePoint = LatLng | readonly [number | null, number | null] | null;
+
+/** A drawable route point (the sync writes both coordinates or neither, so the latitude decides). */
+export const isLatLng = (p: RoutePoint | undefined): p is LatLng => !!p && Number.isFinite(p[0]);
+
 /** Zone boundaries as the colouring reads them (lower bounds count). */
 type ZoneBounds = readonly { min: number | null; max?: number | null }[];
 /** A run of route points in one zone (0 = no zone colouring). */
@@ -26,11 +32,11 @@ const zoneOf = (v: number, zones: ZoneBounds) => zoneIdx(v, zones) + 1;
  * The route split into runs of the same zone (each run shares its first point with the previous one's
  * last, so the line has no gaps). Without values/zones the whole route is one run of zone 0.
  */
-export function zoneRuns(points: readonly (LatLng | null)[], values: readonly (number | null)[] | null, zones: ZoneBounds | null): ZoneRun[] {
+export function zoneRuns(points: readonly RoutePoint[], values: readonly (number | null)[] | null, zones: ZoneBounds | null): ZoneRun[] {
   const runs: ZoneRun[] = [];
   let cur: ZoneRun | null = null;
   points.forEach((p, i) => {
-    if (!p || !Number.isFinite(p[0])) return;
+    if (!isLatLng(p)) return;
     const v = values ? values[i] : null;
     const z = values && zones ? (v != null ? zoneOf(v, zones) : cur ? cur.zone || 1 : 1) : 0;
     if (!cur || z !== cur.zone) {

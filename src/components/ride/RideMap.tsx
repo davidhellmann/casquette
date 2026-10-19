@@ -2,7 +2,7 @@ import * as React from 'react';
 import { t } from '@/i18n/index.ts';
 import { useLeaflet, withColors } from '@/components/map/use-leaflet';
 import { rollingMean } from '@/lib/chart-streams.ts';
-import { zoneRuns } from './ride-data.ts';
+import { isLatLng, zoneRuns, type RoutePoint } from './ride-data.ts';
 
 export type LatLng = [number, number];
 
@@ -12,7 +12,7 @@ export interface RideMapHandle {
 }
 
 export interface RideMapProps {
-  points: (LatLng | null)[];
+  points: readonly RoutePoint[];
   /** Values per point (watts or HR) and their zones – colour the route by zone; null = one colour. */
   values: (number | null)[] | null;
   zones: readonly { min: number | null; max: number | null }[] | null;
@@ -31,7 +31,7 @@ export const RideMap = React.forwardRef<RideMapHandle, RideMapProps>(function Ri
     if (!lf) return;
     const { L, layer } = lf;
     layer.clearLayers();
-    const valid = points.filter((p): p is LatLng => !!p && Number.isFinite(p[0]));
+    const valid = points.filter(isLatLng);
     if (valid.length < 2) return;
     withColors((css) => {
       L.polyline(valid, { color: css('var(--card)'), weight: 9, opacity: 0.9, interactive: false }).addTo(layer);
@@ -48,7 +48,7 @@ export const RideMap = React.forwardRef<RideMapHandle, RideMapProps>(function Ri
   // View: fit the route once it is known
   React.useEffect(() => {
     if (!lf) return;
-    const valid = points.filter((p): p is LatLng => !!p && Number.isFinite(p[0]));
+    const valid = points.filter(isLatLng);
     if (valid.length > 1) lf.map.fitBounds(lf.L.latLngBounds(valid), { padding: [24, 24] });
   }, [lf, points]);
 
