@@ -8,7 +8,9 @@ import type { PeriodRide } from '../dashboard-period/index.ts';
 import { evalGoal } from './goals.ts';
 import type { Goal, GoalMetric } from './goals.ts';
 import { computeMetrics } from '../../scripts/shared/metrics.ts';
-import { rideFrontmatter } from '../../scripts/shared/ride-file.ts';
+import { asReadFrontmatter, rideFrontmatter as writeFrontmatter } from '../../scripts/shared/ride-file.ts';
+// The written frontmatter as the ride module reads it back (src/ride RideFrontmatter).
+const rideFrontmatter = (...a: Parameters<typeof writeFrontmatter>) => asReadFrontmatter(writeFrontmatter(...a));
 import { calendarDay } from '../training/index.ts';
 
 const transport = (rides: Ride[]): PeriodRide[] => decodeDashboard(encodeDashboard({ rides })).rides;

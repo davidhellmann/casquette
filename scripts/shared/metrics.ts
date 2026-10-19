@@ -2,9 +2,9 @@
 import { eachInterval, hrDistribution, isMeasured, powerDistribution } from '../../src/ride/distribution.ts';
 import type { Zone } from './athlete-file.ts';
 
-// TODO(ts-b1): use src/ride type (the distribution of src/ride/distribution.ts)
-/** Power or HR distribution: pairs of value and seconds, sorted by value. */
-export type Distribution = { version: number; method: string; samples: [number, number][] };
+import type { Distribution } from '../../src/ride/index.ts';
+
+export type { Distribution };
 
 /** Best average per duration in seconds (power curve, HR curve). */
 export type Curve = Record<number, number>;
@@ -73,14 +73,9 @@ type ChartSeries = 'watts' | 'heart_rate' | 'cadence' | 'altitude' | 'velocity' 
 export type ChartStreams = { points: number; original_points: number; time: number[]; latlng?: ([number | null, number | null] | null)[] }
   & Partial<Record<ChartSeries, (number | null)[]>>;
 
-// TODO(ts-b1): drop once src/ride's isMeasured is a type guard itself.
-/** A real measurement (src/ride/distribution.ts owns the rule), as a type guard. */
-const measured = (v: number | null | undefined): v is number => isMeasured(v);
+const measured = isMeasured;
 
-// TODO(ts-b1): call src/ride's eachInterval directly once its callbacks are typed (today its `gap` infers as `() => void`).
-type EachInterval = (time: readonly number[], values: readonly (number | null)[],
-  interval: (value: number | null, dt: number, i: number) => void, gap?: (value: number | null, i: number) => void) => void;
-const eachSample = eachInterval as EachInterval;
+const eachSample = eachInterval;
 
 /** A finite, positive number. */
 const positive = (v: number | null | undefined): v is number => typeof v === 'number' && Number.isFinite(v) && v > 0;

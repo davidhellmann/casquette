@@ -10,7 +10,9 @@ import { runSync } from './sync.ts';
 import type { GeocodeRides, SyncOptions } from './sync.ts';
 import { createStravaFake } from './strava-fake.ts';
 import type { StravaStreams } from './strava.ts';
-import { rideFrontmatter } from '../../shared/ride-file.ts';
+import { asReadFrontmatter, rideFrontmatter as writeFrontmatter } from '../../shared/ride-file.ts';
+// The written frontmatter as the ride module reads it back (src/ride RideFrontmatter).
+const rideFrontmatter = (...a: Parameters<typeof writeFrontmatter>) => asReadFrontmatter(writeFrontmatter(...a));
 import type { ActivitySummary, RideGeo } from '../../shared/ride-file.ts';
 import { computeMetrics } from '../../shared/metrics.ts';
 import type { RideMetrics } from '../../shared/metrics.ts';

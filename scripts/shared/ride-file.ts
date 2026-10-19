@@ -3,6 +3,7 @@
  * text is rendered (ride body preserved) and the targeted metrics patch. Pure, no I/O: ride storage
  * writes it; generators and readers of ride files use the same rules.
  */
+import type { RideFrontmatter } from '../../src/ride/index.ts';
 import { toYaml } from './yaml.ts';
 import { DEFAULT_RIDE_NAME } from '../../src/ride/defaults.ts';
 import { currentMetrics, storedMetrics } from './metrics.ts';
@@ -175,7 +176,17 @@ export type RideFileRecord = {
 export type FrontmatterParts = { open: string; front: string; close: string; body: string };
 
 /** The frontmatter of a ride file. */
-export type RideFrontmatter = ReturnType<typeof rideFrontmatter>;
+/**
+ * The frontmatter as written. The ride module reads it back as `RideFrontmatter` (src/ride), which
+ * differs only in requiring `start_date_local` – the content schema rejects a ride file without it.
+ */
+export type WrittenRideFrontmatter = ReturnType<typeof rideFrontmatter>;
+
+/** Read side of a written frontmatter (tests, rebuild checks): the local start must be there. */
+export function asReadFrontmatter(fm: WrittenRideFrontmatter): RideFrontmatter {
+  if (typeof fm.start_date_local !== 'string') throw new Error(`Ride ${fm.id} has no local start date`);
+  return { ...fm, start_date_local: fm.start_date_local };
+}
 
 /** Path below the rides folder: `<year>/<ride date>_<id>.md` (ride date = local start date). */
 export function rideFileName(rec: Pick<RideFileRecord, 'id' | 'summary'>): string {

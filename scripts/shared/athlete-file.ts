@@ -4,9 +4,9 @@
  * reuse the shapes.
  */
 
-// TODO(ts-b1): use src/training type (the zone of src/training/zones.ts)
-/** One zone: lower bound and upper bound (`null` = open-ended top zone). */
-export type Zone = { min: number; max: number | null };
+import type { Zone } from '../../src/training/index.ts';
+
+export type { Zone };
 
 /** Today's zones in the athlete file: FTP, HR zones and where they come from, power zones. */
 export type AthleteZones = {

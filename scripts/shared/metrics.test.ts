@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { computeMetrics, to1Hz } from './metrics.ts';
 import type { RawStreams } from './metrics.ts';
 import { powerDistribution } from '../../src/ride/distribution.ts';
-import { rideFrontmatter } from './ride-file.ts';
+import { asReadFrontmatter, rideFrontmatter as writeFrontmatter } from './ride-file.ts';
+// The written frontmatter as the ride module reads it back (src/ride RideFrontmatter).
+const rideFrontmatter = (...a: Parameters<typeof writeFrontmatter>) => asReadFrontmatter(writeFrontmatter(...a));
 import { athleteTimeline, rideLoad } from '../../src/training/index.ts';
 import { processRide } from '../../src/ride/index.ts';
 
@@ -140,7 +142,7 @@ describe('sync → frontmatter → ride', () => {
   it('keeps zero watts and HR boundaries and rejects an unknown power distribution version', () => {
     const metrics = computeMetrics(activity, { time: { data: [0, 2, 4] }, watts: { data: [0, 0, 0] }, heartrate: { data: [140, 140, 140] } });
     expect(processRide({ ...activity, metrics }, athleteState())).toMatchObject({ tizP: [4, 0, 0, 0, 0, 0, 0], tizBasis: { hr: { zones: athleteState().zones.heart_rate_zones } } });
-    const r = processRide({ ...activity, metrics: { power_distribution: { version: 99, samples: [[100, 99]] }, time_in_power_zones: [10] } }, athleteState());
+    const r = processRide({ ...activity, metrics: { power_distribution: { version: 99, method: 'unknown', samples: [[100, 99]] }, time_in_power_zones: [10] } }, athleteState());
     expect(r.tizP).toEqual([10]);
     expect(r.tizBasis.power.exact).toBe(false);
   });
