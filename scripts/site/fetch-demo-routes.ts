@@ -18,7 +18,7 @@ import { ROOT, sleep } from '../shared/env.ts';
 import { CITIES, type DemoRouteSpec } from './lib/demo-cities.ts';
 import { compactRoute, renderRouteCache, routeCacheFile, routerUrl, type CachedRoute, type RouteCacheFile } from './lib/demo-route-cache.ts';
 
-const USER_AGENT = 'casquette-demo-routes/0.1 (one-off demo data refresh; https://github.com/davidhellmann/casquette)';
+const USER_AGENT = 'casquette-demo-routes/1.0 (one-off demo data refresh; https://github.com/davidhellmann/casquette)';
 const PAUSE_MS = 2000;
 
 const arg = (name: string) => { const i = process.argv.indexOf(name); return i > 0 ? process.argv[i + 1] : undefined; };

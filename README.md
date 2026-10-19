@@ -275,6 +275,10 @@ Route geometry in `demo/source/routes/` and the demo rides derived from it: © [
 
 Casquette uses the Strava API to read your own activities. This project is independent and is not developed, sponsored or endorsed by Strava. Map data and demo route geometry © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors (ODbL).
 
+## Versioning
+
+Casquette follows [semantic versioning](https://semver.org). What counts is everything you keep or run on your side: the ride files and the other files in `src/data/` and `.strava-cache/`, the zones and goals file formats, the `npm run` commands, the `.env` settings and the required Node.js version. A change that breaks one of them is a new major version and comes with a migration or clear upgrade steps. New features are minor versions, fixes are patch versions. Changes are listed in [`CHANGELOG.md`](CHANGELOG.md).
+
 ## License
 
 [MIT](LICENSE)

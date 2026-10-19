@@ -88,6 +88,6 @@ Strava provides no usable place names, so Casquette looks them up itself via rev
 |---|---|---|
 | `GEO_LANG` | `en` | Language of the place names Nominatim returns (e.g. `de`, `fr`) |
 | `NOMINATIM_URL` | public OpenStreetMap endpoint | Use your own Nominatim instance |
-| `NOMINATIM_UA` | `casquette/0.1 (self-hosted training dashboard)` | User agent sent to Nominatim; the usage policy requires one that identifies the application |
+| `NOMINATIM_UA` | `casquette/1.0 (self-hosted training dashboard)` | User agent sent to Nominatim; the usage policy requires one that identifies the application |
 
 Keep `GEO_LANG` stable once `src/data/geo-cells.json` is filled. Cells that are already cached are never looked up again, so changing the language later mixes old and new place names. To switch completely, delete `geo-cells.json` and run `npm run geo` again.

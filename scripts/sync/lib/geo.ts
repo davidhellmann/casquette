@@ -52,7 +52,7 @@ const GAP_MS = 1100;  // > 1 s between requests
 export const nominatimConfig = (env: Readonly<Record<string, string | undefined>> = process.env) => ({
   endpoint: env.NOMINATIM_URL || 'https://nominatim.openstreetmap.org/reverse',
   // The usage policy requires a User-Agent that identifies the application.
-  userAgent: env.NOMINATIM_UA || 'casquette/0.1 (self-hosted training dashboard)',
+  userAgent: env.NOMINATIM_UA || 'casquette/1.0 (self-hosted training dashboard)',
   lang: env.GEO_LANG || 'en',
 });
 
