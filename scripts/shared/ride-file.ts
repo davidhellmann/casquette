@@ -9,7 +9,9 @@ import { DEFAULT_RIDE_NAME } from '../../src/ride/defaults.ts';
 import { currentMetrics, storedMetrics } from './metrics.ts';
 import type { RideMetrics } from './metrics.ts';
 
-export type LatLng = [number, number];
+import type { LatLng } from '../../src/scripts/polyline.ts';
+
+export type { LatLng };
 
 /** A cached Strava summary (activity cache `summary`): the summary fields the sync keeps. */
 export type ActivitySummary = {

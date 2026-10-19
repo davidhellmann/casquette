@@ -113,7 +113,7 @@ describe('demo data generator – valid for the app', () => {
     const zonesFile = demo.data['zones.json'];
     const timeline = athleteTimeline({ athlete: demo.data['athlete.json'], zonesFile });
     const days = demo.rides.map((r) => localStart(r).slice(0, 10)).sort();
-    const first = timeline.at(days[0]).zones, last = timeline.at(days.at(-1)).zones;
+    const first = timeline.at(days[0]).zones, last = timeline.at(days[days.length - 1]).zones;
     expect(first.source).toEqual({ hr: 'file', power: 'default' });
     expect(first.heart_rate_zones).not.toEqual(last.heart_rate_zones);
     // The current file entry matches the athlete's Strava zones.

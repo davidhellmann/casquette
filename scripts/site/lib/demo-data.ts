@@ -17,8 +17,11 @@ import { computeMetrics, downsampleStreams, normalizedPower, to1Hz } from '../..
 import type { ChartStreams, RawStreams } from '../../shared/metrics.ts';
 import { rideBody, rideFileName, rideFrontmatter, rideText } from '../../shared/ride-file.ts';
 import type {
-  ActivitySummary, LatLng, RideFileRecord, RideFrontmatter, RideGeo, RideLap, RidePlace, RideSegmentEffort, RideSplit,
+  ActivitySummary, LatLng, RideFileRecord, RideGeo, RideLap, RidePlace, RideSegmentEffort, RideSplit,
 } from '../../shared/ride-file.ts';
+import type { WrittenRideFrontmatter } from '../../shared/ride-file.ts';
+import type { ZonesFile } from '../../../src/training/index.ts';
+import type { Goal } from '../../../src/scripts/goals.ts';
 import { athleteFile, historyEntry } from '../../shared/athlete-file.ts';
 import type { AthleteFile, Gear, HistoryEntry, Zone } from '../../shared/athlete-file.ts';
 import { toYaml } from '../../shared/yaml.ts';
@@ -31,7 +34,7 @@ import type { LoadedRoute } from './demo-route-cache.ts';
 import { ROOT } from '../../shared/env.ts';
 
 /** A ride file of the demo dataset: path below demo/, frontmatter and ride body. */
-export type DemoRideFile = { file: string; data: RideFrontmatter; body: string };
+export type DemoRideFile = { file: string; data: WrittenRideFrontmatter; body: string };
 
 /** The custom block of a demo gear file (what a rider adds by hand). */
 export type DemoGearCustom = { purchase_date: string | null; price_eur: number; components: string[]; color: string; notes: string | null };
@@ -43,22 +46,12 @@ export type DemoGearFile = {
   body: string;
 };
 
-// TODO(ts-b1): use the src/training goal type
-/** One goal of goals.json. */
-export type DemoGoal = {
-  id: string; label: string; period: 'week' | 'month' | 'year'; metric: string; target: number; zone?: number; basis?: string; min_km?: number;
-};
-
-// TODO(ts-b1): use the src/training zones file type
-/** zones.json: dated HR zone lower bounds. */
-export type DemoZonesFile = { heart_rate: { from: string; bpm: number[] }[] };
-
 /** The files below demo/data/. */
 export type DemoDataFiles = {
   'athlete.json': AthleteFile;
-  'goals.json': DemoGoal[];
+  'goals.json': Goal[];
   'fitness-history.json': HistoryEntry[];
-  'zones.json': DemoZonesFile;
+  'zones.json': ZonesFile;
   'meta.json': DemoMeta;
 };
 
@@ -700,14 +693,16 @@ export function generateDemoData({ seed = DEFAULT_SEED, through = DEFAULT_THROUG
   }));
 
   const last = history[history.length - 1];
+  if (last.ftp == null) throw new Error('The demo athlete history ends without an FTP');
+  const lastFtp = last.ftp;
   const athlete = athleteFile({
     syncedAt,
     profile: { id: 'demo', first_name: 'Demo', last_name: 'Rider', username: 'demo-rider', city: cities[HOME_CITY].name, state: cities[HOME_CITY].region, country: cities[HOME_CITY].countryName, sex: null, weight: last.weight, ftp: last.ftp, premium: false, created_at: `${dayStr(startMs - 400 * DAY)}T12:00:00Z`, avatar: null },
-    zones: { ftp: last.ftp, heart_rate_zones: HR_ZONES, heart_rate_zone_source: 'Manual', power_zones: cogganZones(last.ftp) },
+    zones: { ftp: lastFtp, heart_rate_zones: HR_ZONES, heart_rate_zone_source: 'Manual', power_zones: cogganZones(lastFtp) },
     gear: gearList, stats: null,
     listComplete: true, oldest: rides.length ? rides[0].data.start_date : null,
   });
-  const goals: DemoGoal[] = [
+  const goals: Goal[] = [
     { id: 'year-km', label: 'Distance per year', period: 'year', metric: 'distance', target: 4500 },
     { id: 'year-elevation', label: 'Elevation per year', period: 'year', metric: 'elevation', target: 45000 },
     { id: 'month-hours', label: 'Hours per month', period: 'month', metric: 'time', target: 14 },

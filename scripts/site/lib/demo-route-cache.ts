@@ -135,8 +135,7 @@ export function loadRouteCache(root: string, cityKeys: readonly string[]): Recor
     const file = routeCacheFile(root, city);
     if (!fs.existsSync(file)) throw new Error(`Missing ${path.relative(root, file)} – run \`npm run demo:fetch-routes\`.`);
     const { routes }: RouteCacheFile = JSON.parse(fs.readFileSync(file, 'utf8'));
-    // TODO(ts-b1): drop the assertion once src/scripts/polyline.ts returns LatLng[]
-    for (const [key, r] of Object.entries(routes)) out[key] = { ...r, points: decodePolyline(r.polyline) as LatLng[] };
+    for (const [key, r] of Object.entries(routes)) out[key] = { ...r, points: decodePolyline(r.polyline) };
   }
   return out;
 }
