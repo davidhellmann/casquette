@@ -108,7 +108,7 @@ function RideHeader({ R }: { R: RidePayload }) {
           {R.device && <Tag><Cpu aria-hidden="true" />{R.device}</Tag>}
           {R.prs > 0 && <Tag><Trophy aria-hidden="true" />{t('common.prs', { n: R.prs })}</Tag>}
           {R.newBests && <Tag className="bg-brand-surface text-brand-surface-foreground"><Star aria-hidden="true" />{t('ride.newBests', { list: R.newBests })}</Tag>}
-          {R.strava && <a href={R.strava} target="_blank" rel="noopener" className="inline-flex items-center gap-1 rounded-sm bg-muted px-1.5 py-0.5 text-xs hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none">{t('common.strava')}<ExternalLink className="size-3" aria-hidden="true" /></a>}
+          {R.strava && <a href={R.strava} target="_blank" rel="noopener" className="inline-flex items-center gap-1 rounded-sm bg-muted px-1.5 py-0.5 text-xs font-semibold hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none">{t('common.viewOnStrava')}<ExternalLink className="size-3" aria-hidden="true" /></a>}
         </div>
         {R.places.length > 0 && (
           <p className="flex flex-wrap items-center gap-x-1.5 text-sm">

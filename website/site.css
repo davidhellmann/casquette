@@ -387,6 +387,7 @@ p, li, dd, figcaption, blockquote { text-wrap: pretty; }
 .foot-links { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 20px; }
 .foot-links a { text-decoration: none; }
 .foot-links a:hover, .foot-links a[aria-current="page"] { color: var(--ink); }
+.foot-note { flex-basis: 100%; font-size: 13px; }
 
 /* ---------- Legal pages (legal-notice.html, privacy-policy.html; #55) ----------
  * One reading column on the page background: eyebrow and heading as elsewhere, then plain prose.

@@ -90,8 +90,8 @@ export function GearDetailView({ P, children }: { P: GearDetailPayload; children
           <StatusBadge retired={P.retired} />
           {P.primary && <PrimaryBadge>{g('primaryBike')}</PrimaryBadge>}
           {P.stravaUrl && (
-            <Badge variant="outline" asChild className="font-normal">
-              <a href={P.stravaUrl} target="_blank" rel="noopener">{t('common.strava')}<ExternalLink aria-hidden="true" /></a>
+            <Badge variant="outline" asChild className="font-semibold">
+              <a href={P.stravaUrl} target="_blank" rel="noopener">{t('common.viewOnStrava')}<ExternalLink aria-hidden="true" /></a>
             </Badge>
           )}
         </div>

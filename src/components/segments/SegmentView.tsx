@@ -148,8 +148,8 @@ export function SegmentView({ S: seg }: { S: SegmentPayload }) {
           {seg.grade != null && <Badge variant="outline">{S('avgGrade', { v: nf(seg.grade, 1) })}</Badge>}
           <Badge variant="outline">{S('attemptsN', { n })}</Badge>
           {seg.strava && (
-            <Badge variant="outline" asChild>
-              <a href={seg.strava} target="_blank" rel="noopener">{S('onStrava')}<ExternalLink aria-hidden="true" /></a>
+            <Badge variant="outline" asChild className="font-semibold">
+              <a href={seg.strava} target="_blank" rel="noopener">{t('common.viewOnStrava')}<ExternalLink aria-hidden="true" /></a>
             </Badge>
           )}
         </div>

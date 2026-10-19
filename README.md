@@ -273,7 +273,7 @@ Route geometry in `demo/source/routes/` and the demo rides derived from it: © [
 
 ## Strava
 
-Casquette uses the Strava API to read your own activities. This project is independent and is not developed, sponsored or endorsed by Strava. Map data and demo route geometry © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors (ODbL).
+Compatible with Strava: Casquette uses the Strava API to read your own activities. Links back to Strava read “View on Strava”, as the [Strava API Brand Guidelines](https://developers.strava.com/guidelines/) ask. This project is independent and is not developed, sponsored or endorsed by Strava. Map data and demo route geometry © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors (ODbL).
 
 ## Versioning
 
