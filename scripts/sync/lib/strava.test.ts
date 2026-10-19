@@ -1,18 +1,25 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import { describe, expect, it } from 'vitest';
 import { createStravaClient } from './strava.ts';
+import type { Fetch, StravaToken } from './strava.ts';
 
 const NOW = Date.parse('2024-05-01T12:07:30Z');
-const json = (body, { status = 200, usage = '10,100', limit = '100,1000' } = {}) => new Response(JSON.stringify(body), {
+const json = (body: unknown, { status = 200, usage = '10,100', limit = '100,1000' } = {}) => new Response(JSON.stringify(body), {
   status, headers: { 'x-readratelimit-usage': usage, 'x-readratelimit-limit': limit },
 });
+/** A stored token; `expiresIn` in seconds from NOW. */
+const stored = (access_token: string, refresh_token: string, expiresIn: number): StravaToken =>
+  ({ access_token, refresh_token, expires_at: NOW / 1000 + expiresIn, athlete_id: null, scope: null });
+
+/** One scripted fetch answer: a response, a network error, or a function returning a response. */
+type Answer = Response | Error | (() => Response);
+type Request = { url: string; auth: string | null; body: string | null };
 
 /** Strava client with a scripted fetch, a fake clock (sleeping only advances time) and an in-memory token store. */
-function setup(answers, { token = { access_token: 'old', refresh_token: 'r1', expires_at: NOW / 1000 + 2 * 86400 } } = {}) {
+function setup(answers: Answer[], { token = stored('old', 'r1', 2 * 86400) }: { token?: StravaToken | null } = {}) {
   let now = NOW;
-  const slept = [], requests = [], logs = [];
-  let stored = token;
-  const fetch = async (url, init) => {
+  const slept: number[] = [], requests: Request[] = [], logs: string[] = [];
+  let current = token;
+  const fetch: Fetch = async (url, init) => {
     requests.push({ url: String(url), auth: init?.headers?.Authorization ?? null, body: init?.body ? String(init.body) : null });
     const next = answers.shift();
     if (!next) throw new Error('No scripted answer left');
@@ -22,11 +29,11 @@ function setup(answers, { token = { access_token: 'old', refresh_token: 'r1', ex
   const client = createStravaClient({
     fetch,
     clock: { now: () => now, sleep: async (ms) => { slept.push(ms); now += ms; } },
-    tokens: { read: () => stored, write: (t) => { stored = t; } },
+    tokens: { read: () => current, write: (t) => { current = t; } },
     env: { STRAVA_CLIENT_ID: 'id', STRAVA_CLIENT_SECRET: 'secret' },
     log: (...a) => logs.push(a.join(' ')),
   });
-  return { client, slept, requests, logs, token: () => stored, now: () => now };
+  return { client, slept, requests, logs, token: () => current, now: () => now };
 }
 
 describe('Strava client', () => {
@@ -63,7 +70,7 @@ describe('Strava client', () => {
   it('stops at the daily limit with a daily-limit error, without another request', async () => {
     const { client, requests, slept } = setup([json([], { usage: '5,999' })]);
     await client.get('/a');
-    const error = await client.get('/b').catch((e) => e);
+    const error = await client.get('/b').catch((e: unknown) => e);
     expect(client.isDailyLimit(error)).toBe(true);
     expect(client.isDailyLimit(new Error('other'))).toBe(false);
     expect(requests).toHaveLength(1);
@@ -72,7 +79,7 @@ describe('Strava client', () => {
 
   it('a 429 at the daily limit is a daily-limit error, too', async () => {
     const { client } = setup([json({}, { status: 429, usage: '5,1000' })]);
-    expect(client.isDailyLimit(await client.get('/a').catch((e) => e))).toBe(true);
+    expect(client.isDailyLimit(await client.get('/a').catch((e: unknown) => e))).toBe(true);
   });
 
   it('with wait, sleeps until 00:01 UTC and continues with fresh counters', async () => {
@@ -89,14 +96,14 @@ describe('Strava client', () => {
     const { client, requests, token } = setup([json({}, { status: 401 }), json(fresh), json({ ok: true })]);
     expect(await client.get('/a')).toEqual({ ok: true });
     expect(requests[1].url).toBe('https://www.strava.com/oauth/token');
-    expect(new URLSearchParams(requests[1].body).get('refresh_token')).toBe('r1');
+    expect(new URLSearchParams(requests[1].body ?? '').get('refresh_token')).toBe('r1');
     expect(requests[2].auth).toBe('Bearer new');
     expect(token()).toMatchObject({ access_token: 'new', refresh_token: 'r2', athlete_id: 9 });
   });
 
   it('refreshes a token that expires within two minutes before the request', async () => {
     const fresh = { access_token: 'new', refresh_token: 'r2', expires_at: NOW / 1000 + 7200 };
-    const { client, requests } = setup([json(fresh), json({ ok: true })], { token: { access_token: 'old', refresh_token: 'r1', expires_at: NOW / 1000 + 60 } });
+    const { client, requests } = setup([json(fresh), json({ ok: true })], { token: stored('old', 'r1', 60) });
     await client.get('/a');
     expect(requests.map((r) => r.auth)).toEqual([null, 'Bearer new']);
   });
@@ -109,7 +116,7 @@ describe('Strava client', () => {
   });
 
   describe('token refresh', () => {
-    const expiring = { access_token: 'old', refresh_token: 'r1', expires_at: NOW / 1000 + 60 };
+    const expiring = stored('old', 'r1', 60);
     const fresh = { access_token: 'new', refresh_token: 'r2', expires_at: NOW / 1000 + 7200 };
 
     it('retries network errors and 5xx of the refresh with the same growing pauses', async () => {
@@ -122,7 +129,7 @@ describe('Strava client', () => {
         'https://www.strava.com/oauth/token', 'https://www.strava.com/oauth/token', 'https://www.strava.com/oauth/token',
         'https://www.strava.com/api/v3/a',
       ]);
-      expect(requests.slice(0, 3).map((r) => new URLSearchParams(r.body).get('refresh_token'))).toEqual(['r1', 'r1', 'r1']);
+      expect(requests.slice(0, 3).map((r) => new URLSearchParams(r.body ?? '').get('refresh_token'))).toEqual(['r1', 'r1', 'r1']);
       expect(requests[3].auth).toBe('Bearer new');
       expect(token()).toMatchObject({ access_token: 'new', refresh_token: 'r2' });
     });

@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 /**
  * Places and countries per ride via reverse geocoding (OpenStreetMap Nominatim, no key).
  *
@@ -11,12 +10,32 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { ROOT, readJSON, writeJSON, sleep, log } from '../../shared/env.ts';
+import { ROOT, errorMessage, readJSON, writeJSON, sleep, log } from '../../shared/env.ts';
 import { decodePolyline } from '../../../src/scripts/polyline.ts';
 import { isIndoor } from '../../../src/training/index.ts';
+import type { ActivitySummary, RideGeo } from '../../shared/ride-file.ts';
+
+/** A resolved grid cell: place name, region and country code. */
+export type GeoPlace = { n: string | null; r: string | null; c: string | null };
+/** A grid cell: a place, or `none` where Nominatim knows nothing (e.g. water). */
+export type GeoCell = GeoPlace | { none: 1 };
+/** The place cache: grid cell key (`<lat>:<lon>` in grid steps) → cell. */
+export type GeoCells = Record<string, GeoCell>;
+
+/** What geocoding reads and sets on a ride (a ride record). */
+export type GeoRide = { summary?: ActivitySummary; geo?: RideGeo | null };
+
+/** Nominatim's reverse geocoding answer (the fields read). */
+type NominatimResponse = {
+  error?: string;
+  address?: {
+    city?: string; town?: string; village?: string; municipality?: string; hamlet?: string; suburb?: string;
+    county?: string; state?: string; region?: string; country_code?: string;
+  };
+};
 
 /** The place cache below `root`; a cache at its former location is moved there on first use. */
-function geoCellsFile(root) {
+function geoCellsFile(root: string): string {
   const file = path.join(root, 'src', 'data', 'geo-cells.json');
   const legacy = path.join(root, '.strava-cache', 'geo-cells.json');
   if (!fs.existsSync(file) && fs.existsSync(legacy)) {
@@ -30,7 +49,7 @@ const STEP_KM = 1;    // sampling distance along the route
 const GAP_MS = 1100;  // > 1 s between requests
 
 /** Nominatim settings, read from the environment at call time (after .env is loaded). */
-export const nominatimConfig = (env = process.env) => ({
+export const nominatimConfig = (env: Readonly<Record<string, string | undefined>> = process.env) => ({
   endpoint: env.NOMINATIM_URL || 'https://nominatim.openstreetmap.org/reverse',
   // The usage policy requires a User-Agent that identifies the application.
   userAgent: env.NOMINATIM_UA || 'casquette/0.1 (self-hosted training dashboard)',
@@ -38,23 +57,24 @@ export const nominatimConfig = (env = process.env) => ({
 });
 
 const toR = Math.PI / 180;
-function km(a, b) {
+type Point = readonly number[];
+function km(a: Point, b: Point): number {
   const dl = (b[0] - a[0]) * toR, dn = (b[1] - a[1]) * toR;
   const x = Math.sin(dl / 2) ** 2 + Math.cos(a[0] * toR) * Math.cos(b[0] * toR) * Math.sin(dn / 2) ** 2;
   return 2 * 6371 * Math.asin(Math.sqrt(x));
 }
-const cellKey = (p) => `${Math.round(p[0] / GRID)}:${Math.round(p[1] / GRID)}`;
-const cellCenter = (k) => k.split(':').map((n) => +(Number(n) * GRID).toFixed(5));
+const cellKey = (p: Point) => `${Math.round(p[0] / GRID)}:${Math.round(p[1] / GRID)}`;
+const cellCenter = (k: string): number[] => k.split(':').map((n) => +(Number(n) * GRID).toFixed(5));
 
 /** Outdoor ride with GPS? (Indoor rides – Zwift and similar – use fictional coordinates.) */
-export const isGeoRide = (s) => !!(s && s.summary_polyline && !isIndoor(s));
+export const isGeoRide = (s: ActivitySummary | null | undefined): boolean => !!(s && s.summary_polyline && !isIndoor(s));
 
 /** Ordered, unique grid cells along the route (start + every ~1 km + finish). */
-export function routeCells(polyline) {
-  const ll = decodePolyline(polyline).filter((p) => Number.isFinite(p[0]) && Number.isFinite(p[1]));
+export function routeCells(polyline: string | null | undefined): string[] {
+  const ll: Point[] = decodePolyline(polyline).filter((p: Point) => Number.isFinite(p[0]) && Number.isFinite(p[1]));
   if (!ll.length) return [];
-  const out = [], seen = new Set();
-  const add = (p) => { const k = cellKey(p); if (!seen.has(k)) { seen.add(k); out.push(k); } };
+  const out: string[] = [], seen = new Set<string>();
+  const add = (p: Point) => { const k = cellKey(p); if (!seen.has(k)) { seen.add(k); out.push(k); } };
   add(ll[0]);
   let acc = 0;
   for (let i = 1; i < ll.length; i++) {
@@ -66,21 +86,21 @@ export function routeCells(polyline) {
 }
 
 /** Nominatim response → compact place. */
-function slimPlace(j) {
+function slimPlace(j: NominatimResponse | null): GeoCell {
   const a = (j && j.address) || {};
   const name = a.city || a.town || a.village || a.municipality || a.hamlet || a.suburb || a.county || a.state || null;
   if (!name && !a.country_code) return { none: 1 };
   return { n: name, r: a.state || a.region || a.county || null, c: (a.country_code || '').toUpperCase() || null };
 }
 
-async function reverse([lat, lon]) {
+async function reverse([lat, lon]: Point): Promise<GeoCell> {
   const { endpoint, userAgent, lang } = nominatimConfig();
   const url = `${endpoint}?format=jsonv2&zoom=13&addressdetails=1&accept-language=${lang}&lat=${lat}&lon=${lon}`;
   for (let attempt = 0; attempt < 4; attempt++) {
     const res = await fetch(url, { headers: { 'User-Agent': userAgent, Accept: 'application/json' } });
     if (res.status === 429 || res.status >= 500) { await sleep(30000 * (attempt + 1)); continue; }
     if (!res.ok) throw new Error(`Nominatim HTTP ${res.status}`);
-    const j = await res.json();
+    const j = (await res.json()) as NominatimResponse | null;
     if (j && j.error) return { none: 1 }; // e.g. "Unable to geocode" (water)
     return slimPlace(j);
   }
@@ -88,17 +108,17 @@ async function reverse([lat, lon]) {
 }
 
 /** Derive a ride's places from its (fully) resolved cells. null = not complete yet. */
-export function rideGeo(polyline, cells) {
+export function rideGeo(polyline: string | null | undefined, cells: GeoCells): RideGeo | null {
   const keys = routeCells(polyline);
   if (!keys.length) return null;
-  const hits = [];
+  const hits: (GeoPlace & { n: string })[] = [];
   for (const k of keys) {
     if (!(k in cells)) return null;
     const c = cells[k];
-    if (c && !c.none && c.n) hits.push(c);
+    if (c && !('none' in c && c.none) && 'n' in c && c.n) hits.push({ ...c, n: c.n });
   }
   if (!hits.length) return null;
-  const places = [], countries = [], regions = [], seen = new Set();
+  const places: RideGeo['places'] = [], countries: string[] = [], regions: string[] = [], seen = new Set<string>();
   for (const h of hits) {
     const id = `${h.c}|${h.n}`;
     if (!seen.has(id)) { seen.add(id); places.push({ name: h.n, region: h.r || null, country: h.c || null }); }
@@ -115,12 +135,15 @@ export function rideGeo(polyline, cells) {
  * @param budgetMs   time limit (0 = unlimited) – the rest follows on the next run
  * @param onRide     callback(rec) for every ride whose geo changed (→ rewrite Markdown)
  */
-export async function geocodeRides(recs, { root = ROOT, budgetMs = 0, onRide } = {}) {
+export async function geocodeRides<R extends GeoRide>(
+  recs: R[], { root = ROOT, budgetMs = 0, onRide }: { root?: string; budgetMs?: number; onRide?: (rec: R) => void } = {},
+): Promise<{ asked: number; changed: number; left: number }> {
   const GEO_FILE = geoCellsFile(root);
-  const cells = readJSON(GEO_FILE, {}) || {};
-  const rides = recs.filter((r) => isGeoRide(r.summary));
-  const todo = [];
-  const seen = new Set();
+  // The place cache is written here only.
+  const cells = (readJSON(GEO_FILE, {}) || {}) as GeoCells;
+  const rides = recs.filter((r): r is R & { summary: ActivitySummary & { summary_polyline: string } } => isGeoRide(r.summary));
+  const todo: string[] = [];
+  const seen = new Set<string>();
   for (const r of rides) for (const k of routeCells(r.summary.summary_polyline)) if (!(k in cells) && !seen.has(k)) { seen.add(k); todo.push(k); }
 
   const t0 = Date.now();
@@ -130,7 +153,7 @@ export async function geocodeRides(recs, { root = ROOT, budgetMs = 0, onRide } =
     if (budgetMs && Date.now() - t0 > budgetMs) { stopped = true; break; }
     const t = Date.now();
     try { cells[k] = await reverse(cellCenter(k)); asked++; }
-    catch (e) { failed++; if (failed >= 5) { log(`⚠️  Geocoding aborted: ${e.message}`); stopped = true; break; } }
+    catch (e) { failed++; if (failed >= 5) { log(`⚠️  Geocoding aborted: ${errorMessage(e)}`); stopped = true; break; } }
     if (asked % 25 === 0) writeJSON(GEO_FILE, cells, false);
     if (asked % 250 === 0 && asked) log(`  … ${asked}/${todo.length} cells`);
     const wait = GAP_MS - (Date.now() - t);

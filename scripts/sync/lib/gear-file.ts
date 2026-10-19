@@ -1,9 +1,9 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT } from '../../shared/env.ts';
 import { toYaml } from '../../shared/yaml.ts';
 import { splitFrontmatter } from '../../shared/ride-file.ts';
+import type { Gear } from '../../shared/athlete-file.ts';
 
 /* ---------------- Gear: one Markdown file per bike/shoe ----------------
  * The sync writes the Strava fields. The `custom:` block (purchase date, price, notes …)
@@ -11,14 +11,14 @@ import { splitFrontmatter } from '../../shared/ride-file.ts';
 const DEFAULT_CUSTOM = 'custom:\n  purchase_date: null    # e.g. "2024-03-15"\n  price_eur: null        # purchase price → cost per km\n  components: []         # e.g. ["Shimano GRX 2x12", "Zipp 303 S"]\n  color: null\n  notes: null\n';
 
 /** Writes `src/content/gear/<id>.md`; `rebuild` keeps the stored sync time instead of `now`. */
-export function writeGear(g, { rebuild = false, root = ROOT, now = Date.now() } = {}) {
+export function writeGear(g: Gear, { rebuild = false, root = ROOT, now = Date.now() }: { rebuild?: boolean; root?: string; now?: number } = {}): void {
   const file = path.join(root, 'src', 'content', 'gear', `${g.id}.md`);
-  let custom = DEFAULT_CUSTOM, body = '', syncedAt = null, hasBody = false;
+  let custom = DEFAULT_CUSTOM, body = '', syncedAt: string | null = null, hasBody = false;
   if (fs.existsSync(file)) {
     const m = splitFrontmatter(fs.readFileSync(file, 'utf8'));
     if (m) {
       const stamp = m.front.match(/^synced_at: ("[^"\r\n]*"|null)\r?$/m);
-      if (stamp) syncedAt = JSON.parse(stamp[1]);
+      if (stamp) syncedAt = JSON.parse(stamp[1]) as string | null; // a JSON string or null, by the pattern
       const lines = m.front.split(/\r?\n/);
       const i = lines.findIndex((l) => /^custom:/.test(l));
       if (i >= 0) {
