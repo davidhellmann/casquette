@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 /**
  * The training calendar of the dashboard: D.heatmap (src/dashboard-period/history.ts) turned into
  * the days, month labels and summary stats the TrainingCalendar component draws. Pure.

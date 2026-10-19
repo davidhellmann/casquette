@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 /**
  * Ride list: the rows of every list of rides – ride log, recent rides, a year's and a bike's rides –
  * built from final rides (ride module or dashboard payload), on the build or in the browser. Rows

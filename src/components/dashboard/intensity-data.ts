@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 /**
  * Intensity cards of the dashboard period: volume by zone per week/month, time by zone, time in zone
  * from the ride histograms, rhythm (weekday, hour, indoor/outdoor) and power & heart rate per ride.

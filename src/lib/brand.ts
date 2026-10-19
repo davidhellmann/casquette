@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 /**
  * The Casquette brand – the single source of the logo (#27). The logo is the owner-approved
  * "cap on the c": the word "casquette" set in the Damion font as-is (real text, self-hosted via the

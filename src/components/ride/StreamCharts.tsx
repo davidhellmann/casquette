@@ -6,12 +6,13 @@ import { SERIES, niceTicks, zoneColor, type SeriesKey } from '@/components/chart
 import { zoneIdx } from '@/training/index.ts';
 import { fmtClock, fmtHm, nf } from '@/scripts/format.ts';
 import { t } from '@/i18n/index.ts';
+import type { ZoneSet } from '@/training/index.ts';
 import { STREAM_SERIES, streamRows } from '@/lib/chart-streams.ts';
 import { zoneBands } from './ride-data.ts';
 
 type Key = 'watts' | 'hr' | 'cad' | 'kmh' | 'alt';
 type Row = { i: number; t: number; km: number | null } & Partial<Record<Key, number | null>>;
-type Zones = { min: number | null; max: number | null }[];
+type Zones = ZoneSet;
 /** Zones that colour the power and heart-rate streams (the athlete's zones on the ride date, as on the route map). */
 export type StreamZones = { watts: Zones | null; hr: Zones | null };
 

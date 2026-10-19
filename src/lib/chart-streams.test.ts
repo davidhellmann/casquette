@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import { describe, expect, it } from 'vitest';
 import { chartStreamsLoader, displayIndices, rollingMean, streamRows } from './chart-streams.ts';
 import { routes } from './routes.ts';
@@ -23,9 +22,9 @@ describe('stream rows for display', () => {
     expect(rows.length).toBeLessThanOrEqual(802);
     expect(rows.length).toBeGreaterThan(400);
     expect(rows[0].i).toBe(0);
-    expect(rows.at(-1).i).toBe(n - 1);
-    expect(Math.max(...rows.map((r) => r.watts))).toBe(1500);
-    expect(Math.min(...rows.map((r) => r.watts))).toBe(0);
+    expect(rows.at(-1)?.i).toBe(n - 1);
+    expect(Math.max(...rows.map((r) => r.watts ?? NaN))).toBe(1500);
+    expect(Math.min(...rows.map((r) => r.watts ?? NaN))).toBe(0);
     // Sample indices ascending, every series taken from the same sample
     expect(rows.every((r, k) => k === 0 || r.i > rows[k - 1].i)).toBe(true);
     expect(rows.every((r) => r.t === r.i && r.hr === 140)).toBe(true);
@@ -60,11 +59,11 @@ describe('smoothing', () => {
 });
 
 describe('loading chart streams', () => {
-  const response = (body, ok = true) => ({ ok, json: async () => body });
+  const response = (body: unknown, ok = true) => ({ ok, json: async () => body });
 
   it('fetches a ride\'s streams from its URL once', async () => {
-    const calls = [];
-    const fetch = async (url) => { calls.push(url); return response({ time: [0, 1] }); };
+    const calls: string[] = [];
+    const fetch = async (url: string) => { calls.push(url); return response({ time: [0, 1] }); };
     const loader = chartStreamsLoader({ fetch });
     expect(await loader.load('7')).toEqual({ time: [0, 1] });
     expect(await loader.load('7')).toEqual({ time: [0, 1] });

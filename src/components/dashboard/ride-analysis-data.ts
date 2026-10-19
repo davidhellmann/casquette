@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 /**
  * Ride analysis of the dashboard: one ride of the period with its classification, key figures, time
  * in zone, aerobic decoupling and fuelling, plus its streams for the chart. Pure.

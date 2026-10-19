@@ -55,9 +55,9 @@ export function ZoneBars({ rows, total, compact = false }: { rows: ZoneRow[]; to
 
 export interface TimeInZonesProps {
   /** Seconds per zone. */
-  seconds?: number[] | null;
+  seconds?: readonly number[] | null;
   /** Zone boundaries ([{min,max}]), null when not stored. */
-  zones?: { min: number | null; max: number | null }[] | null;
+  zones?: readonly { min: number | null; max: number | null }[] | null;
   kind: 'power' | 'hr';
 }
 

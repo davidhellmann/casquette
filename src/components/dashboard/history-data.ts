@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 /**
  * History and records of the dashboard: all-time totals, years compared, the cumulative kilometre
  * race, and the records of the period. Pure; rounding as shown.

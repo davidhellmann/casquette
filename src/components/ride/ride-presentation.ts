@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 /**
  * Ride presentation: turns the codes of a final ride (ride classification source, TIZ basis,
  * decoupling) into display text, tones and zone classes – one place for the ride page, the dashboard

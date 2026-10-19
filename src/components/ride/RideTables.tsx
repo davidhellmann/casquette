@@ -13,7 +13,7 @@ export interface SegmentEffort {
   average_watts: number | null; average_heartrate: number | null; pr_rank: number | null;
 }
 export interface Split {
-  split: number; moving_time: number | null; average_speed: number | null; elevation_difference: number | null; average_heartrate: number | null;
+  split: number | null; moving_time: number | null; average_speed: number | null; elevation_difference: number | null; average_heartrate: number | null;
 }
 
 const v = (x: number | null | undefined) => (x == null ? undefined : x);

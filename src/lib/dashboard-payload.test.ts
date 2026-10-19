@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import { describe, expect, it } from 'vitest';
 import { processRide } from '../ride/index.ts';
 import { athleteTimeline } from '../training/index.ts';

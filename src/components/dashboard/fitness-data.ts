@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import { thin } from '../charts/series.ts';
 
 /**

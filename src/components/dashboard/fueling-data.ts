@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 /**
  * Fueling (GLOSSARY) on the dashboard: carbs per hour on the bike by ride length and intensity.
  * Pure. Daily needs ("nutrition") live in nutrition-data.js.

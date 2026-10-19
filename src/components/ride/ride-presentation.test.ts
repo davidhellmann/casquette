@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import { describe, expect, it } from 'vitest';
 import { DECOUPLING_SCALE, rideClassification, rideDecoupling, rideTimeInZones, tizBasisLabel, toneBg, zoneBg } from './ride-presentation.ts';
 

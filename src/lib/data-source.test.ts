@@ -1,12 +1,11 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { selectDataSource } from './data-source.ts';
 
-let root;
-const put = (rel, text = '') => {
+let root: string;
+const put = (rel: string, text = '') => {
   const file = path.join(root, rel);
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, text);

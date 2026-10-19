@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import { expect, it } from 'vitest';
 import { decodeDashboard, encodeDashboard } from '../../lib/dashboard-payload.ts';
 import { createBuildDataset, memorySource } from '../../lib/build-dataset.ts';

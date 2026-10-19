@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 /**
  * Nutrition, zones and garage of the dashboard: daily needs and on-bike totals for the period,
  * today's power/HR zones and the bikes. Pure. *Html = i18n strings with markup.

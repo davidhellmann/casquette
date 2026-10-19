@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 /**
  * Pure data for the ride page (src/pages/rides/[id].astro → RideView): the route and stream colouring
  * and the power curve rows (stream rows: src/lib/chart-streams.ts). No DOM, no React – unit-tested in ride-data.test.js.

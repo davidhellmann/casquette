@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 /**
  * Goal cards of the dashboard (src/data/goals.json, independent of the period): each goal evaluated
  * with evalGoal (src/scripts/goals.ts) and turned into what its card shows. Pure. *Html = i18n markup.

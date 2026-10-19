@@ -19,8 +19,8 @@ export interface PerformancePayload {
   /** Today's FTP and body weight. */
   ftp: number;
   kg: number;
-  current: { eftp: number; wkg: number } | null;
-  peak: { key: string; eftp: number; wkg: number } | null;
+  current: { eftp: number; wkg: number | null } | null;
+  peak: { key: string; eftp: number; wkg: number | null } | null;
   peakCtl: { date: string; ctl: number } | null;
   /** All-time bests for the key figures (5 s … 20 min). */
   bests: { label: string; w: number | null; wkg: number | null }[];

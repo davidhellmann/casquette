@@ -15,7 +15,7 @@ export interface RideMapProps {
   points: (LatLng | null)[];
   /** Values per point (watts or HR) and their zones – colour the route by zone; null = one colour. */
   values: (number | null)[] | null;
-  zones: { min: number | null; max: number | null }[] | null;
+  zones: readonly { min: number | null; max: number | null }[] | null;
 }
 
 /** The ride's route on monochrome tiles, coloured by zone, with start/finish pins and a hover marker. Client-only. */

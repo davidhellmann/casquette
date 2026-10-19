@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import { describe, expect, it } from 'vitest';
 import { attemptRows, prHistory, segmentTrack, timeTicks, wattsPoints } from './segment-data.ts';
 

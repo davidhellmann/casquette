@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 /**
  * Pure data for the segment detail page (src/components/segments/SegmentView.tsx).
  * An attempt: { ride, name, date: 'YYYY-MM-DD', t: elapsed seconds, w, hr, pr } in date order.

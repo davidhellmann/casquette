@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import { describe, expect, it } from 'vitest';
 import { fixtureDataset, NOW } from './dataset-fixture.ts';
 import { gearIndexPayload, gearPayload } from './gear-payload.ts';

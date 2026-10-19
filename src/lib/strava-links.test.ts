@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import { describe, expect, it } from 'vitest';
 import { activityUrl, gearUrl, isStravaId, segmentUrl } from './strava-links.ts';
 

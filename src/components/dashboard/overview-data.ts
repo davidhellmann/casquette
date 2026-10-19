@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 /**
  * Form today, 80/20 check, power profile and training load of the dashboard: D (src/dashboard-period/)
  * turned into the values, labels and hints the cards show. Pure. Strings marked *Html are i18n

@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 /**
  * Chart rows for the performance page, from the build payload (see src/pages/performance.astro).
  * Pure: the same rows feed the charts and the consumer tests (src/lib/training-consumers.test.ts).

@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import { describe, expect, it } from 'vitest';
 import { fixtureDataset } from './dataset-fixture.ts';
 import { segmentPageIds, segmentPayload, segmentsIndexPayload } from './segment-payload.ts';

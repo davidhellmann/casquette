@@ -10,6 +10,7 @@ import { EmptyState } from '@/components/app/EmptyState';
 import { ZoneBadge } from '@/components/rides/ride-columns';
 import { fmtClock, fmtDur, nf } from '@/scripts/format.ts';
 import { t } from '@/i18n/index.ts';
+import type { ZoneSet } from '@/training/index.ts';
 import { RideMap, type LatLng, type RideMapHandle } from './RideMap';
 import { StreamCharts, type StreamZones } from './StreamCharts';
 import { TimeInZones } from '@/components/charts/ZoneBars';
@@ -20,7 +21,7 @@ import { useChartStreams } from '@/components/app/use-chart-streams';
 import { rideDecoupling, toneBg, zoneBg } from './ride-presentation.ts';
 import { DecouplingScale } from './DecouplingScale';
 
-type Zones = { min: number | null; max: number | null }[];
+type Zones = ZoneSet;
 interface Link { href: string; name: string }
 
 /** Build payload of /rides/<id> (src/lib/ride-payload.ts). Locale-dependent texts are formatted at build time. */
@@ -60,7 +61,7 @@ export interface RidePayload {
   };
   /** Zones that colour the power and heart-rate streams. */
   streamZones: StreamZones;
-  tiz: Record<'power' | 'hr', { seconds: number[] | null; zones: Zones | null; label: string }>;
+  tiz: Record<'power' | 'hr', { seconds: readonly number[] | null; zones: Zones | null; label: string }>;
   year: number;
   ftp: number;
   curve: Omit<RideCurveProps, 'yearLabel' | 'ftp'>;

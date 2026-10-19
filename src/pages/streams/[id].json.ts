@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 /**
  * Demo streams at /streams/<id>.json – the same URL the real streams have in public/streams/.
  * Only generates files while the demo data is active; with real data there are no paths here

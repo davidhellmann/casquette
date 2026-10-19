@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import { describe, expect, it } from 'vitest';
 import { calendarDays, calendarMonths, calendarStats } from './calendar-data.ts';
 import { routes } from '../../lib/routes.ts';

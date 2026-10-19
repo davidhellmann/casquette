@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { bestCurve } from '../training/index.ts';
 import { decodeDashboard, encodeDashboard } from './dashboard-payload.ts';

@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 /** Map page (/map): route data, toolbar filters and the places browser (country → region → place). Pure, no DOM. */
 import { decodePolyline } from '@/scripts/polyline.ts';
 

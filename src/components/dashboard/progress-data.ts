@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 /**
  * Progress cards of the dashboard period: aerobic efficiency per ride with its rolling trend and the
  * power curve (period, all-time, 2nd half, FTP) with W/kg at each best's own body weight. Pure;
