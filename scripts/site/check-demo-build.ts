@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 // `npm run demo:check -- <build dir> [--base /demo/]` – the deploy's guard for the public demo (#54):
 // fails unless the build contains only the synthetic demo dataset (demo/) and every root-relative
 // link and asset lies inside the base path and has a file behind it. Checks: lib/demo-build-check.ts.

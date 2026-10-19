@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 // @ts-check
 import { defineConfig, fontProviders } from 'astro/config';
 import react from '@astrojs/react';
