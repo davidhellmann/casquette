@@ -1,6 +1,6 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 // Fixed, synthetic final rides shared by regression tests; no repository ride data.
 import { processRide } from '../ride/index.ts';
+import type { RideFrontmatter } from '../ride/index.ts';
 import { athleteTimeline } from '../training/index.ts';
 export const now = new Date('2024-01-14T18:00:00');
 export const timeline = athleteTimeline({ history: [
@@ -8,7 +8,7 @@ export const timeline = athleteTimeline({ history: [
   { date: '2024-01-01', ftp: 300, weight: 75 },
 ] });
 export const athleteState = timeline.at('2024-01-14');
-export function ride(id, date, extra = {}) {
+export function ride(id: string, date: string, extra: Partial<RideFrontmatter> = {}) {
   const data = { id, name: id, start_date_local: date + 'T12:00:00', sport_type: 'Ride',
     moving_time: 3600, distance: 30000, total_elevation_gain: 400, calories: 500,
     device_watts: true, average_watts: 200, average_heartrate: 140, max_heartrate: 170,

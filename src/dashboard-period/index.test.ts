@@ -1,19 +1,21 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import { describe, expect, it } from 'vitest';
 import { dashboardPeriod } from './index.ts';
+import type { DashboardPeriodOptions, PeriodRide } from './index.ts';
+import type { Distribution } from '../ride/index.ts';
 import { fixtures, now, ride } from './fixtures.ts';
 import legacy from './legacy-results.json';
 import legacyCards from './legacy-cards.json';
-const calculate = (rides = fixtures(), options = {}) => dashboardPeriod(rides, { days: 14, basis: 'power', now, ...options });
+const calculate = (rides: readonly PeriodRide[] = fixtures(), options: Partial<DashboardPeriodOptions> = {}) => dashboardPeriod(rides, { days: 14, basis: 'power', now, ...options });
 // Goldens carry the capturing machine's Date serialization; calendar day is the contract.
-const withoutDateSerialization = value => JSON.parse(JSON.stringify(value, (key,v) => key === 'd' ? undefined : v));
+const withoutDateSerialization = (value: unknown) => JSON.parse(JSON.stringify(value, (key,v) => key === 'd' ? undefined : v));
 
 describe('Dashboard period: public interface', () => {
-  for (const days of [14, 30, 90, 365, 0]) for (const basis of ['power', 'hr']) it(`preserves original KPIs/previous period/halves/80-20/power curves/fitness: ${days}/${basis}`, () => {
+  for (const days of [14, 30, 90, 365, 0] as const) for (const basis of ['power', 'hr'] as const) it(`preserves original KPIs/previous period/halves/80-20/power curves/fitness: ${days}/${basis}`, () => {
     const result = calculate(fixtures(), { days, basis });
     const expected = legacy[`${days}-${basis}`];
+    const actual = new Map(Object.entries(result.S));
     for (const [key, value] of Object.entries(expected.S)) {
-      expect(key === 'efList' ? result.S[key].map(r => r.id) : result.S[key], key).toEqual(value);
+      expect(key === 'efList' ? result.S.efList.map(r => r.id) : actual.get(key), key).toEqual(value);
     }
     expect(result.rides.map(r => r.id)).toEqual(expected.rides);
     expect(result.prevRides.map(r => r.id)).toEqual(expected.prev);
@@ -26,8 +28,8 @@ describe('Dashboard period: public interface', () => {
   });
   it('returns finished records, fueling, rhythm, EF smoothing and historical power curve W/kg', () => {
     const D = calculate();
-    expect(D.records.longest.id).toBe('recent');
-    expect(D.records.np.id).toBe('recent');
+    expect(D.records.longest?.id).toBe('recent');
+    expect(D.records.np?.id).toBe('recent');
     expect(D.nutrition).toEqual(legacyCards.power.nutrition);
     expect(withoutDateSerialization(D.load)).toMatchObject(withoutDateSerialization(legacyCards.power.load));
     expect(D.rhythm.hours.reduce((a,b) => a+b, 0)).toBe(4);
@@ -49,12 +51,12 @@ describe('Dashboard period: public interface', () => {
     expect(D.heatmap.cells).toHaveLength(371);
   });
   it('sums historical and legacy TIZ without reporting unknown boundaries as exact', () => {
-    const distribution = { version: 1, method: 'right-sample-dt-0-10s', samples: [[200, 3600]] };
+    const distribution: Distribution = { version: 1, method: 'right-sample-dt-0-10s', samples: [[200, 3600]] };
     const a = ride('old', '2023-12-31', { metrics: { power_distribution: distribution } });
     const b = ride('new', '2024-01-01', { metrics: { power_distribution: distribution } });
     const D = calculate([a,b,ride('legacy','2024-01-02')], { days: 30 });
     expect(D.tiz.power).toMatchObject({ total: 10800, z2Percent: 50, exact: false, mixed: true, zones: null, legacyCount: 1 });
-    expect(D.tiz.power.bases.map(b => b.ftp)).toEqual([250,300,200]);
+    expect(D.tiz.power.bases.map(b => b?.ftp)).toEqual([250,300,200]);
     expect(D.rideTiz.old.power).toBe(3600);
     const exact = calculate([a,b], { days: 30 }).tiz.power;
     expect(exact).toMatchObject({ exact: true, mixed: true, zones: null, legacyCount: 0 });
@@ -75,7 +77,7 @@ describe('Dashboard period: public interface', () => {
     expect(only.ridesAll).toEqual([]);
   });
   it('returns defined null/0 values for empty and all time without an invented previous period', () => {
-    for (const days of [14, 0]) {
+    for (const days of [14, 0] as const) {
       const D = calculate([], { days });
       expect(D.S).toMatchObject({ n: 0, time: 0, tss: 0, avgW: null, avgHR: null, low: 0, ctl: 0, atl: 0, tsb: 0 });
       expect(D.S.deltas).toEqual({ n:null,time:null,dist:null,elev:null,tss:null,pr:null,power:null,hr:null });
@@ -91,7 +93,7 @@ describe('Dashboard period: public interface', () => {
     expect(D.load).toMatchObject({ last7:0,rest14:14,streak:0 });
   });
   it('excludes the future, including later on the same day, and keeps date boundaries exact', () => {
-    const at = (id, start) => ride(id, start.slice(0,10), { start_date_local:start });
+    const at = (id: string, start: string) => ride(id, start.slice(0,10), { start_date_local:start });
     const rides = [at('start','2024-01-01T00:00:00'), at('prevEnd','2023-12-31T23:59:59'),
       at('prevStart','2023-12-18T00:00:00'), at('tooOld','2023-12-17T23:59:59'),
       at('now','2024-01-14T18:00:00'), at('later','2024-01-14T18:00:01'), at('tomorrow','2024-01-15T00:00:00')];
@@ -102,7 +104,7 @@ describe('Dashboard period: public interface', () => {
     expect(D.ridesAll).toHaveLength(5);
     expect(D.heatmap.day['2024-01-14'].n).toBe(1);
     expect(D.heatmap.day['2024-01-15']).toBeUndefined();
-    expect(D.history.years.at(-1).n).toBe(2);
+    expect(D.history.years.at(-1)?.n).toBe(2);
   });
   for (const [start, end] of [['2024-03-25','2024-04-07'], ['2024-10-21','2024-11-03']]) it(`counts calendar days across DST: ${start}`, () => {
     const rides = [ride('start',start),ride('end',end)], clock = new Date(end+'T18:00:00');
@@ -153,8 +155,8 @@ describe('Dashboard period: public interface', () => {
   it('keeps the weekly tooltip as the sum of bars rounded to two decimals', () => {
     const D = calculate([ride('low','2024-01-10',{moving_time:3700}),ride('high','2024-01-11',{moving_time:3700,average_watts:400})]);
     const b = D.weekly.buckets.find(b=>b.total>0);
-    expect(b.tooltipTotal).toBe(2.06);
-    expect(b.total).toBe(7400/3600);
+    expect(b?.tooltipTotal).toBe(2.06);
+    expect(b?.total).toBe(7400/3600);
   });
   it('preserves the explicit clock for consumers such as goal projections', () => {
     const D = calculate();
@@ -167,7 +169,7 @@ describe('Dashboard period: public interface', () => {
   });
   it('returns garage totals and ordering instead of browser aggregation', () => {
     const gear = [{ id:'b',type:'bike',distance:2000 }, { id:'a',type:'bike',distance:5000 },
-      { id:'old',type:'bike',retired:true,distance:10000 }, { type:'shoes',distance:99999 }];
+      { id:'old',type:'bike',retired:true,distance:10000 }, { id:'shoes',type:'shoes',distance:99999 }];
     const D = calculate([ride('1','2024-01-01',{gear_id:'a',distance:3000}),
       ride('2','2024-01-01',{gear_id:'b',distance:4000}), ride('3','2024-01-01',{gear_id:'old',distance:1000})], { gear });
     expect(D.garage.active.map(g=>g.id)).toEqual(['b','a']);
@@ -199,6 +201,7 @@ describe('Dashboard period: public interface', () => {
     expect(JSON.stringify(rides)).toBe(before);
     expect(+now).toBe(clock);
     expect(() => calculate(rides,{now:undefined})).toThrow('now');
+    // @ts-expect-error an invalid period, as an untyped caller could pass it
     expect(() => calculate(rides,{days:15})).toThrow('period');
   });
 });
