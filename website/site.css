@@ -377,6 +377,8 @@ p, li, dd, figcaption, blockquote { text-wrap: pretty; }
 @media (max-width: 860px) {
   .steps > li { grid-template-columns: minmax(0, 1fr); gap: 16px; padding: 18px; }
   .needs { margin-bottom: 32px; }
+  /* Centred text wrapping over several lines reads ragged on both sides – align it with the step cards */
+  .start-note { justify-content: flex-start; text-align: left; }
 }
 
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
