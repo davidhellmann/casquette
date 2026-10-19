@@ -2,14 +2,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { STYLE_PROPS, diffStyles, snapshotStyles } from '../scripts/site/lib/fragments.ts';
+import { STYLE_PROPS, diffStyles, snapshotStyles, type FragmentsManifest } from '../scripts/site/lib/fragments.ts';
 
 // Refs #46: the committed UI fragments (website/ui/, `npm run fragments`) render on their own, in light
 // and dark, without app JavaScript – and neither leak into a host page nor take styles from it.
 // Freshness against the demo build: `npm run fragments -- --check`.
 const DIR = path.resolve(import.meta.dirname, '..', 'website', 'ui');
-const manifest = JSON.parse(fs.readFileSync(path.join(DIR, 'fragments.json'), 'utf8'));
-const fragmentFiles: string[] = manifest.fragments.map((f: { file: string }) => f.file);
+const manifest: FragmentsManifest = JSON.parse(fs.readFileSync(path.join(DIR, 'fragments.json'), 'utf8'));
+const fragmentFiles: string[] = manifest.fragments.map((f) => f.file);
 
 /** `/ui/host.html`: a host page built by the test, next to the fragments (relative URLs resolve to website/ui/). */
 async function hostPage(page: Page, html: string) {

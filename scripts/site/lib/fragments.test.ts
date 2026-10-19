@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import { describe, expect, it } from 'vitest';
 import { MAP, PIECES, SCOPE_CLASS, appFonts, assertStatic, diffStyles, fixedNow, inlineRemToPx, keepAttribute, piecePath, renameRefs, wrapFragment } from './fragments.ts';
 
@@ -11,7 +10,7 @@ describe('pieces', () => {
       expect(['left', 'right']).toContain(p.anchor);
       expect(p.root).toBeTruthy();
     }
-    expect(piecePath(PIECES.find((p) => p.name === 'year'), { ride: 'r', year: 2025 })).toBe('/years/2025');
+    expect(piecePath(PIECES.find((p) => p.name === 'year')!, { ride: 'r', year: 2025 })).toBe('/years/2025');
   });
 
   it('pins the clock one day after the newest demo ride', () => {
@@ -118,7 +117,7 @@ describe('appFonts', () => {
 });
 
 describe('diffStyles', () => {
-  const row = (tag, box, font, fill) => [tag, box, font, fill];
+  const row = (tag: string, box: string, font: string, fill: string) => [tag, box, font, fill];
   const props = ['font-family', 'fill'];
 
   it('ignores renamed fonts, renamed ids and empty boxes', () => {

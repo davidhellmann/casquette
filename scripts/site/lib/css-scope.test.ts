@@ -1,6 +1,13 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import { describe, expect, it } from 'vitest';
-import { collectMedia, collectSelectors, dropDecls, isInteractive, parseCss, remToPx, scopeCss, scopeSelector, serializeCss, splitList } from './css-scope.ts';
+import {
+  collectMedia, collectSelectors, dropDecls, isInteractive, parseCss, remToPx, scopeCss, scopeSelector, serializeCss, splitList,
+  type CssAtRule, type CssNode, type ScopeCssOptions,
+} from './css-scope.ts';
+
+const atRule = (node: CssNode): CssAtRule => {
+  if (node.type !== 'at') throw new Error(`expected an at-rule, got ${node.selector}`);
+  return node;
+};
 
 describe('parseCss / serializeCss', () => {
   it('round-trips minified CSS with layers, at-rules, escapes and strings', () => {
@@ -12,8 +19,8 @@ describe('parseCss / serializeCss', () => {
   it('parses rules, group rules, declaration at-rules and statements', () => {
     const nodes = parseCss('@layer a, b;@media (hover:hover){.a:hover{color:red}}@property --x{syntax:"*";inherits:false}.b{color:blue}');
     expect(nodes.map((n) => n.type === 'rule' ? n.selector : `@${n.name}`)).toEqual(['@layer', '@media', '@property', '.b']);
-    expect(nodes[1].rules[0]).toEqual({ type: 'rule', selector: '.a:hover', decls: 'color:red' });
-    expect(nodes[2].decls).toBe('syntax:"*";inherits:false');
+    expect(atRule(nodes[1]).rules?.[0]).toEqual({ type: 'rule', selector: '.a:hover', decls: 'color:red' });
+    expect(atRule(nodes[2]).decls).toBe('syntax:"*";inherits:false');
   });
 
   it('drops comments but keeps licence banners', () => {
@@ -69,7 +76,7 @@ describe('remToPx / dropDecls', () => {
 });
 
 describe('scopeCss', () => {
-  const run = (css, opts = {}) => scopeCss(parseCss(css), { scope: '.ui', ...opts });
+  const run = (css: string, opts: Partial<ScopeCssOptions> = {}) => scopeCss(parseCss(css), { scope: '.ui', ...opts });
 
   it('flattens layers in order and wraps everything in @scope', () => {
     expect(run('@layer a,b;@layer a{.x{c:1}}@layer b{.y{c:2}}')).toBe('@scope (.ui){:scope .x{c:1}:scope .y{c:2}}');
@@ -77,12 +84,13 @@ describe('scopeCss', () => {
 
   it('resolves layout media queries and keeps reader preferences', () => {
     const css = '@media (width>=40rem){.a{c:1}}@media (width>=96rem){.b{c:2}}@media (orientation:portrait){.c{c:3}}@media (prefers-reduced-motion:reduce){.d{c:4}}';
-    const media = (m) => ({ '(width>=40rem)': true, '(width>=96rem)': false })[m];
+    const matches: Record<string, boolean> = { '(width>=40rem)': true, '(width>=96rem)': false };
+    const media = (m: string) => matches[m];
     expect(run(css, { media })).toBe('@scope (.ui){:scope .a{c:1}@media (orientation:portrait){:scope .c{c:3}}@media (prefers-reduced-motion:reduce){:scope .d{c:4}}}');
   });
 
   it('drops unused selectors, interactive states and empty rules', () => {
-    const used = (s) => s !== '.unused';
+    const used = (s: string) => s !== '.unused';
     expect(run('.a,.unused{c:1}.unused{c:2}.b:hover{c:3}@supports (x:y){.unused{c:4}}', { used })).toBe('@scope (.ui){:scope .a{c:1}}');
   });
 
