@@ -1,16 +1,15 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { heroRide, readDemoDataset, reviewYear, rideYears } from './demo-dataset.ts';
 
-let root;
-const put = (rel, text) => {
+let root: string;
+const put = (rel: string, text: string | object) => {
   fs.mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
   fs.writeFileSync(path.join(root, rel), typeof text === 'string' ? text : JSON.stringify(text));
 };
-const rideFile = (id, local, extra = '') => `---\nid: "${id}"\nstart_date: "${local}Z"\nstart_date_local: "${local}"\ntrainer: false\ndistance: 42195.5\n${extra}---\n\nNotes\n`;
+const rideFile = (id: string, local: string, extra = '') => `---\nid: "${id}"\nstart_date: "${local}Z"\nstart_date_local: "${local}"\ntrainer: false\ndistance: 42195.5\n${extra}---\n\nNotes\n`;
 
 beforeEach(() => {
   root = fs.mkdtempSync(path.join(os.tmpdir(), 'demo-dataset-'));
@@ -78,7 +77,7 @@ describe('rideYears', () => {
 });
 
 describe('reviewYear', () => {
-  const ridesIn = (...years) => years.map((y) => ({ start_date_local: `${y}-05-01T08:00:00` }));
+  const ridesIn = (...years: number[]) => years.map((y) => ({ start_date_local: `${y}-05-01T08:00:00` }));
 
   it('shows the last complete year, not the running one', () => {
     expect(reviewYear(ridesIn(2024, 2026, 2023, 2025))).toBe(2025);
@@ -90,7 +89,7 @@ describe('reviewYear', () => {
 });
 
 describe('heroRide', () => {
-  const ride = (id, extra = {}) => ({ id, trainer: false, device_watts: true, has_heartrate: true, summary_polyline: 'abc', ...extra });
+  const ride = (id: string, extra = {}) => ({ id, trainer: false, device_watts: true, has_heartrate: true, summary_polyline: 'abc', ...extra });
 
   it('picks the newest outdoor ride that has power, heart rate and a route', () => {
     const rides = [

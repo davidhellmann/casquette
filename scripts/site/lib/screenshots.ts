@@ -1,17 +1,25 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 // Refs #14, #41: which product screenshots exist and how they are framed.
 // Config + helpers (shared with e2e/screenshots.spec.ts); the capture runs in scripts/site/screenshots.ts.
 
+/** A colour theme a capture is taken in. */
+export type Theme = 'light' | 'dark';
+
+/** One key view: `path` may hold `{ride}` / `{year}`; `focus` is the selector of a close-up. */
+export type Shot = { name: string; path: string; focus?: string };
+
+/** One planned capture: output file, resolved URL, theme and the close-up selector (or null). */
+export type PlannedShot = { file: string; url: string; theme: Theme; focus: string | null };
+
 /** Every capture uses the same viewport and pixel density (2880×1800 output). */
 export const VIEWPORT = { width: 1440, height: 900, deviceScaleFactor: 2 };
-export const THEMES = ['light', 'dark'];
+export const THEMES: readonly Theme[] = ['light', 'dark'];
 
 /**
  * Key views. `{ride}` / `{year}` are filled in by planShots; `focus` (a selector, usually a
  * `data-testid` of a card or dashboard section) scrolls that element to the top of the viewport
  * for close-ups. Without `focus` the top of the page is shot.
  */
-export const SHOTS = [
+export const SHOTS: readonly Shot[] = [
   { name: 'dashboard', path: '/' },
   { name: 'ride', path: '/rides/{ride}' },
   { name: 'ride-charts', path: '/rides/{ride}', focus: '[data-testid="ride-streams"]' },
@@ -22,7 +30,9 @@ export const SHOTS = [
 ];
 
 /** One capture per shot and theme, with the URL resolved against the preview server. */
-export function planShots({ baseUrl, ride, year, shots = SHOTS, themes = THEMES }) {
+export function planShots({ baseUrl, ride, year, shots = SHOTS, themes = THEMES }: {
+  baseUrl: string; ride: string; year: number | string; shots?: readonly Shot[]; themes?: readonly Theme[];
+}): PlannedShot[] {
   const base = baseUrl.replace(/\/$/, '');
   return shots.flatMap((shot) => {
     const url = base + shot.path.replace('{ride}', ride).replace('{year}', String(year));

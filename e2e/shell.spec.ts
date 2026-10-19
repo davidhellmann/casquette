@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, hydrated, test } from './fixtures';
+import { expect, hydrated, test, type Page } from './fixtures';
 import { STATIC_PAGES } from './pages';
 
 const SECTIONS = [
@@ -11,7 +11,7 @@ const SECTIONS = [
   { name: 'Performance', path: '/performance' },
   { name: 'Gear', path: '/gear' },
 ];
-const nav = (page) => page.getByRole('navigation', { name: 'Main navigation' });
+const nav = (page: Page) => page.getByRole('navigation', { name: 'Main navigation' });
 
 test('the sidebar reaches every section and marks the current one', async ({ page }) => {
   await page.goto('/');

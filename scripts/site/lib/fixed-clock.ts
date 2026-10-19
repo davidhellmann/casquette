@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 // Refs #46: preloaded into the demo build of `npm run fragments` (node --import) so the build sees a
 // fixed "now" (FRAGMENTS_NOW, an ISO instant): the demo dates (src/lib/demo-clock.ts), current year and
 // periods then never depend on the day the fragments are regenerated. Time still advances from there.

@@ -1,14 +1,14 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 // Renders the brand PNG pages (scripts/site/lib/brand-assets.ts) with the local Chromium: serves the
 // Damion font, waits for it, places the cap on the "c" with capPlacement() and centres the logo.
 import fs from 'node:fs';
+import type { Browser, Page } from '@playwright/test';
 import { capPlacement } from '../../../src/lib/brand.ts';
-import { FONT_FILE, FONT_URL } from './brand-assets.ts';
+import { FONT_FILE, FONT_URL, type BrandPng } from './brand-assets.ts';
 
 const ORIGIN = 'http://brand.local';
 
 /** Loads `html` into a new page of `browser` and returns it with the logo laid out. */
-export async function openBrandPage(browser, { html, width, height, scale = 1 }) {
+export async function openBrandPage(browser: Browser, { html, width, height, scale = 1 }: BrandPng): Promise<Page> {
   const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: scale });
   await page.route(`${ORIGIN}/**`, (route) => {
     const url = new URL(route.request().url());
@@ -22,7 +22,7 @@ export async function openBrandPage(browser, { html, width, height, scale = 1 })
 
   // The placement exactly as on the approval sheet: the "c"'s box measured in the rendered word.
   const words = await page.evaluate(() => [...document.querySelectorAll('.wm')].map((wm) => {
-    const fs = parseFloat(getComputedStyle(wm).fontSize), r = wm.getBoundingClientRect(), c = wm.querySelector('.c').getBoundingClientRect();
+    const fs = parseFloat(getComputedStyle(wm).fontSize), r = wm.getBoundingClientRect(), c = wm.querySelector('.c')!.getBoundingClientRect();
     return { fs, cTop: (c.top - r.top) / fs, cLeft: (c.left - r.left) / fs };
   }));
   const boxes = words.map(({ fs, cTop, cLeft }) => {
@@ -31,19 +31,19 @@ export async function openBrandPage(browser, { html, width, height, scale = 1 })
   });
   await page.evaluate((boxes) => {
     document.querySelectorAll('.wm').forEach((wm, i) => {
-      const b = boxes[i], cap = wm.querySelector('.cap');
+      const b = boxes[i], cap = wm.querySelector<SVGSVGElement>('.cap')!;
       Object.assign(cap.style, { left: `${b.left}px`, top: `${b.top}px`, width: `${b.width}px`, height: `${b.height}px`, transform: `rotate(${b.rotate}deg)`, transformOrigin: b.origin });
-      wm.parentElement.style.paddingLeft = `${Math.max(0, -b.left)}px`;
+      wm.parentElement!.style.paddingLeft = `${Math.max(0, -b.left)}px`;
     });
     // Centre on the ink: the glyphs (canvas text metrics) and the cap's strokes.
-    const ctx = document.createElement('canvas').getContext('2d');
-    document.querySelectorAll('[data-centre]').forEach((stage) => {
-      const lk = stage.querySelector('.lk'), wm = lk.querySelector('.wm'), fs = parseFloat(getComputedStyle(wm).fontSize);
+    const ctx = document.createElement('canvas').getContext('2d')!;
+    document.querySelectorAll<HTMLElement>('[data-centre]').forEach((stage) => {
+      const lk = stage.querySelector<HTMLElement>('.lk')!, wm = lk.querySelector<HTMLElement>('.wm')!, fs = parseFloat(getComputedStyle(wm).fontSize);
       ctx.font = `${fs}px Damion`;
-      const m = ctx.measureText(wm.textContent), r = wm.getBoundingClientRect(), c = wm.querySelector('.c').getBoundingClientRect();
+      const m = ctx.measureText(wm.textContent ?? ''), r = wm.getBoundingClientRect(), c = wm.querySelector('.c')!.getBoundingClientRect();
       const base = c.top + m.fontBoundingBoxAscent;
       let [x1, y1, x2, y2] = [r.left - m.actualBoundingBoxLeft, base - m.actualBoundingBoxAscent, r.left + m.actualBoundingBoxRight, base + m.actualBoundingBoxDescent];
-      const cap = wm.querySelector('.cap'), half = (3.12 / 2) * (cap.getBoundingClientRect().width / 48);
+      const cap = wm.querySelector('.cap')!, half = (3.12 / 2) * (cap.getBoundingClientRect().width / 48);
       for (const path of cap.querySelectorAll('path')) {
         const p = path.getBoundingClientRect();
         x1 = Math.min(x1, p.left - half); y1 = Math.min(y1, p.top - half); x2 = Math.max(x2, p.right + half); y2 = Math.max(y2, p.bottom + half);

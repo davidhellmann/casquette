@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from './fixtures';
 
-const calendar = (page) => page.getByRole('grid', { name: 'Training calendar' });
+const calendar = (page: Page) => page.getByRole('grid', { name: 'Training calendar' });
 /** Monday = 0 … Sunday = 6, like the calendar rows. */
 const weekday = (d: Date) => (d.getDay() + 6) % 7;
 
@@ -90,12 +90,16 @@ test('Enter or a click on a day with a ride opens the ride', async ({ page }) =>
  * from #dash-data, so move the second-newest stat ride onto the newest one's day (an hour earlier):
  * both entries then link to real ride pages. Returns their ids, earlier first.
  */
+// TODO(ts-b1): use the src/lib/dashboard-payload.ts type
+type DashRide = { id: string; start_local: string; start: number | string; stats?: boolean };
+type DashData = { rides: DashRide[] };
+
 async function withTwoRidesOnOneDay(page: Page) {
   const ids: string[] = [];
   await page.route(/\/$/, async (route) => {
     const html = await (await route.fetch()).text();
     const out = html.replace(/(<script type="application\/json" id="dash-data">)([\s\S]*?)(<\/script>)/, (_, open, json, close) => {
-      const data = JSON.parse(json);
+      const data: DashData = JSON.parse(json);
       const stat = data.rides.filter((r) => r.stats !== false).sort((a, b) => b.start_local.localeCompare(a.start_local));
       const [newest, moved] = stat;
       moved.start_local = `${newest.start_local.slice(0, 10)}T00:30:00`;

@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -125,10 +124,10 @@ describe('renderPage', () => {
 });
 
 describe('buildSite', () => {
-  const dirs = [];
+  const dirs: string[] = [];
   const tmp = () => { const d = fs.mkdtempSync(path.join(os.tmpdir(), 'site-build-')); dirs.push(d); return d; };
   afterEach(() => { for (const d of dirs.splice(0)) fs.rmSync(d, { recursive: true, force: true }); });
-  const write = (dir, files) => { for (const [f, c] of Object.entries(files)) { fs.mkdirSync(path.dirname(path.join(dir, f)), { recursive: true }); fs.writeFileSync(path.join(dir, f), c); } };
+  const write = (dir: string, files: Record<string, string>) => { for (const [f, c] of Object.entries(files)) { fs.mkdirSync(path.dirname(path.join(dir, f)), { recursive: true }); fs.writeFileSync(path.join(dir, f), c); } };
 
   it('copies the site, fills the pages, skips README.md, injects Cabin into site and demo', () => {
     const src = tmp(), demo = tmp(), out = path.join(tmp(), 'dist-site');
@@ -177,11 +176,12 @@ describe('buildSite', () => {
 
 describe('the website templates', () => {
   const site = new URL('../../../website/', import.meta.url);
-  const read = (f) => fs.readFileSync(new URL(f, site), 'utf8');
+  const read = (f: string) => fs.readFileSync(new URL(f, site), 'utf8');
 
   it('build cleanly with placeholder values, with and without Cabin', () => {
+    const envs: Record<string, string>[] = [ENV, { ...ENV, SITE_CABIN_HOST: 'cabin.example.com' }];
     for (const file of ['index.html', 'legal-notice.html', 'privacy-policy.html']) {
-      for (const env of [ENV, { ...ENV, SITE_CABIN_HOST: 'cabin.example.com' }]) {
+      for (const env of envs) {
         const out = renderPage(read(file), readSiteEnv(env), file);
         expect(findLeftovers(out), file).toEqual([]);
         expect(out.includes('cabin.example.com'), file).toBe(Boolean(env.SITE_CABIN_HOST));

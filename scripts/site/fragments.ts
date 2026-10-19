@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck – typed in phase B of docs/adr/0004
 // Refs #46: real UI fragments for the website (website/ui/) from the demo build.
 //
 //   npm run fragments              # demo build → serve → capture → website/ui/
@@ -14,25 +13,40 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
+import type { Browser } from '@playwright/test';
 import { captureWebp, launchBrowser, openDemoPage, waitUntilReady } from './lib/capture.ts';
 import { heroRide, readDemoDataset, reviewYear } from './lib/demo-dataset.ts';
-import { ROOT } from '../shared/env.ts';
+import { ROOT, errorMessage } from '../shared/env.ts';
 import { serveStatic } from './lib/static-server.ts';
-import { collectMedia, collectSelectors, parseCss, scopeCss } from './lib/css-scope.ts';
+import { collectMedia, collectSelectors, parseCss, scopeCss, type CssNode, type CssRule } from './lib/css-scope.ts';
 import {
   DESCENDANT_RESET, MAP, MAP_SCALE, PIECES, SCOPE_CLASS, TIME_ZONE, VIEWPORT, WRAPPER_RESET,
   STYLE_PROPS, appFonts, assertStatic, cleanTree, diffStyles, fixedNow, inlineRemToPx, keepAttribute, manifestEntry, piecePath, previewPage, renameRefs,
   snapshotStyles, wrapFragment,
+  type KeepAttribute, type ManifestEntry, type MapEntry, type Piece, type StyleSnapshot,
 } from './lib/fragments.ts';
+import type { Theme } from './lib/screenshots.ts';
 
 const OUT_DIR = path.join(ROOT, 'website', 'ui');
 const DIST = path.join(ROOT, 'dist-fragments');
 /** Hand-written files in the output folder; everything else there is generated and replaced. */
 const KEEP_FILES = new Set(['README.md', 'OFL.txt']);
 
+/** A page of the demo build to open: served at `base`, `url` below it, in `theme` on the fixed clock `now`. */
+type PageTarget = { base: string; url: string; theme: Theme; now: string; scale?: number };
+
+/** What extract() returns from the page: the cleaned piece – or why it is missing. */
+type Extracted = { error: string } | { error?: undefined; html: string; css: string; width: number; height: number; styles: StyleSnapshot };
+
+/** One piece captured in one theme, with the stylesheets and inline styles of the page head. */
+type PieceShot = Extract<Extracted, { html: string }> & { head: { sheets: string[]; styles: string[] } };
+
+/** One generated fragment: its manifest entry, chart CSS, reference styles per theme and the file content. */
+type Fragment = { piece: Piece; entry: ManifestEntry; css: string; styles: Record<Theme, StyleSnapshot>; html: string };
+
 const { values: args } = parseArgs({ options: { check: { type: 'boolean', default: false }, 'no-build': { type: 'boolean', default: false } } });
 
-function build(now) {
+function build(now: string): void {
   console.log(`Building the demo (clock ${now}, ${TIME_ZONE}) into ${path.relative(ROOT, DIST)}/ …`);
   const clock = path.join(ROOT, 'scripts', 'site', 'lib', 'fixed-clock.ts');
   const res = spawnSync(path.join(ROOT, 'node_modules', '.bin', 'astro'), ['build', '--outDir', DIST], {
@@ -43,15 +57,15 @@ function build(now) {
 }
 
 /** A page of the demo build (served at `base`) in `theme`, with the demo's clock, time zone and locale. */
-const openPage = (browser, { base, url, theme, now, scale = 1 }) =>
+const openPage = (browser: Browser, { base, url, theme, now, scale = 1 }: PageTarget) =>
   openDemoPage(browser, base + url, { theme, viewport: VIEWPORT, scale, now, timeZone: TIME_ZONE, locale: 'en-US' });
 
 /**
  * Runs in the page: the piece's element, reduced to `keep`, cleaned; its markup, chart CSS, size and
  * computed styles (to check the fragment against).
  */
-function extract(piece, keep, clean, snapshot, props) {
-  const root = [...document.querySelectorAll(piece.root)].find((el) => !piece.label || el.textContent.trim().startsWith(piece.label));
+function extract(piece: Piece, keep: KeepAttribute, clean: typeof cleanTree, snapshot: typeof snapshotStyles, props: readonly string[]): Extracted {
+  const root = [...document.querySelectorAll<HTMLElement>(piece.root)].find((el) => !piece.label || el.textContent.trim().startsWith(piece.label));
   if (!root) return { error: `${piece.root} ${piece.label ?? ''} not found` };
   if (piece.keep) for (const child of [...root.children]) if (!piece.keep.some((s) => child.matches(s))) child.remove();
   const css = clean(root, keep);
@@ -65,41 +79,41 @@ function extract(piece, keep, clean, snapshot, props) {
   return { html, css: css.join('\n'), width: Math.ceil(width), height: Math.ceil(height), styles: snapshot(root, props) };
 }
 
-async function capturePiece(browser, opts, piece) {
+async function capturePiece(browser: Browser, opts: PageTarget, piece: Piece): Promise<PieceShot> {
   const { page, errors, close } = await openPage(browser, opts);
   try {
     await page.evaluate((sel) => document.querySelector(sel)?.scrollIntoView(), piece.root);
     await waitUntilReady(page, piece.root);
     const fn = `(${extract})(${JSON.stringify(piece)}, ${keepAttribute}, ${cleanTree}, ${snapshotStyles}, ${JSON.stringify(STYLE_PROPS)})`;
-    const res = await page.evaluate(fn);
-    if (res.error) throw new Error(`${opts.url}: ${res.error}`);
+    const res = await page.evaluate<Extracted>(fn);
+    if (res.error !== undefined) throw new Error(`${opts.url}: ${res.error}`);
     if (errors.length) throw new Error(`${opts.url}: page errors: ${errors.join('; ')}`);
     const head = await page.evaluate(() => ({
-      sheets: [...document.styleSheets].map((s) => s.href).filter(Boolean),
+      sheets: [...document.styleSheets].map((s) => s.href).filter((href): href is string => Boolean(href)),
       styles: [...document.head.querySelectorAll('style')].map((s) => s.textContent),
     }));
     return { ...res, head };
   } finally { await close(); }
 }
 
-async function captureMap(browser, opts) {
+async function captureMap(browser: Browser, opts: PageTarget): Promise<{ image: Buffer; width: number; height: number }> {
   const { page, close } = await openPage(browser, { ...opts, scale: MAP_SCALE });
   try {
     await waitUntilReady(page, MAP.root);
-    const box = await page.evaluate((sel) => { scrollTo(0, 0); const r = document.querySelector(sel).getBoundingClientRect(); return { x: r.left, y: r.top, width: r.width, height: r.height }; }, MAP.root);
+    const box = await page.evaluate((sel) => { scrollTo(0, 0); const r = document.querySelector(sel)!.getBoundingClientRect(); return { x: r.left, y: r.top, width: r.width, height: r.height }; }, MAP.root);
     return { image: await captureWebp(page, box), width: Math.round(box.width), height: Math.round(box.height) };
   } finally { await close(); }
 }
 
 /** Selectors used by the fragments and the layout media queries at the capture viewport – asked in a page holding all of them. */
-async function cascadeFacts(browser, html, selectors, media) {
+async function cascadeFacts(browser: Browser, html: string, selectors: string[], media: string[]): Promise<{ used: string[]; media: Record<string, boolean> }> {
   const context = await browser.newContext({ viewport: VIEWPORT });
   const page = await context.newPage();
   try {
     await page.setContent(`<!doctype html><html><body>${html}</body></html>`);
     return await page.evaluate(({ selectors, media }) => {
       const pseudo = /::?(?:before|after|backdrop|placeholder|marker|selection|file-selector-button|first-line|first-letter|-webkit-[\w-]+|-moz-[\w-]+)(?:\([^)]*\))?/g;
-      const test = (s) => { try { return !!document.querySelector(s.replace(pseudo, '').trim() || '*'); } catch { return true; } };
+      const test = (s: string) => { try { return !!document.querySelector(s.replace(pseudo, '').trim() || '*'); } catch { return true; } };
       const used = new Set(selectors.filter(test));
       document.documentElement.classList.add('dark');
       selectors.filter((s) => !used.has(s) && test(s)).forEach((s) => used.add(s));
@@ -108,7 +122,7 @@ async function cascadeFacts(browser, html, selectors, media) {
   } finally { await context.close(); }
 }
 
-async function generate(outDir) {
+async function generate(outDir: string): Promise<void> {
   const { meta } = readDemoDataset();
   const now = fixedNow(meta.newest_day);
   if (!args['no-build']) build(now);
@@ -120,13 +134,15 @@ async function generate(outDir) {
   const server = await serveStatic(DIST);
   const browser = await launchBrowser();
   try {
-    const fragments = [];
-    const sheets = new Set();
-    let head = null;
+    const fragments: Fragment[] = [];
+    const sheets = new Set<string>();
+    let head: PieceShot['head'] | null = null;
     for (const piece of PIECES) {
       const url = piecePath(piece, vars);
-      const shots = {};
-      for (const theme of ['light', 'dark']) shots[theme] = await capturePiece(browser, { base: server.url, url, theme, now }, piece);
+      const shots = {
+        light: await capturePiece(browser, { base: server.url, url, theme: 'light', now }, piece),
+        dark: await capturePiece(browser, { base: server.url, url, theme: 'dark', now }, piece),
+      };
       head ??= shots.light.head;
       shots.light.head.sheets.forEach((s) => sheets.add(s));
       // One fragment for both themes: the app's colours are CSS variables, so the markup must not differ
@@ -143,9 +159,11 @@ async function generate(outDir) {
       console.log(`${piece.name.padEnd(10)} ${String(entry.width).padStart(5)}×${String(entry.height).padEnd(5)} ${(html.length / 1024).toFixed(0).padStart(4)} KB  ${url}`);
     }
 
-    const maps = {};
-    for (const theme of ['light', 'dark']) maps[theme] = await captureMap(browser, { base: server.url, url: MAP.path, theme, now });
-    const map = { name: MAP.name, light: `${MAP.name}-light.webp`, dark: `${MAP.name}-dark.webp`, width: maps.light.width, height: maps.light.height, scale: MAP_SCALE, anchor: MAP.anchor, source: MAP.path, note: MAP.note };
+    const maps = {
+      light: await captureMap(browser, { base: server.url, url: MAP.path, theme: 'light', now }),
+      dark: await captureMap(browser, { base: server.url, url: MAP.path, theme: 'dark', now }),
+    };
+    const map: MapEntry = { name: MAP.name, light: `${MAP.name}-light.webp`, dark: `${MAP.name}-dark.webp`, width: maps.light.width, height: maps.light.height, scale: MAP_SCALE, anchor: MAP.anchor, source: MAP.path, note: MAP.note };
     console.log(`${'map'.padEnd(10)} ${String(map.width).padStart(5)}×${String(map.height).padEnd(5)} ${(maps.light.image.length / 1024).toFixed(0).padStart(4)} KB  ${MAP.path} (light), ${(maps.dark.image.length / 1024).toFixed(0)} KB (dark)`);
 
     // Stylesheet: the app CSS + the fragments' chart colours, reduced to what the fragments use, scoped
@@ -153,10 +171,11 @@ async function generate(outDir) {
     const nodes = parseCss([...appCss, ...fragments.map((f) => f.css)].join('\n'));
     const facts = await cascadeFacts(browser, fragments.map((f) => f.html).join('\n'), [...collectSelectors(nodes)], [...collectMedia(nodes)]);
     const used = new Set(facts.used);
-    const headNodes = head.styles.flatMap((s) => parseCss(s));
+    if (!head) throw new Error('No piece captured');
+    const headNodes: CssNode[] = head.styles.flatMap((s) => parseCss(s));
     const fonts = appFonts(
-      [...new Set(headNodes.filter((n) => n.name === 'font-face').map((n) => n.decls))],
-      headNodes.filter((n) => n.type === 'rule' && n.selector === ':root').flatMap((n) => n.decls.split(';')),
+      [...new Set(headNodes.flatMap((n) => (n.type === 'at' && n.name === 'font-face' && n.decls !== undefined ? [n.decls] : [])))],
+      headNodes.filter((n): n is CssRule => n.type === 'rule' && n.selector === ':root').flatMap((n) => n.decls.split(';')),
     );
     const css = scopeCss(nodes, { scope: `.${SCOPE_CLASS}`, used: (s) => used.has(s), media: (m) => facts.media[m], wrapper: [WRAPPER_RESET, ...fonts.props].join(';'), reset: DESCENDANT_RESET });
     const stylesheet = `/* Generated by \`npm run fragments\` from the demo build: the app's CSS for the UI fragments, scoped to .${SCOPE_CLASS}. Do not edit. */\n`
@@ -180,19 +199,19 @@ async function generate(outDir) {
 }
 
 /** The written fragments, rendered from the preview page, must compute the same styles and boxes as in the app. */
-async function verify(browser, outDir, fragments) {
+async function verify(browser: Browser, outDir: string, fragments: readonly Fragment[]): Promise<void> {
   const server = await serveStatic(outDir);
   try {
-    for (const theme of ['light', 'dark']) {
+    for (const theme of ['light', 'dark'] as const) {
       const context = await browser.newContext({ viewport: VIEWPORT, colorScheme: theme, reducedMotion: 'reduce' }); // no transitions while ui.css loads
       const page = await context.newPage();
-      const errors = [];
+      const errors: string[] = [];
       page.on('pageerror', (e) => errors.push(e.message));
       page.on('requestfailed', (r) => errors.push(`${r.url()} failed`));
       await page.goto(`${server.url}/index.html`);
       await page.evaluate(() => document.fonts.ready);
       for (const f of fragments) {
-        const got = await page.evaluate(`(${snapshotStyles})(document.querySelector('[data-fragment="${f.entry.name}"] > *'), ${JSON.stringify(STYLE_PROPS)})`);
+        const got = await page.evaluate<StyleSnapshot>(`(${snapshotStyles})(document.querySelector('[data-fragment="${f.entry.name}"] > *'), ${JSON.stringify(STYLE_PROPS)})`);
         const diffs = diffStyles(f.styles[theme], got);
         if (diffs.length) throw new Error(`${f.entry.name} (${theme}) renders differently from the app:\n  ${diffs.slice(0, 8).join('\n  ')}`);
       }
@@ -204,8 +223,8 @@ async function verify(browser, outDir, fragments) {
 }
 
 /** Generated files that differ between `a` and `b` (map crops only by presence: the tiles change upstream). */
-function compare(a, b) {
-  const list = (d) => fs.readdirSync(d, { recursive: true }).filter((f) => !KEEP_FILES.has(f) && fs.statSync(path.join(d, f)).isFile()).sort();
+function compare(a: string, b: string): string[] {
+  const list = (d: string) => fs.readdirSync(d, { recursive: true, encoding: 'utf8' }).filter((f) => !KEEP_FILES.has(f) && fs.statSync(path.join(d, f)).isFile()).sort();
   const files = [...new Set([...list(a), ...list(b)])];
   return files.filter((f) => {
     const [x, y] = [path.join(a, f), path.join(b, f)];
@@ -233,4 +252,4 @@ async function main() {
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 }
 
-main().catch((err) => { console.error(err.message); process.exit(1); });
+main().catch((err: unknown) => { console.error(errorMessage(err)); process.exit(1); });

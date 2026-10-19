@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 // Demo capture (GLOSSARY): the local Chromium, driven by Playwright, for every headless capture – pages of
 // the demo build (screenshots, UI fragments) as well as the og image, the brand assets and the
 // Playwright configs, which only need the browser. A page of the demo build is opened in a theme,
@@ -6,7 +5,8 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { chromium } from '@playwright/test';
+import { chromium, type Browser, type Page } from '@playwright/test';
+import type { Theme } from './screenshots.ts';
 import { THEME_KEY } from '../../../src/lib/theme-key.ts';
 import { DEMO_MARKER } from './demo-dataset.ts';
 
@@ -15,10 +15,12 @@ import { DEMO_MARKER } from './demo-dataset.ts';
 const SETTLE_MS = 600;
 const READY_TIMEOUT_MS = 30000;
 
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** Headless Chromium/Chrome binary: `CHROME_PATH` wins, else the first installed candidate. */
-export function findBrowser({ env, candidates, exists }) {
+export function findBrowser({ env, candidates, exists }: {
+  env: { CHROME_PATH?: string }; candidates: readonly string[]; exists: (file: string) => boolean;
+}): string {
   if (env.CHROME_PATH) return env.CHROME_PATH;
   const found = candidates.find((p) => exists(p));
   if (!found) throw new Error('No Chromium or Chrome found. Set CHROME_PATH to a Chromium-based browser binary.');
@@ -26,7 +28,7 @@ export function findBrowser({ env, candidates, exists }) {
 }
 
 /** Known install locations, most specific first: system Chromium/Chrome, then Playwright's cache (newest first). */
-function browserCandidates(home = os.homedir()) {
+function browserCandidates(home = os.homedir()): string[] {
   const pwCache = path.join(home, 'Library', 'Caches', 'ms-playwright');
   const playwright = fs.existsSync(pwCache)
     ? fs.readdirSync(pwCache).filter((d) => /^chromium-\d+$/.test(d)).sort().reverse()
@@ -41,26 +43,39 @@ function browserCandidates(home = os.homedir()) {
 }
 
 /** A locally installed Chromium/Chrome (no extra browser download needed): `CHROME_PATH` or the first candidate; throws if there is none. */
-export const localBrowser = (env = process.env) =>
+export const localBrowser = (env: { CHROME_PATH?: string } = process.env): string =>
   findBrowser({ env, candidates: browserCandidates(), exists: fs.existsSync });
 
 /** Headless local Chromium (Playwright). Close it when done. */
-export const launchBrowser = () => chromium.launch({ executablePath: localBrowser() });
+export const launchBrowser = (): Promise<Browser> => chromium.launch({ executablePath: localBrowser() });
+
+/** How a demo page is opened: theme, viewport, pixel density and optionally clock, time zone and locale. */
+export type DemoPageOptions = {
+  theme: Theme;
+  viewport?: { width: number; height: number };
+  scale?: number;
+  /** The page clock's start (keeps running from there). */
+  now?: string | number | Date;
+  timeZone?: string;
+  locale?: string;
+};
+
+/** An open demo page, its page errors so far (live), and a close for its context. */
+export type DemoPage = { page: Page; errors: string[]; close: () => Promise<void> };
 
 /**
  * Opens `url` of a demo build in a fresh context of `browser`: in `theme` (system colour scheme and
  * the app's stored preference – the app defaults to light), at `viewport` × `scale`, optionally with
  * the clock at `now` (keeps running from there) and a time zone and locale. Fails unless the page
  * answers 200 and shows the demo marker – privacy guard: real data is never captured.
- * @returns {Promise<{ page: import('@playwright/test').Page, errors: string[], close: () => Promise<void> }>}
- *   the page, the page errors seen so far (live), and a close for its context
+ * Resolves to the page, the page errors seen so far (live), and a close for its context.
  */
-export async function openDemoPage(browser, url, { theme, viewport, scale = 1, now, timeZone, locale } = {}) {
+export async function openDemoPage(browser: Browser, url: string, { theme, viewport, scale = 1, now, timeZone, locale }: DemoPageOptions): Promise<DemoPage> {
   const context = await browser.newContext({ viewport, deviceScaleFactor: scale, colorScheme: theme, timezoneId: timeZone, locale });
   try {
     await context.addInitScript(([key, value]) => { try { localStorage.setItem(key, value); } catch {} }, [THEME_KEY, theme]);
     const page = await context.newPage();
-    const errors = [];
+    const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
     if (now) {
       await page.clock.install({ time: new Date(now) });
@@ -80,7 +95,7 @@ export async function openDemoPage(browser, url, { theme, viewport, scale = 1, n
  * Runs in the page: fonts, images, every island (`<html data-hydrated>`, src/lib/island-ready.ts) and
  * the map tiles are done, and every displayed chart under `root` is drawn.
  */
-function isReady(root) {
+function isReady(root: string): boolean {
   if (document.readyState !== 'complete' || document.fonts.status !== 'loaded') return false;
   if ([...document.images].some((img) => !img.complete)) return false;
   if (Number(document.documentElement.dataset.hydrated ?? 0) < document.querySelectorAll('astro-island').length) return false;
@@ -95,7 +110,7 @@ function isReady(root) {
 }
 
 /** Resolves once the page is ready under `root` (a selector), stays ready over a short settle, and is ready again after it. */
-export async function waitUntilReady(page, root = 'body') {
+export async function waitUntilReady(page: Page, root = 'body'): Promise<void> {
   const t0 = Date.now();
   for (let settled = false; ;) {
     if (await page.evaluate(isReady, root)) {
@@ -109,11 +124,14 @@ export async function waitUntilReady(page, root = 'body') {
   }
 }
 
+/** A capture box in document CSS px. */
+export type Clip = { x: number; y: number; width: number; height: number };
+
 /**
  * The viewport – or the `clip` box (document CSS px) – as WebP, quality 80, at the page's pixel
  * density. Playwright's own screenshots know no WebP.
  */
-export async function captureWebp(page, clip) {
+export async function captureWebp(page: Page, clip?: Clip | null): Promise<Buffer> {
   const view = await page.evaluate(() => ({ x: scrollX, y: scrollY, width: innerWidth, height: innerHeight, scale: devicePixelRatio }));
   const { x, y, width, height } = clip ?? view;
   const cdp = await page.context().newCDPSession(page);

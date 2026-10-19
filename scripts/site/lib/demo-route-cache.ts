@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 /**
  * Cached road geometries for the demo dataset (Refs #25).
  *
@@ -14,6 +13,28 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { decodePolyline } from '../../../src/scripts/polyline.ts';
+import type { LatLng } from '../../shared/ride-file.ts';
+
+/** What the router is asked for: a route key (for messages), a BRouter profile and the waypoints. */
+export type RouteRequest = { key: string; profile: string; waypoints: readonly LatLng[] };
+
+/** One route in a city cache file: how it was fetched, its simplified track and one elevation (m) per track point. */
+export type CachedRoute = { profile: string; waypoints: readonly LatLng[]; polyline: string; elevation: number[] };
+
+/** A cached route with its track decoded. */
+export type LoadedRoute = CachedRoute & { points: LatLng[] };
+
+/** demo/source/routes/<city>.json. */
+export type RouteCacheFile = { attribution: string; routes: Record<string, CachedRoute> };
+
+/** The part of a BRouter GeoJSON answer the cache reads: [lon, lat, elevation] per track point. */
+export type RouterAnswer = {
+  type?: string;
+  features?: { type?: string; properties?: unknown; geometry?: { type?: string; coordinates?: [number, number, number?][] } }[];
+};
+
+/** [lat, lng, elevation]. */
+type TrackPoint = [number, number, number];
 
 const ROUTER_ENDPOINT = 'https://brouter.de/brouter';
 export const ROUTE_ATTRIBUTION = 'Route geometry © OpenStreetMap contributors (ODbL, https://www.openstreetmap.org/copyright). Routed with BRouter (https://brouter.de); elevation from SRTM via BRouter.';
@@ -23,16 +44,16 @@ const TOL_M = 6;
 const TOL_ELE = 4;
 
 /** BRouter request for one route: GeoJSON track (with elevation) through every waypoint. */
-export function routerUrl(spec) {
+export function routerUrl(spec: RouteRequest): string {
   const lonlats = spec.waypoints.map(([lat, lng]) => `${lng},${lat}`).join('|');
   return `${ROUTER_ENDPOINT}?lonlats=${lonlats}&profile=${spec.profile}&alternativeidx=0&format=geojson`;
 }
 
 /* ---------------- Polyline ---------------- */
 /** [[lat,lng], …] → Google encoded polyline (precision 5, ≈ 1 m). */
-export function encodePolyline(points) {
+export function encodePolyline(points: readonly (readonly number[])[]): string {
   let out = '', plat = 0, plng = 0;
-  const enc = (v) => {
+  const enc = (v: number) => {
     let n = v < 0 ? ~(v << 1) : v << 1;
     let s = '';
     while (n >= 0x20) { s += String.fromCharCode((0x20 | (n & 0x1f)) + 63); n >>= 5; }
@@ -49,14 +70,14 @@ export function encodePolyline(points) {
 /* ---------------- Geometry ---------------- */
 const RAD = Math.PI / 180;
 /** Great-circle distance in metres. */
-export function metres(a, b) {
+export function metres(a: readonly number[], b: readonly number[]): number {
   const dl = (b[0] - a[0]) * RAD, dn = (b[1] - a[1]) * RAD;
   const x = Math.sin(dl / 2) ** 2 + Math.cos(a[0] * RAD) * Math.cos(b[0] * RAD) * Math.sin(dn / 2) ** 2;
   return 2 * 6371000 * Math.asin(Math.sqrt(x));
 }
 
 /** Distance (m) of p from segment a–b, plus the position (0…1) of the foot point. */
-export function offSegment(p, a, b) {
+export function offSegment(p: readonly number[], a: readonly number[], b: readonly number[]): { d: number; f: number } {
   const kx = 111320 * Math.cos(a[0] * RAD), ky = 110540;
   const bx = (b[1] - a[1]) * kx, by = (b[0] - a[0]) * ky;
   const px = (p[1] - a[1]) * kx, py = (p[0] - a[0]) * ky;
@@ -66,12 +87,12 @@ export function offSegment(p, a, b) {
 }
 
 /** Douglas-Peucker on [lat, lng, ele]: keeps a point if it bends the line or the gradient. */
-function simplify(pts) {
+function simplify(pts: TrackPoint[]): TrackPoint[] {
   const keep = new Uint8Array(pts.length);
   keep[0] = keep[pts.length - 1] = 1;
-  const stack = [[0, pts.length - 1]];
+  const stack: [number, number][] = [[0, pts.length - 1]];
   while (stack.length) {
-    const [i0, i1] = stack.pop();
+    const [i0, i1] = stack.pop()!;
     let worst = -1, score = 0;
     for (let i = i0 + 1; i < i1; i++) {
       const { d, f } = offSegment(pts[i], pts[i0], pts[i1]);
@@ -85,10 +106,10 @@ function simplify(pts) {
 }
 
 /** Router answer (BRouter GeoJSON) → compact cache entry for one route. */
-export function compactRoute(spec, geojson) {
+export function compactRoute(spec: RouteRequest, geojson: RouterAnswer | null | undefined): CachedRoute {
   const coords = geojson?.features?.[0]?.geometry?.coordinates;
   if (!Array.isArray(coords) || coords.length < 2) throw new Error(`No track in the router answer for route "${spec.key}".`);
-  const pts = coords.map(([lng, lat, ele]) => [Math.round(lat * 1e5) / 1e5, Math.round(lng * 1e5) / 1e5, Number(ele) || 0]);
+  const pts = coords.map(([lng, lat, ele]): TrackPoint => [Math.round(lat * 1e5) / 1e5, Math.round(lng * 1e5) / 1e5, Number(ele) || 0]);
   const kept = simplify(pts);
   return {
     profile: spec.profile,
@@ -100,21 +121,22 @@ export function compactRoute(spec, geojson) {
 
 /* ---------------- Cache files ---------------- */
 /** demo/source/routes/<city>.json – tracked in git, written only by `npm run demo:fetch-routes`. */
-export const routeCacheFile = (root, city) => path.join(root, 'demo', 'source', 'routes', `${city}.json`);
+export const routeCacheFile = (root: string, city: string): string => path.join(root, 'demo', 'source', 'routes', `${city}.json`);
 
 /** Text of one city cache file (stable key order, one route per line block). */
-export function renderRouteCache(routes) {
+export function renderRouteCache(routes: Readonly<Record<string, CachedRoute | undefined>>): string {
   return JSON.stringify({ attribution: ROUTE_ATTRIBUTION, routes }, null, 1) + '\n';
 }
 
 /** Reads the cached routes of every city: { [routeKey]: { profile, waypoints, points: [[lat,lng]], elevation } }. */
-export function loadRouteCache(root, cityKeys) {
-  const out = {};
+export function loadRouteCache(root: string, cityKeys: readonly string[]): Record<string, LoadedRoute> {
+  const out: Record<string, LoadedRoute> = {};
   for (const city of cityKeys) {
     const file = routeCacheFile(root, city);
     if (!fs.existsSync(file)) throw new Error(`Missing ${path.relative(root, file)} – run \`npm run demo:fetch-routes\`.`);
-    const { routes } = JSON.parse(fs.readFileSync(file, 'utf8'));
-    for (const [key, r] of Object.entries(routes)) out[key] = { ...r, points: decodePolyline(r.polyline) };
+    const { routes }: RouteCacheFile = JSON.parse(fs.readFileSync(file, 'utf8'));
+    // TODO(ts-b1): drop the assertion once src/scripts/polyline.ts returns LatLng[]
+    for (const [key, r] of Object.entries(routes)) out[key] = { ...r, points: decodePolyline(r.polyline) as LatLng[] };
   }
   return out;
 }

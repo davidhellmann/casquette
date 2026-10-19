@@ -1,12 +1,11 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import { describe, expect, it } from 'vitest';
-import { compactRoute, routerUrl } from './demo-route-cache.ts';
+import { compactRoute, routerUrl, type RouteRequest, type RouterAnswer } from './demo-route-cache.ts';
 import { decodePolyline } from '../../../src/scripts/polyline.ts';
 
-const spec = { key: 'test-loop', profile: 'fastbike', waypoints: [[48.1, 11.5], [48.11, 11.52], [48.1, 11.5]] };
+const spec: RouteRequest = { key: 'test-loop', profile: 'fastbike', waypoints: [[48.1, 11.5], [48.11, 11.52], [48.1, 11.5]] };
 
 /** A BRouter-style GeoJSON answer: [lon, lat, elevation] per point. */
-function brouterAnswer(coords) {
+function brouterAnswer(coords: [number, number, number][]): RouterAnswer {
   return { type: 'FeatureCollection', features: [{ type: 'Feature', properties: { 'track-length': '2000' }, geometry: { type: 'LineString', coordinates: coords } }] };
 }
 
@@ -22,8 +21,8 @@ describe('routerUrl', () => {
 
 describe('compactRoute', () => {
   // 1 km straight east with many redundant points, then a 90° turn north.
-  const straight = Array.from({ length: 101 }, (_, i) => [11.5 + i * 0.000134, 48.1, 500 + (i === 50 ? 1 : 0)]);
-  const north = Array.from({ length: 50 }, (_, i) => [11.5134, 48.1 + (i + 1) * 0.00018, 500 + Math.max(0, i - 25) * 1.2]); // flat, then a climb
+  const straight = Array.from({ length: 101 }, (_, i): [number, number, number] => [11.5 + i * 0.000134, 48.1, 500 + (i === 50 ? 1 : 0)]);
+  const north = Array.from({ length: 50 }, (_, i): [number, number, number] => [11.5134, 48.1 + (i + 1) * 0.00018, 500 + Math.max(0, i - 25) * 1.2]); // flat, then a climb
   const cached = compactRoute(spec, brouterAnswer([...straight, ...north]));
 
   it('drops redundant points on straight roads but keeps corners and both ends', () => {

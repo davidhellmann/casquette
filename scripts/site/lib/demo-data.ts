@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 /**
  * Synthetic demo dataset (Refs #13, #25): a fictional "travelling rider" with bikes and ~3 years
  * of rides on real roads in Munich, London, Paris, New York and Vancouver – so a fresh clone
@@ -15,13 +14,75 @@
  * - Pure: returns data, writes nothing. `scripts/site/generate-demo.ts` writes it to demo/.
  */
 import { computeMetrics, downsampleStreams, normalizedPower, to1Hz } from '../../shared/metrics.ts';
+import type { ChartStreams, RawStreams } from '../../shared/metrics.ts';
 import { rideBody, rideFileName, rideFrontmatter, rideText } from '../../shared/ride-file.ts';
+import type {
+  ActivitySummary, LatLng, RideFileRecord, RideFrontmatter, RideGeo, RideLap, RidePlace, RideSegmentEffort, RideSplit,
+} from '../../shared/ride-file.ts';
 import { athleteFile, historyEntry } from '../../shared/athlete-file.ts';
+import type { AthleteFile, Gear, HistoryEntry, Zone } from '../../shared/athlete-file.ts';
 import { toYaml } from '../../shared/yaml.ts';
 import { cogganZones } from '../../../src/training/index.ts';
 import { CITIES } from './demo-cities.ts';
+import type { DemoCity, DemoPlace, DemoRouteSpec, DemoSegmentSpec } from './demo-cities.ts';
+import type { DemoMeta } from './demo-dataset.ts';
 import { encodePolyline, loadRouteCache, metres, ROUTE_ATTRIBUTION } from './demo-route-cache.ts';
+import type { LoadedRoute } from './demo-route-cache.ts';
 import { ROOT } from '../../shared/env.ts';
+
+/** A ride file of the demo dataset: path below demo/, frontmatter and ride body. */
+export type DemoRideFile = { file: string; data: RideFrontmatter; body: string };
+
+/** The custom block of a demo gear file (what a rider adds by hand). */
+export type DemoGearCustom = { purchase_date: string | null; price_eur: number; components: string[]; color: string; notes: string | null };
+
+/** A gear file of the demo dataset: path below demo/, frontmatter and body. */
+export type DemoGearFile = {
+  file: string;
+  data: Gear & { strava_url: null; synced_at: string; custom: DemoGearCustom };
+  body: string;
+};
+
+// TODO(ts-b1): use the src/training goal type
+/** One goal of goals.json. */
+export type DemoGoal = {
+  id: string; label: string; period: 'week' | 'month' | 'year'; metric: string; target: number; zone?: number; basis?: string; min_km?: number;
+};
+
+// TODO(ts-b1): use the src/training zones file type
+/** zones.json: dated HR zone lower bounds. */
+export type DemoZonesFile = { heart_rate: { from: string; bpm: number[] }[] };
+
+/** The files below demo/data/. */
+export type DemoDataFiles = {
+  'athlete.json': AthleteFile;
+  'goals.json': DemoGoal[];
+  'fitness-history.json': HistoryEntry[];
+  'zones.json': DemoZonesFile;
+  'meta.json': DemoMeta;
+};
+
+/** The generated demo dataset (generateDemoData), written to demo/ by renderDemoFiles. */
+export type DemoData = {
+  rides: DemoRideFile[];
+  gear: DemoGearFile[];
+  /** Chart streams per ride id. */
+  streams: Record<string, ChartStreams | null>;
+  data: DemoDataFiles;
+};
+
+/** generateDemoData options: seed, last day, number of weeks, and the routes (default: demo/source/routes/). */
+export type GenerateDemoOptions = { seed?: number; through?: string; weeks?: number; routeCache?: Record<string, LoadedRoute> | null };
+
+/** The seeded random source of the generator. */
+type Rng = {
+  next: () => number;
+  range: (lo: number, hi: number) => number;
+  int: (lo: number, hi: number) => number;
+  pick: <T>(arr: readonly T[]) => T;
+  chance: (p: number) => boolean;
+  normal: () => number;
+};
 
 export const DEFAULT_SEED = 13;
 /** Last day of generated rides. Fixed (not "today") so the output never depends on the clock;
@@ -34,7 +95,7 @@ const STREAM_POINTS = 240;
 const HOME_CITY = 'munich';
 
 /* ---------------- Seeded randomness ---------------- */
-function rng(seed) {
+function rng(seed: number): Rng {
   let a = seed >>> 0;
   const next = () => {
     a = (a + 0x6d2b79f5) >>> 0;
@@ -43,7 +104,7 @@ function rng(seed) {
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
-  const r = {
+  const r: Rng = {
     next,
     range: (lo, hi) => lo + (hi - lo) * next(),
     int: (lo, hi) => Math.floor(lo + (hi - lo + 1) * next()),
@@ -57,11 +118,13 @@ function rng(seed) {
   return r;
 }
 
-const round = (v, d = 0) => Math.round(v * 10 ** d) / 10 ** d;
-const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+/** `v` rounded to `d` decimals; null counts as 0 (as in Math.round(null)). */
+const round = (v: number | null, d = 0) => Math.round((v ?? 0) * 10 ** d) / 10 ** d;
+const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+const roundPoint = ([lat, lng]: LatLng, d: number): LatLng => [round(lat, d), round(lng, d)];
 const DAY = 86400000;
-const dayStr = (ms) => new Date(ms).toISOString().slice(0, 10);
-const utcDay = (day) => Date.parse(`${day}T00:00:00Z`);
+const dayStr = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+const utcDay = (day: string) => Date.parse(`${day}T00:00:00Z`);
 
 /* ---------------- Routes on real roads ---------------- */
 /** Resampling step along a route (km). */
@@ -69,62 +132,82 @@ const STEP_KM = 0.02;
 /** Elevation smoothing (± samples): SRTM is noisy on bridges and in cuttings. */
 const SMOOTH = 6;
 
+/** A route resampled along its roads: positions, distances (km) and smoothed elevation per sample. */
+type Route = DemoRouteSpec & {
+  city: DemoCity; vertices: LatLng[]; vdist: number[]; xy: LatLng[]; dist: number[]; elev: number[]; lengthKm: number;
+};
+/** The roads one ride follows (ridePath), with its encoded polyline. */
+type RidePath = Route & { polyline: string };
+/** A segment with its distance, grade and category measured on the roads. */
+type CanonicalSegment = DemoSegmentSpec & { distance: number; average_grade: number; climb_category: number; city: string };
+/** A segment one ride passes: where it starts and ends on the ride (km). */
+type SegmentOnRide = Omit<CanonicalSegment, 'from' | 'to'> & { from: number; to: number };
+/** A city with its resampled routes and measured segments. */
+type CityData = Omit<DemoCity, 'routes' | 'segments'> & { routes: Route[]; segments: CanonicalSegment[] };
+
 /** Cached vertices → cumulative distance (km). */
-function vertexDistances(points) {
+function vertexDistances(points: readonly LatLng[]): number[] {
   const dist = [0];
   for (let i = 1; i < points.length; i++) dist.push(dist[i - 1] + metres(points[i - 1], points[i]) / 1000);
   return dist;
 }
 
 /** Value of `arr` (per point) at distance `km` along `dist`, linearly interpolated. */
-function interp(dist, arr, km) {
+function interp(dist: readonly number[], arr: readonly LatLng[], km: number): LatLng;
+function interp(dist: readonly number[], arr: readonly number[], km: number): number;
+function interp(dist: readonly number[], arr: readonly LatLng[] | readonly number[], km: number): LatLng | number;
+function interp(dist: readonly number[], arr: readonly LatLng[] | readonly number[], km: number): LatLng | number {
   let lo = 0, hi = dist.length - 1;
   if (km <= 0) return arr[0];
   if (km >= dist[hi]) return arr[hi];
   while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (dist[mid] <= km) lo = mid; else hi = mid; }
   const f = (km - dist[lo]) / (dist[hi] - dist[lo] || 1);
   const a = arr[lo], b = arr[hi];
-  return Array.isArray(a) ? [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f] : a + (b - a) * f;
+  if (Array.isArray(a) && Array.isArray(b)) return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f];
+  if (typeof a === 'number' && typeof b === 'number') return a + (b - a) * f;
+  throw new Error('interp: points and values mixed in one series');
 }
 
 /** One cached route → uniformly resampled track with smoothed elevation. */
-function buildRoute(spec, cached, city) {
+function buildRoute(spec: DemoRouteSpec, cached: LoadedRoute, city: DemoCity): Route {
   const vdist = vertexDistances(cached.points);
-  const lengthKm = vdist.at(-1);
+  const lengthKm = vdist.at(-1)!;
   const n = Math.max(2, Math.round(lengthKm / STEP_KM));
-  const xy = [], dist = [], raw = [];
+  const xy: LatLng[] = [], dist: number[] = [], raw: number[] = [];
   for (let i = 0; i <= n; i++) {
     const km = (lengthKm * i) / n;
     dist.push(km); xy.push(interp(vdist, cached.points, km)); raw.push(interp(vdist, cached.elevation, km));
   }
-  const elev = raw.map((_, i) => mean(raw, Math.max(0, i - SMOOTH), Math.min(raw.length, i + SMOOTH + 1)));
+  const elev = raw.map((_, i) => mean(raw, Math.max(0, i - SMOOTH), Math.min(raw.length, i + SMOOTH + 1))!);
   return { ...spec, city, vertices: cached.points, vdist, xy, dist, elev, lengthKm };
 }
 
 /** The roads one ride follows: the whole loop, or out to `turn` (share of the way out) and back. */
-function ridePath(route, turn = 1) {
+function ridePath(route: Route, turn = 1): RidePath {
   if (route.kind !== 'out-back') return { ...route, polyline: encodePolyline(route.vertices) };
   const cut = route.lengthKm * turn;
   const i1 = route.dist.findIndex((d) => d >= cut - 1e-9);
   const end = i1 < 0 ? route.dist.length - 1 : i1;
   const outXy = route.xy.slice(0, end + 1), outElev = route.elev.slice(0, end + 1), outDist = route.dist.slice(0, end + 1);
-  const total = outDist.at(-1);
+  const total = outDist.at(-1)!;
   const xy = [...outXy, ...outXy.slice(0, -1).reverse()];
   const elev = [...outElev, ...outElev.slice(0, -1).reverse()];
   const dist = [...outDist, ...outDist.slice(0, -1).reverse().map((d) => 2 * total - d)];
   const v = route.vertices.filter((_, i) => route.vdist[i] < total);
-  const tip = outXy.at(-1);
+  const tip = outXy.at(-1)!;
   const way = [...v, tip];
   return { ...route, xy, elev, dist, lengthKm: 2 * total, polyline: encodePolyline([...way, ...way.slice(0, -1).reverse()]) };
 }
 
-const at = (path, arr, km) => interp(path.dist, arr, km);
-const gradeAt = (path, km) => (at(path, path.elev, km + 0.05) - at(path, path.elev, km - 0.05)) / 100;
+function at(path: Route, arr: readonly LatLng[], km: number): LatLng;
+function at(path: Route, arr: readonly number[], km: number): number;
+function at(path: Route, arr: readonly LatLng[] | readonly number[], km: number): LatLng | number { return interp(path.dist, arr, km); }
+const gradeAt = (path: Route, km: number) => (at(path, path.elev, km + 0.05) - at(path, path.elev, km - 0.05)) / 100;
 
 /* ---------------- Places ---------------- */
 /** The gazetteer place a point belongs to: closest relative to the place's radius. */
-function placeAt(city, p) {
-  let best = null, score = 1;
+function placeAt(city: Pick<DemoCity, 'places'>, p: LatLng): DemoPlace | null {
+  let best: DemoPlace | null = null, score = 1;
   for (const pl of city.places) {
     const s = metres(p, pl.at) / 1000 / pl.r;
     if (s < score) { score = s; best = pl; }
@@ -133,8 +216,8 @@ function placeAt(city, p) {
 }
 
 /** `geo:` block of a ride – the same shape the sync's reverse geocoding produces. */
-function geoOf(path, city) {
-  const list = [];
+function geoOf(path: RidePath, city: CityData): RideGeo {
+  const list: (RidePlace & { region: string })[] = [];
   for (let km = 0; km <= path.lengthKm; km += 0.25) {
     const pl = placeAt(city, at(path, path.xy, km));
     if (pl && !list.some((x) => x.name === pl.name)) list.push({ name: pl.name, region: pl.region, country: city.country });
@@ -144,11 +227,11 @@ function geoOf(path, city) {
 
 /* ---------------- Segments ---------------- */
 const SNAP_M = 60;
-const climbCategory = (m, grade) => { const s = m * grade; return s > 80000 ? 5 : s > 64000 ? 4 : s > 32000 ? 3 : s > 16000 ? 2 : s > 8000 ? 1 : 0; };
+const climbCategory = (m: number, grade: number) => { const s = m * grade; return s > 80000 ? 5 : s > 64000 ? 4 : s > 32000 ? 3 : s > 16000 ? 2 : s > 8000 ? 1 : 0; };
 
 /** Where a ride passes segment `seg` (start, then end, in that order): { from, to } in km, or null. */
-function locate(path, seg, maxKm) {
-  const near = (p, q) => metres(p, q) <= SNAP_M;
+function locate(path: RidePath, seg: DemoSegmentSpec, maxKm: number): { from: number; to: number } | null {
+  const near = (p: LatLng, q: LatLng) => metres(p, q) <= SNAP_M;
   for (let i = 0; i < path.xy.length; i++) {
     if (!near(path.xy[i], seg.from)) continue;
     // closest sample to the start within this pass
@@ -170,7 +253,7 @@ function locate(path, seg, maxKm) {
 }
 
 /** Canonical segment data (distance, grade, category) from the first route that rides it. */
-function canonicalSegments(city, routes) {
+function canonicalSegments(city: DemoCity, routes: readonly Route[]): CanonicalSegment[] {
   return city.segments.map((seg) => {
     for (const route of routes) {
       const path = ridePath(route);
@@ -186,8 +269,8 @@ function canonicalSegments(city, routes) {
 }
 
 /** Segments one ride passes, with their position (km) on the ride. */
-function segmentsOn(path, segments) {
-  const out = [];
+function segmentsOn(path: RidePath, segments: readonly CanonicalSegment[]): SegmentOnRide[] {
+  const out: SegmentOnRide[] = [];
   for (const seg of segments) {
     const hit = locate(path, seg, (seg.distance / 1000) * 1.3 + 0.2);
     if (hit) out.push({ ...seg, from: hit.from, to: hit.to });
@@ -198,8 +281,8 @@ function segmentsOn(path, segments) {
 /* ---------------- Physics ---------------- */
 const MASS = 88, CRR = 0.005, CDA = 0.38, RHO = 1.05, G = 9.81;
 /** Steady-state speed (m/s) for power `p` on `grade` (bisection on the power balance). */
-function speedFor(p, grade, crr = CRR) {
-  const need = (v) => 0.5 * RHO * CDA * v ** 3 + (crr * MASS * G + MASS * G * grade) * v;
+function speedFor(p: number, grade: number, crr = CRR): number {
+  const need = (v: number) => 0.5 * RHO * CDA * v ** 3 + (crr * MASS * G + MASS * G * grade) * v;
   let lo = 0.5, hi = 19;
   if (need(hi) <= p * 0.97) return hi;
   for (let i = 0; i < 28; i++) { const mid = (lo + hi) / 2; if (need(mid) > p * 0.97) hi = mid; else lo = mid; }
@@ -207,12 +290,12 @@ function speedFor(p, grade, crr = CRR) {
 }
 
 /* ---------------- Time zone ---------------- */
-const TZ_FMT = new Map();
+const TZ_FMT = new Map<string, Intl.DateTimeFormat>();
 /** UTC offset (seconds) of `timeZone` at the local wall time `localISO`. */
-function utcOffset(localISO, timeZone) {
+function utcOffset(localISO: string, timeZone: string): number {
   if (!TZ_FMT.has(timeZone)) TZ_FMT.set(timeZone, new Intl.DateTimeFormat('en-US', { timeZone, timeZoneName: 'longOffset' }));
-  const offsetAt = (ms) => {
-    const name = TZ_FMT.get(timeZone).formatToParts(new Date(ms)).find((x) => x.type === 'timeZoneName').value; // GMT-07:00 or GMT
+  const offsetAt = (ms: number) => {
+    const name = TZ_FMT.get(timeZone)!.formatToParts(new Date(ms)).find((x) => x.type === 'timeZoneName')!.value; // GMT-07:00 or GMT
     const m = /GMT([+-])(\d{2}):(\d{2})/.exec(name);
     return m ? (m[1] === '-' ? -1 : 1) * (Number(m[2]) * 3600 + Number(m[3]) * 60) : 0;
   };
@@ -222,44 +305,55 @@ function utcOffset(localISO, timeZone) {
 
 /* ---------------- Travel ---------------- */
 /** Which city the rider is in, week by week: stints of 5–11 weeks, every city once per round. */
-function travelPlan(r, startMs, endMs) {
-  const stints = [];
-  let order = [];
+function travelPlan(r: Rng, startMs: number, endMs: number): (ms: number) => string {
+  const stints: { from: number; city: string }[] = [];
+  let order: string[] = [];
   for (let t = startMs; t <= endMs; t += r.int(5, 11) * 7 * DAY) {
     if (!order.length) {
       order = CITIES.map((c) => c.key);
       for (let i = order.length - 1; i > 0; i--) { const j = r.int(0, i); [order[i], order[j]] = [order[j], order[i]]; }
-      if (stints.length && order[0] === stints.at(-1).city) order.push(order.shift());
+      if (stints.length && order[0] === stints.at(-1)!.city) order.push(order.shift()!);
     }
-    stints.push({ from: t, city: order.shift() });
+    stints.push({ from: t, city: order.shift()! });
   }
-  return (ms) => stints.filter((s) => s.from <= ms).at(-1).city;
+  return (ms) => stints.filter((s) => s.from <= ms).at(-1)!.city;
 }
 
 /* ---------------- Athlete ---------------- */
-const HR_ZONES = [{ min: 0, max: 128 }, { min: 129, max: 146 }, { min: 147, max: 160 }, { min: 161, max: 172 }, { min: 173, max: null }];
+const HR_ZONES: Zone[] = [{ min: 0, max: 128 }, { min: 129, max: 146 }, { min: 147, max: 160 }, { min: 161, max: 172 }, { min: 173, max: null }];
 const HR_REST = 52, HR_MAX = 186;
 /** Zones file of the demo: the rider set lower HR zones by hand for the first part, then took Strava's current ones. */
-const lowerBounds = (zones) => zones.map((z) => z.min);
+const lowerBounds = (zones: readonly Zone[]) => zones.map((z) => z.min);
 const EARLY_HR_BPM = [0, 124, 142, 156, 168];
 /** Share of the demo period after which the current HR zones apply. */
 const HR_ZONES_CHANGE = 0.4;
 
-function fitnessHistory(startMs, endMs) {
-  const steps = [[225, 79.5], [232, 78.6], [240, 77.9], [236, 78.4], [247, 77.0], [255, 76.1], [251, 76.6], [262, 75.2], [268, 74.6]];
+function fitnessHistory(startMs: number, endMs: number): HistoryEntry[] {
+  const steps: [ftp: number, weight: number][] = [[225, 79.5], [232, 78.6], [240, 77.9], [236, 78.4], [247, 77.0], [255, 76.1], [251, 76.6], [262, 75.2], [268, 74.6]];
   const n = steps.length;
   return steps.map(([ftp, weight], i) => {
     const day = dayStr(startMs + Math.round(((endMs - startMs - 20 * DAY) * i) / (n - 1)) + 3 * DAY);
     return historyEntry({ day, ftp, weight, source: i % 3 === 1 ? 'strava' : 'manual', note: i === 0 ? 'Starting value' : i % 3 === 1 ? 'Change detected in Strava' : 'FTP test (20 min)' });
   });
 }
-const standAt = (history, day) => {
+/** FTP of a history entry – every demo entry has one. */
+function ftpOf(entry: HistoryEntry): number {
+  if (entry.ftp === null) throw new Error(`Demo history entry ${entry.date} has no FTP.`);
+  return entry.ftp;
+}
+const standAt = (history: readonly HistoryEntry[], day: string) => {
   let cur = history[0];
   for (const h of history) if (h.date <= day) cur = h;
   return cur;
 };
 
-const GEAR = [
+/** A demo bike: its gear fields, when it is ridden (share of the period, `from`…`to`), custom block and body. */
+type DemoBike = {
+  id: string; name: string; brand: string; model: string; frame_type: string; weight: number; power: boolean; from: number; to: number;
+  retired?: boolean; primary?: boolean; indoor?: boolean; custom: DemoGearCustom; body: string;
+};
+
+const GEAR: DemoBike[] = [
   { id: 'bdemo1', name: 'Steel Classic', brand: 'Fernweh', model: 'Randonneur 8', frame_type: 'Road', weight: 10.4, power: false, from: 0, to: 0.22, retired: true,
     custom: { purchase_date: '2016-05-14', price_eur: 1450, components: ['Shimano 105 2x10', 'Hand-built 32h wheels'], color: 'British racing green', notes: 'First proper road bike. Retired after the carbon bike arrived.' },
     body: 'A steel randonneur with fenders and a front bag. Slow, comfortable and nearly indestructible.' },
@@ -275,15 +369,19 @@ const GEAR = [
 ];
 
 /* ---------------- Workouts ---------------- */
-const WORKOUTS = [
+/** One workout step: name, duration (s) and share of FTP. */
+type WorkoutStep = [name: string, seconds: number, share: number];
+type Workout = { name: string; steps: WorkoutStep[] };
+
+const WORKOUTS: Workout[] = [
   { name: 'Endurance spin', steps: [['Warm-up', 600, 0.55], ['Endurance', 3000, 0.68], ['Cool-down', 480, 0.5]] },
-  { name: 'Sweet spot 3×12', steps: [['Warm-up', 720, 0.55], ...[1, 2, 3].flatMap((i) => [[`Sweet spot ${i}`, 720, 0.9], ['Recovery', 300, 0.5]]), ['Cool-down', 420, 0.5]] },
-  { name: 'VO2max 5×4', steps: [['Warm-up', 900, 0.58], ...[1, 2, 3, 4, 5].flatMap((i) => [[`Interval ${i}`, 240, 1.15], ['Recovery', 240, 0.5]]), ['Cool-down', 600, 0.5]] },
+  { name: 'Sweet spot 3×12', steps: [['Warm-up', 720, 0.55], ...[1, 2, 3].flatMap((i): WorkoutStep[] => [[`Sweet spot ${i}`, 720, 0.9], ['Recovery', 300, 0.5]]), ['Cool-down', 420, 0.5]] },
+  { name: 'VO2max 5×4', steps: [['Warm-up', 900, 0.58], ...[1, 2, 3, 4, 5].flatMap((i): WorkoutStep[] => [[`Interval ${i}`, 240, 1.15], ['Recovery', 240, 0.5]]), ['Cool-down', 600, 0.5]] },
   { name: 'Threshold 2×20', steps: [['Warm-up', 900, 0.58], ['Threshold 1', 1200, 0.97], ['Recovery', 420, 0.5], ['Threshold 2', 1200, 0.96], ['Cool-down', 540, 0.5]] },
   { name: 'Tempo 45', steps: [['Warm-up', 600, 0.58], ['Tempo', 2700, 0.82], ['Cool-down', 480, 0.5]] },
   { name: 'Recovery spin', steps: [['Easy', 2400, 0.5]] },
 ];
-const FTP_TEST = { name: 'FTP test (20 min)', steps: [['Warm-up', 1200, 0.6], ['Opener', 300, 1.08], ['Recovery', 600, 0.5], ['20 min test', 1200, 1.055], ['Cool-down', 600, 0.5]] };
+const FTP_TEST: Workout = { name: 'FTP test (20 min)', steps: [['Warm-up', 1200, 0.6], ['Opener', 300, 1.08], ['Recovery', 600, 0.5], ['20 min test', 1200, 1.055], ['Cool-down', 600, 0.5]] };
 
 const DESCRIPTIONS = [
   'Legs felt fresh today. Kept it steady and enjoyed the quiet roads.',
@@ -300,14 +398,24 @@ const DESCRIPTIONS = [
 
 /* ---------------- Simulation ---------------- */
 /** Synthetic watts in 5-W steps: keeps the stored power distribution (one pair per distinct value) compact. */
-const quantize = (p) => Math.round(p / 5) * 5;
+const quantize = (p: number) => Math.round(p / 5) * 5;
+
+/** A simulated ride: 1-second streams (latlng and altitude outdoors only, laps indoors only). */
+type Sim = {
+  time: number[]; distance: number[]; velocity: number[]; cadence: number[];
+  watts: (number | null)[] | null; heart: (number | null)[] | null;
+  laps?: { name: string; start: number; end: number }[];
+} & ({ latlng: LatLng[]; altitude: number[] } | { latlng?: undefined; altitude?: undefined });
 
 /** One ride as Strava would report it: raw 1-second streams plus per-sample bookkeeping. */
-function simulateOutdoor(route, r, { ftp, intensity, power, hr, hardSegments, segments, gravel }) {
+function simulateOutdoor(route: RidePath, r: Rng, { ftp, intensity, power, hr, hardSegments, segments, gravel }: {
+  ftp: number; intensity: number; power: boolean; hr: boolean; hardSegments: boolean; segments: readonly SegmentOnRide[]; gravel: boolean;
+}): Sim {
   const drift = r.range(4, 11);
   const crr = gravel ? 0.0075 : CRR;
   const total = route.lengthKm * 1000;
-  const time = [], distance = [], latlng = [], altitude = [], velocity = [], watts = [], heart = [], cadence = [];
+  const time: number[] = [], distance: number[] = [], latlng: LatLng[] = [], altitude: number[] = [], velocity: number[] = [];
+  const watts: (number | null)[] = [], heart: (number | null)[] = [], cadence: number[] = [];
   let s = 0, t = 0, v = 4, h = HR_REST + 20, noise = 0, coast = 0;
   while (s < total && t < 6 * 3600 * 2) {
     const km = s / 1000;
@@ -327,7 +435,7 @@ function simulateOutdoor(route, r, { ftp, intensity, power, hr, hardSegments, se
     const hrTarget = HR_REST + (HR_MAX - HR_REST) * clamp(0.38 + 0.5 * (p / ftp), 0.3, 1) + (t / 3600) * drift;
     h += (hrTarget - h) / 28 + r.normal() * 0.3;
     time.push(t); distance.push(round(s, 1));
-    latlng.push(at(route, route.xy, km).map((x) => round(x, 5)));
+    latlng.push(roundPoint(at(route, route.xy, km), 5));
     altitude.push(round(at(route, route.elev, km), 1));
     velocity.push(round(v, 2));
     watts.push(power ? quantize(p) : null);
@@ -338,8 +446,9 @@ function simulateOutdoor(route, r, { ftp, intensity, power, hr, hardSegments, se
   return { time, distance, latlng, altitude, velocity, watts: power ? watts : null, heart: hr ? heart : null, cadence };
 }
 
-function simulateIndoor(r, { ftp, steps, hr }) {
-  const time = [], distance = [], velocity = [], watts = [], heart = [], cadence = [], laps = [];
+function simulateIndoor(r: Rng, { ftp, steps, hr }: { ftp: number; steps: readonly WorkoutStep[]; hr: boolean }): Sim & { laps: NonNullable<Sim['laps']> } {
+  const time: number[] = [], distance: number[] = [], velocity: number[] = [], watts: number[] = [], heart: (number | null)[] = [], cadence: number[] = [];
+  const laps: NonNullable<Sim['laps']> = [];
   let s = 0, t = 0, v = 7, h = HR_REST + 15;
   for (const [name, dur, pct] of steps) {
     const lapStart = t;
@@ -360,12 +469,13 @@ function simulateIndoor(r, { ftp, steps, hr }) {
   return { time, distance, velocity, watts, heart: hr ? heart : null, cadence, laps };
 }
 
-const mean = (arr, i0 = 0, i1 = arr.length) => { let sum = 0, n = 0; for (let i = i0; i < i1; i++) if (arr[i] != null) { sum += arr[i]; n++; } return n ? sum / n : null; };
-const max = (arr, i0 = 0, i1 = arr.length) => { let m = null; for (let i = i0; i < i1; i++) if (arr[i] != null && (m == null || arr[i] > m)) m = arr[i]; return m; };
-const gainOf = (alt, i0 = 0, i1 = alt.length) => { let g = 0; for (let i = i0 + 1; i < i1; i++) if (alt[i] > alt[i - 1]) g += alt[i] - alt[i - 1]; return g; };
-const firstIndex = (distance, m) => { const i = distance.findIndex((d) => d >= m); return i < 0 ? distance.length - 1 : i; };
+type Series = readonly (number | null | undefined)[];
+const mean = (arr: Series, i0 = 0, i1 = arr.length) => { let sum = 0, n = 0; for (let i = i0; i < i1; i++) { const x = arr[i]; if (x != null) { sum += x; n++; } } return n ? sum / n : null; };
+const max = (arr: Series, i0 = 0, i1 = arr.length) => { let m: number | null = null; for (let i = i0; i < i1; i++) { const x = arr[i]; if (x != null && (m == null || x > m)) m = x; } return m; };
+const gainOf = (alt: readonly number[], i0 = 0, i1 = alt.length) => { let g = 0; for (let i = i0 + 1; i < i1; i++) if (alt[i] > alt[i - 1]) g += alt[i] - alt[i - 1]; return g; };
+const firstIndex = (distance: readonly number[], m: number) => { const i = distance.findIndex((d) => d >= m); return i < 0 ? distance.length - 1 : i; };
 
-function lapOf(sim, i0, i1, extra) {
+function lapOf(sim: Sim, i0: number, i1: number, extra: { name: string; lap_index: number; split: number; start_date_local: string }): RideLap {
   const dist = sim.distance[i1] - sim.distance[i0], secs = i1 - i0;
   return {
     ...extra, elapsed_time: secs, moving_time: secs, distance: round(dist, 1),
@@ -379,7 +489,7 @@ function lapOf(sim, i0, i1, extra) {
 }
 
 /** Strava's Relative Effort, approximated from minutes per heart rate zone. */
-function relativeEffort(heart) {
+function relativeEffort(heart: Series | null): number | null {
   if (!heart) return null;
   const w = [0.4, 0.9, 1.6, 2.6, 3.5];
   let sum = 0;
@@ -388,9 +498,12 @@ function relativeEffort(heart) {
 }
 
 /* ---------------- Schedule ---------------- */
-function plan(r, { startMs, endMs, history }) {
-  const rides = [];
-  const testDays = new Set(history.filter((h) => h.note.startsWith('FTP test')).map((h) => h.date));
+/** A planned ride day: a ride (on a weekend or not, in a season 0…1) or an FTP test (indoors). */
+type PlannedRide = { day: string; kind: 'ride' | 'test'; weekend?: boolean; season?: number };
+
+function plan(r: Rng, { startMs, endMs, history }: { startMs: number; endMs: number; history: readonly HistoryEntry[] }): PlannedRide[] {
+  const rides: PlannedRide[] = [];
+  const testDays = new Set(history.filter((h) => h.note!.startsWith('FTP test')).map((h) => h.date));
   for (let week = startMs; week <= endMs; week += 7 * DAY) {
     const doy = (new Date(week).getUTCMonth() * 30.5 + new Date(week).getUTCDate());
     const season = 0.5 + 0.5 * Math.sin(((doy - 105) / 365) * 2 * Math.PI); // 0 in January, 1 in July
@@ -408,7 +521,7 @@ function plan(r, { startMs, endMs, history }) {
 }
 
 /* ---------------- Dataset ---------------- */
-export function generateDemoData({ seed = DEFAULT_SEED, through = DEFAULT_THROUGH, weeks = DEFAULT_WEEKS, routeCache = null } = {}) {
+export function generateDemoData({ seed = DEFAULT_SEED, through = DEFAULT_THROUGH, weeks = DEFAULT_WEEKS, routeCache = null }: GenerateDemoOptions = {}): DemoData {
   const r = rng(seed);
   const endMs = utcDay(through);
   const startMs = endMs - ((new Date(endMs).getUTCDay() + 6) % 7) * DAY - (weeks - 1) * 7 * DAY; // a Monday
@@ -417,23 +530,23 @@ export function generateDemoData({ seed = DEFAULT_SEED, through = DEFAULT_THROUG
 
   // Real roads per city (cached router output), segments measured on the first route that rides them.
   const cache = routeCache ?? loadRouteCache(ROOT, CITIES.map((c) => c.key));
-  const cities = Object.fromEntries(CITIES.map((city) => {
+  const cities: Record<string, CityData> = Object.fromEntries(CITIES.map((city) => {
     const routes = city.routes.map((spec) => buildRoute(spec, cache[spec.key], city));
     return [city.key, { ...city, routes, segments: canonicalSegments(city, routes) }];
   }));
   const cityAt = travelPlan(r, startMs, endMs);
   // Each city's routes take turns, so every route gets ridden a few times.
-  const turns = new Map();
-  const nextRoute = (cityKey, kind, list) => {
+  const turns = new Map<string, number>();
+  const nextRoute = (cityKey: string, kind: string, list: readonly Route[]) => {
     const k = `${cityKey}|${kind}`;
     const i = (turns.get(k) ?? r.int(0, list.length - 1)) + 1;
     turns.set(k, i);
     return list[i % list.length];
   };
 
-  const gearAt = (frac, indoor, gravel) => GEAR.find((g) => !!g.indoor === indoor && (gravel ? g.frame_type === 'Gravel' : g.frame_type !== 'Gravel') && frac >= g.from && frac < g.to + 1e-9);
-  const segBest = new Map();
-  const rides = [], streams = {};
+  const gearAt = (frac: number, indoor: boolean, gravel: boolean) => GEAR.find((g) => !!g.indoor === indoor && (gravel ? g.frame_type === 'Gravel' : g.frame_type !== 'Gravel') && frac >= g.from && frac < g.to + 1e-9);
+  const segBest = new Map<string, number[]>();
+  const rides: DemoRideFile[] = [], streams: DemoData['streams'] = {};
   let seq = 0;
 
   // Streams use their own generator per ride, so tuning the physics never reshuffles the schedule.
@@ -441,9 +554,11 @@ export function generateDemoData({ seed = DEFAULT_SEED, through = DEFAULT_THROUG
     seq++;
     const frac = (utcDay(p.day) - startMs) / span;
     const city = cities[cityAt(utcDay(p.day))];
-    const { ftp } = standAt(history, p.day);
-    const winter = p.kind === 'ride' && p.season < 0.3;
-    const indoor = p.kind === 'test' || (winter ? r.chance(0.75) : r.chance(p.season > 0.7 ? 0.04 : 0.2));
+    const ftp = ftpOf(standAt(history, p.day));
+    // Only test days (always indoors) have no season; their outdoor and temperature draws never happen
+    const season = p.season ?? 0.5;
+    const winter = p.kind === 'ride' && season < 0.3;
+    const indoor = p.kind === 'test' || (winter ? r.chance(0.75) : r.chance(season > 0.7 ? 0.04 : 0.2));
     const ebike = !indoor && r.chance(0.07);
     const hr = !r.chance(0.04);
     const hour = indoor ? r.pick([6, 18, 19]) : p.weekend ? r.int(7, 10) : r.pick([6, 17, 18]);
@@ -452,32 +567,37 @@ export function generateDemoData({ seed = DEFAULT_SEED, through = DEFAULT_THROUG
     const startUtc = new Date(Date.parse(`${local}Z`) - offset * 1000).toISOString().replace('.000Z', 'Z');
     const id = `demo-${String(seq).padStart(4, '0')}`;
 
-    let sim, route = null, path = null, name, sport, gear = null, trainer = false, laps = [], segments = [], workout = null, gravel = false;
+    let sim: Sim, route: Route | null = null, path: RidePath | null = null, name: string, sport: string, gear: DemoBike | null | undefined = null;
+    let trainer = false, laps: RideLap[] = [], segments: RideSegmentEffort[] = [], workout: Workout | null = null, gravel = false;
     if (indoor) {
       workout = p.kind === 'test' ? FTP_TEST : r.pick(WORKOUTS);
-      sim = simulateIndoor(rng(seed * 1000 + seq), { ftp, steps: workout.steps, hr });
+      const indoorSim = simulateIndoor(rng(seed * 1000 + seq), { ftp, steps: workout.steps, hr });
+      sim = indoorSim;
       sport = r.chance(0.6) ? 'VirtualRide' : 'Ride';
       trainer = sport === 'Ride';
       name = workout.name;
       gear = gearAt(frac, true, false);
-      laps = sim.laps.map((l, i) => lapOf(sim, l.start, l.end, { name: l.name, lap_index: i + 1, split: i + 1, start_date_local: shiftLocal(local, l.start) }));
+      laps = indoorSim.laps.map((l, i) => lapOf(indoorSim, l.start, l.end, { name: l.name, lap_index: i + 1, split: i + 1, start_date_local: shiftLocal(local, l.start) }));
     } else {
-      gravel = !ebike && r.chance(p.season > 0.4 ? 0.22 : 0.35);
-      const use = (u) => city.routes.filter((x) => x.use === u);
+      gravel = !ebike && r.chance(season > 0.4 ? 0.22 : 0.35);
+      const use = (u: string) => city.routes.filter((x) => x.use === u);
       // Weekend: mostly the long routes, sometimes a shorter one; weekdays: short routes, now and then the commute.
       const kind = ebike ? 'errand' : gravel ? 'gravel' : p.weekend ? (r.chance(0.35) ? 'weekday' : 'weekend') : r.chance(0.12) ? 'errand' : 'weekday';
-      route = nextRoute(city.key, kind, use(kind));
-      path = ridePath(route, route.kind === 'out-back' ? r.range(...route.turn) : 1);
+      let ridden = nextRoute(city.key, kind, use(kind));
+      let ride = ridePath(ridden, ridden.kind === 'out-back' ? r.range(...ridden.turn) : 1);
       // No long rides in the cold season: a shorter route instead.
-      if (path.lengthKm > 90 && p.season < 0.5) {
-        route = nextRoute(city.key, 'weekday', use('weekday'));
-        path = ridePath(route, route.kind === 'out-back' ? r.range(...route.turn) : 1);
+      if (ride.lengthKm > 90 && season < 0.5) {
+        ridden = nextRoute(city.key, 'weekday', use('weekday'));
+        ride = ridePath(ridden, ridden.kind === 'out-back' ? r.range(...ridden.turn) : 1);
       }
+      route = ridden;
+      path = ride;
       gear = ebike ? null : gearAt(frac, false, gravel);
       const power = !!gear?.power;
       const rideSegments = segmentsOn(path, city.segments);
       const intensity = route.use === 'errand' ? 0.55 : path.lengthKm > 90 ? r.range(0.58, 0.66) : r.range(0.6, 0.76);
-      sim = simulateOutdoor(path, rng(seed * 1000 + seq), { ftp, intensity, power, hr, hardSegments: r.chance(0.35), segments: rideSegments, gravel });
+      const outdoorSim = simulateOutdoor(path, rng(seed * 1000 + seq), { ftp, intensity, power, hr, hardSegments: r.chance(0.35), segments: rideSegments, gravel });
+      sim = outdoorSim;
       sport = ebike ? 'EBikeRide' : gravel ? 'GravelRide' : 'Ride';
       const tod = hour < 11 ? 'Morning' : hour < 15 ? 'Lunch' : hour < 18 ? 'Afternoon' : 'Evening';
       name = ebike ? 'E-bike errands' : r.chance(0.45) ? route.name : `${tod} Ride`;
@@ -486,7 +606,7 @@ export function generateDemoData({ seed = DEFAULT_SEED, through = DEFAULT_THROUG
         const every = 10000;
         let i0 = 0;
         for (let k = 1; i0 < sim.distance.length - 1; k++) {
-          const i1 = k * every >= sim.distance.at(-1) ? sim.distance.length - 1 : firstIndex(sim.distance, k * every);
+          const i1 = k * every >= sim.distance.at(-1)! ? sim.distance.length - 1 : firstIndex(sim.distance, k * every);
           laps.push(lapOf(sim, i0, i1, { name: `Lap ${k}`, lap_index: k, split: k, start_date_local: shiftLocal(local, i0) }));
           i0 = i1;
         }
@@ -517,40 +637,40 @@ export function generateDemoData({ seed = DEFAULT_SEED, through = DEFAULT_THROUG
     const np = w ? normalizedPower(to1Hz(sim.time, w)) : null;
     const avgW = w ? mean(w) : null;
     const estW = !w && !ebike ? Math.round(ftp * 0.6) : null;
-    const summary = {
+    const summary: ActivitySummary = {
       id, name, type: sport, sport_type: sport, workout_type: null,
       start_date: startUtc, start_date_local: local, timezone: `(GMT${offset < 0 ? '-' : '+'}${String(Math.abs(offset) / 3600).padStart(2, '0')}:00) ${city.timezone}`, utc_offset: offset,
       distance: round(dist, 1), moving_time: moving, elapsed_time: moving + stops,
       total_elevation_gain: sim.altitude ? round(gainOf(sim.altitude), 1) : 0,
-      elev_high: sim.altitude ? round(max(sim.altitude), 1) : null, elev_low: sim.altitude ? round(-max(sim.altitude.map((x) => -x)), 1) : null,
+      elev_high: sim.altitude ? round(max(sim.altitude), 1) : null, elev_low: sim.altitude ? round(-max(sim.altitude.map((x) => -x))!, 1) : null,
       average_speed: round(dist / moving, 3), max_speed: round(max(sim.velocity), 2),
       average_cadence: round(mean(sim.cadence.map((c) => c || null)), 1),
       average_temp: indoor ? null : Math.round(4 + 24 * (p.season ?? 0.5) + r.normal() * 3),
       average_watts: w ? round(avgW, 1) : estW, weighted_average_watts: np, max_watts: w ? max(w) : null,
-      kilojoules: w ? round((avgW * moving) / 1000, 1) : estW ? round((estW * moving) / 1000, 1) : null,
+      kilojoules: w ? round((avgW! * moving) / 1000, 1) : estW ? round((estW * moving) / 1000, 1) : null,
       device_watts: !!w,
       has_heartrate: !!sim.heart, average_heartrate: sim.heart ? round(mean(sim.heart), 1) : null, max_heartrate: sim.heart ? max(sim.heart) : null,
       suffer_score: relativeEffort(sim.heart),
       trainer, commute: name === 'Commute', manual: false, private: false, visibility: 'everyone', flagged: false,
       gear_id: gear?.id || null,
-      start_latlng: sim.latlng ? sim.latlng[0].map((x) => round(x, 2)) : null, end_latlng: sim.latlng ? sim.latlng[n - 1].map((x) => round(x, 2)) : null,
+      start_latlng: sim.latlng ? roundPoint(sim.latlng[0], 2) : null, end_latlng: sim.latlng ? roundPoint(sim.latlng[n - 1], 2) : null,
       kudos_count: indoor ? r.int(0, 4) : r.int(1, 14), comment_count: r.chance(0.15) ? r.int(1, 3) : 0,
       athlete_count: !indoor && p.weekend && r.chance(0.25) ? r.int(3, 9) : 1, photo_count: 0, total_photo_count: 0,
       achievement_count: segments.filter((e) => e.pr_rank).length, pr_count: segments.filter((e) => e.pr_rank === 1).length,
       summary_polyline: path ? path.polyline : null,
     };
-    const raw = {
+    const raw: RawStreams = {
       time: { data: sim.time }, distance: { data: sim.distance }, velocity_smooth: { data: sim.velocity }, cadence: { data: sim.cadence },
       ...(w ? { watts: { data: w } } : {}), ...(sim.heart ? { heartrate: { data: sim.heart } } : {}),
       ...(sim.latlng ? { latlng: { data: sim.latlng }, altitude: { data: sim.altitude } } : {}),
     };
     const splits = path && dist <= 35000 ? splitsOf(sim) : [];
     const syncedAt = Date.parse(startUtc) + moving * 1000 + 3600e3;
-    const rec = {
+    const rec: RideFileRecord = {
       id, summary,
       detail: {
         description: r.chance(0.18) ? r.pick(DESCRIPTIONS) : '',
-        calories: w ? Math.round(avgW * moving / 1000 * 1.05) : Math.round((moving / 3600) * (ebike ? 250 : 560)),
+        calories: w ? Math.round(avgW! * moving / 1000 * 1.05) : Math.round((moving / 3600) * (ebike ? 250 : 560)),
         device_name: indoor ? 'Smart trainer' : 'Bike computer',
         perceived_exertion: r.chance(0.2) ? r.int(3, 8) : null,
         gear: gear ? { id: gear.id, name: gear.name } : undefined,
@@ -565,15 +685,15 @@ export function generateDemoData({ seed = DEFAULT_SEED, through = DEFAULT_THROUG
     streams[id] = downsampleStreams(raw, STREAM_POINTS);
   }
 
-  const gearKm = (id) => rides.filter((x) => x.data.gear_id === id).reduce((s, x) => s + (x.data.distance || 0), 0);
-  const gearList = GEAR.map((g) => ({
+  const gearKm = (id: string) => rides.filter((x) => x.data.gear_id === id).reduce((s, x) => s + (x.data.distance || 0), 0);
+  const gearList = GEAR.map((g): Gear => ({
     id: g.id, name: g.name, type: 'bike', brand: g.brand, model: g.model, frame_type: g.frame_type, description: null, weight: g.weight,
     distance: Math.round(gearKm(g.id) + (g.id === 'bdemo1' ? 18400e3 : g.id === 'bdemo3' ? 3200e3 : 0)), retired: !!g.retired, primary: !!g.primary,
   }));
-  const newest = rides.map((x) => x.data.start_date_local.slice(0, 10)).sort().pop() || through;
+  const newest = rides.map((x) => x.data.start_date_local!.slice(0, 10)).sort().pop() || through;
   // "Last sync" = the morning after the newest ride, so the demo clock shifts it together with the rides.
   const syncedAt = `${dayStr(utcDay(newest) + DAY)}T06:00:00.000Z`;
-  const gear = GEAR.map((g, i) => ({
+  const gear = GEAR.map((g, i): DemoGearFile => ({
     file: `gear/${g.id}.md`,
     data: { ...gearList[i], strava_url: null, synced_at: syncedAt, custom: { purchase_date: g.custom.purchase_date ?? dayStr(startMs + g.from * span - 5 * DAY), ...withoutPurchase(g.custom) } },
     body: g.body,
@@ -587,7 +707,7 @@ export function generateDemoData({ seed = DEFAULT_SEED, through = DEFAULT_THROUG
     gear: gearList, stats: null,
     listComplete: true, oldest: rides.length ? rides[0].data.start_date : null,
   });
-  const goals = [
+  const goals: DemoGoal[] = [
     { id: 'year-km', label: 'Distance per year', period: 'year', metric: 'distance', target: 4500 },
     { id: 'year-elevation', label: 'Elevation per year', period: 'year', metric: 'elevation', target: 45000 },
     { id: 'month-hours', label: 'Hours per month', period: 'month', metric: 'time', target: 14 },
@@ -612,16 +732,18 @@ export function generateDemoData({ seed = DEFAULT_SEED, through = DEFAULT_THROUG
   };
 }
 
-function withoutPurchase({ purchase_date, ...rest }) { return rest; }
-function shiftLocal(local, seconds) { return new Date(Date.parse(`${local}Z`) + seconds * 1000).toISOString().slice(0, 19); }
-function splitsOf(sim) {
-  const out = [];
+function withoutPurchase({ purchase_date, ...rest }: DemoGearCustom): Omit<DemoGearCustom, 'purchase_date'> { return rest; }
+function shiftLocal(local: string, seconds: number): string { return new Date(Date.parse(`${local}Z`) + seconds * 1000).toISOString().slice(0, 19); }
+/** Kilometre splits of an outdoor ride (one with altitude). */
+function splitsOf(sim: Sim): RideSplit[] {
+  const out: RideSplit[] = [];
+  const altitude = sim.altitude!;
   let i0 = 0;
   for (let k = 1; i0 < sim.distance.length - 1; k++) {
     const i1 = firstIndex(sim.distance, k * 1000);
     if (i1 <= i0) break;
     const dist = sim.distance[i1] - sim.distance[i0], secs = i1 - i0;
-    out.push({ split: k, distance: round(dist, 1), elapsed_time: secs, moving_time: secs, elevation_difference: round(sim.altitude[i1] - sim.altitude[i0], 1),
+    out.push({ split: k, distance: round(dist, 1), elapsed_time: secs, moving_time: secs, elevation_difference: round(altitude[i1] - altitude[i0], 1),
       average_speed: round(dist / secs, 2), average_heartrate: sim.heart ? round(mean(sim.heart, i0, i1 + 1), 1) : undefined });
     i0 = i1;
   }
@@ -629,8 +751,8 @@ function splitsOf(sim) {
 }
 
 /** Dataset → { 'relative/path': text } below demo/. */
-export function renderDemoFiles(demo) {
-  const files = {};
+export function renderDemoFiles(demo: DemoData): Record<string, string> {
+  const files: Record<string, string> = {};
   for (const x of demo.rides) files[x.file] = rideText(x.data, x.body);
   for (const x of demo.gear) files[x.file] = `---\n${toYaml(x.data)}---\n\n${x.body}\n`;
   for (const [id, s] of Object.entries(demo.streams)) if (s) files[`streams/${id}.json`] = JSON.stringify(s);

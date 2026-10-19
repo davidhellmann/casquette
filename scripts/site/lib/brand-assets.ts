@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 // The static brand assets, built from the brand source in src/lib/brand.ts (#27).
 // Pure builders – scripts/site/brand.ts writes the SVGs and renders the PNGs with the local Chromium from
 // the HTML pages below, which set the word in Damion as-is (font file from @fontsource/damion).
@@ -15,34 +14,40 @@ const TAGLINE = {
 };
 
 const SVG_NS = 'xmlns="http://www.w3.org/2000/svg"';
-const num = (v) => String(Math.round(v * 1000) / 1000);
+const num = (v: number) => String(Math.round(v * 1000) / 1000);
 const require = createRequire(import.meta.url);
 
 /** The Damion font file the PNG pages load (served by scripts/site/brand.ts at FONT_URL). */
 export const FONT_FILE = require.resolve('@fontsource/damion/files/damion-latin-400-normal.woff2');
 export const FONT_URL = '/damion.woff2';
-const FONT_VERSION = JSON.parse(fs.readFileSync(require.resolve('@fontsource/damion/package.json'), 'utf8')).version;
+const FONT_VERSION: unknown = JSON.parse(fs.readFileSync(require.resolve('@fontsource/damion/package.json'), 'utf8')).version;
+
+/** Logo theme of an asset. */
+export type BrandTheme = 'light' | 'dark';
+
+/** How the cap's strokes are painted: colours (attribute values) or classes. */
+type CapColors = { ink?: string; accent?: string; inkClass?: string; accentClass?: string; stroke?: number };
 
 /** The cap's strokes as SVG markup; colours are attribute values or classes. `stroke` defaults to 2.4. */
-function capPaths({ ink, accent, inkClass, accentClass, stroke = CAP.stroke }) {
-  const paint = (cls, color) => (cls ? `class="${cls}"` : `stroke="${color}"`);
+function capPaths({ ink, accent, inkClass, accentClass, stroke = CAP.stroke }: CapColors): string {
+  const paint = (cls: string | undefined, color: string | undefined) => (cls ? `class="${cls}"` : `stroke="${color}"`);
   return `<g fill="none" stroke-linecap="round" stroke-linejoin="round">`
     + `<path d="${CAP.outline}" ${paint(inkClass, ink)} stroke-width="${num(stroke)}"/>`
     + `<path d="${CAP.stripe}" ${paint(accentClass, accent)} stroke-width="${num(stroke * CAP.stripeFactor)}"/></g>`;
 }
 
 /** The cap centred on (x, y) at scale `s` (centre of its drawing x 6…42.5, y 4…25.6, not of the viewBox). */
-function capAt(x, y, s, colors) {
+function capAt(x: number, y: number, s: number, colors: CapColors): string {
   return `<g transform="translate(${num(x - 24.25 * s)} ${num(y - 14.8 * s)}) scale(${num(s)})">${capPaths(colors)}</g>`;
 }
 
-const TILES = {
+const TILES: Record<BrandTheme, { tile: string; ink: string; accent: string }> = {
   light: { tile: COLORS.ink, ink: COLORS.paper, accent: COLORS.pinkOnDark },
   dark: { tile: COLORS.navy, ink: COLORS.inkOnDark, accent: COLORS.pinkOnDark },
 };
 
 /** App icon: the cap alone on a rounded tile – ink in light contexts, navy in dark ones. */
-function iconSvg(theme) {
+function iconSvg(theme: BrandTheme): string {
   const c = TILES[theme];
   return `<svg ${SVG_NS} viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Casquette"><title>Casquette</title>`
     + `<rect width="64" height="64" rx="14" fill="${c.tile}"/>${capAt(32, 32, 1.15, c)}</svg>\n`;
@@ -64,7 +69,7 @@ function faviconSvg() {
     + `<g transform="translate(${num(32 - 24.25 * 1.3)} ${num(33 - 14.8 * 1.3)}) scale(1.3)">${capPaths({ inkClass: 'i', accentClass: 'a', stroke: 3.6 })}</g></svg>\n`;
 }
 
-const THEMES = {
+const THEMES: Record<BrandTheme, { ink: string; accent: string; background: string }> = {
   light: { ink: COLORS.ink, accent: COLORS.pink, background: COLORS.grey },
   dark: { ink: COLORS.inkOnDark, accent: COLORS.pinkOnDark, background: COLORS.navy },
 };
@@ -74,7 +79,7 @@ const THEMES = {
  * the "c" in its own span (measured for the placement), a pink full stop and the cap, which
  * scripts/site/brand.ts places with capPlacement() once the font has loaded.
  */
-function logoMarkup(fontSize, theme) {
+function logoMarkup(fontSize: number, theme: BrandTheme): string {
   const c = THEMES[theme];
   return `<span class="lk" style="--ink:${c.ink};--pk:${c.accent};color:${c.ink}">`
     + `<span class="wm" style="font-size:${fontSize}px"><span class="c">c</span>${WORDMARK.text.slice(1)}<span class="dot">${WORDMARK.stop}</span>`
@@ -84,7 +89,7 @@ function logoMarkup(fontSize, theme) {
 }
 
 /** A page around `body`: Damion loaded from FONT_URL, the logo styles of the approval sheet. */
-function page(body, css = '') {
+function page(body: string, css = ''): string {
   return `<!doctype html><html><head><meta charset="utf-8"><style>`
     + `@font-face{font-family:'Damion';src:url(${FONT_URL}) format('woff2');font-display:block}`
     + `html,body{margin:0}svg{display:block}`
@@ -95,7 +100,7 @@ function page(body, css = '') {
 
 /** README header: the logo on a transparent canvas, ink on light, light ink on dark (shown at 1×, rendered at 2×). */
 const LOGO_CANVAS = { width: 320, height: 124, fontSize: 72 };
-function logoHtml(theme) {
+function logoHtml(theme: BrandTheme): string {
   const { width, height, fontSize } = LOGO_CANVAS;
   return page(`<div class="stage" data-centre>${logoMarkup(fontSize, theme)}</div>`,
     `.stage{width:${width}px;height:${height}px;display:flex;align-items:center;justify-content:center}`);
@@ -110,14 +115,17 @@ function ogHtml() {
     `body{background:${COLORS.grey}}.stage{width:1200px;height:470px;display:flex;align-items:center;justify-content:center}`);
 }
 
-const svgPage = (svg) => `<!doctype html><style>html,body{margin:0}svg{display:block}</style>${svg}`;
+const svgPage = (svg: string) => `<!doctype html><style>html,body{margin:0}svg{display:block}</style>${svg}`;
+
+/** One raster asset: the page to render, its viewport, device scale and whether its background is transparent. */
+export type BrandPng = { html: string; width: number; height: number; scale: number; transparent?: boolean };
 
 /**
  * Raster assets: output → { html, size, device scale, transparent background }. Every page that
  * shows the logo has the word measured and the cap placed by scripts/site/brand.ts; elements marked
  * `data-centre` are then centred on their ink (word + cap), not on the word's line box.
  */
-export const BRAND_PNGS = {
+export const BRAND_PNGS: Readonly<Record<string, BrandPng>> = {
   'public/apple-touch-icon.png': { html: svgPage(touchIconSvg()), width: 180, height: 180, scale: 1 },
   'public/og.png': { html: ogHtml(), width: 1200, height: 630, scale: 1 },
   'brand/casquette-logo-light.png': { html: logoHtml('light'), width: LOGO_CANVAS.width, height: LOGO_CANVAS.height, scale: 2, transparent: true },
@@ -126,19 +134,19 @@ export const BRAND_PNGS = {
 
 /** The promo website (website/, no build) ships its own copies of the app's rendered icons: copy → source.
  *  Its social image is its own (website/og.png, `npm run og`). */
-export const WEBSITE_COPIES = {
+export const WEBSITE_COPIES: Readonly<Record<string, string>> = {
   'website/apple-touch-icon.png': 'public/apple-touch-icon.png',
 };
 
 /** Fingerprint of everything a PNG is rendered from – brand/png-sources.json, checked by src/brand.test.ts. */
-function pngSources() {
-  const hash = (spec) => crypto.createHash('sha256')
+function pngSources(): Record<string, string> {
+  const hash = (spec: BrandPng) => crypto.createHash('sha256')
     .update(JSON.stringify([spec, capPlacement({ cTop: -0.2, cLeft: 0.01 }), FONT_VERSION])).digest('hex').slice(0, 16);
   return Object.fromEntries(Object.entries(BRAND_PNGS).map(([file, spec]) => [file, hash(spec)]));
 }
 
 /** Every generated text file: path (repo-relative) → content. */
-export function brandFiles() {
+export function brandFiles(): Record<string, string> {
   return {
     'public/favicon.svg': faviconSvg(),
     'website/favicon.svg': faviconSvg(),

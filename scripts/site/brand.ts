@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 // Regenerates every brand asset from the brand source (src/lib/brand.ts): favicon and app icons as
 // SVG (the cap alone); apple-touch-icon.png, og.png and the README header PNGs rendered with the
 // local Chromium from HTML that sets the word in Damion (scripts/site/lib/brand-assets.ts); the website's
