@@ -30,7 +30,7 @@ const POWER_ZONES = 7;
 
 const fail = (field: string, rule: string): never => { throw new Error(`zones.json: ${field} ${rule}`); };
 
-/** Property `key` of parsed JSON, `undefined` when `value` is no object (like `value?.[key]`). */
+/** Property `key` of parsed JSON, `undefined` when `value` is no object (like `value?.[key]`). Parse seam: the result is checked by the caller. */
 const field = (value: unknown, key: string): unknown =>
   typeof value === 'object' && value !== null ? (value as Record<string, unknown>)[key] : undefined;
 
