@@ -28,7 +28,7 @@ const PRIMARY = v('brand');
 const REFERENCE = v('foreground');
 const COMPARE = v('muted-foreground');
 
-export const SERIES = {
+const STYLES = {
   // Fitness & fatigue: fitness is the primary line, fatigue a dashed grey, form in status colours
   fitness: { color: PRIMARY, curve: 'monotone' },
   fatigue: { color: COMPARE, curve: 'linear', dash: '4 3' },
@@ -77,7 +77,9 @@ export const SERIES = {
   segmentBest: { color: REFERENCE, curve: 'stepAfter', dash: '4 3' },
 } satisfies Record<string, SeriesStyle>;
 
-export type SeriesKey = keyof typeof SERIES;
+export type SeriesKey = keyof typeof STYLES;
+/** Style per series key. */
+export const SERIES: Record<SeriesKey, SeriesStyle> = STYLES;
 
 /** Earlier years next to the highlighted current one (pink): the rest of the category palette, never zone colours. */
 export const COMPARE_COLORS = [2, 3, 6, 4, 5].map((n) => v(`category-${n}`));

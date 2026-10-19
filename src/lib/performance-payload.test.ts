@@ -25,7 +25,7 @@ describe('performancePayload', () => {
     expect(P.months.find((m) => m.key === '2024-04')).toEqual({ key: '2024-04', eftp: 266, best20: 280, ftp: 260, weight: 70, wkg: 3.8 });
     expect(P.current).toEqual({ eftp: 266, wkg: 3.8 });
     expect(P.peak).toEqual({ key: '2024-04', eftp: 266, wkg: 3.8 });
-    expect(P.ctl.at(-1).date).toBe('2024-06-15');
+    expect(P.ctl.at(-1)?.date).toBe('2024-06-15');
   });
 
   it('compares all-time, last 90 days and last year; the ride that has not started yet does not count', async () => {

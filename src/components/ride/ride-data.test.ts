@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { rideCurveData, zoneBands, zoneRuns } from './ride-data.ts';
+import type { LatLng } from './RideMap';
 
 const ZONES = [{ min: 0, max: 100 }, { min: 101, max: 200 }, { min: 201, max: null }];
 
 describe('route colouring', () => {
   it('splits the route into connected runs per zone', () => {
-    const pts = [[1, 1], [2, 2], [3, 3], [4, 4], [5, 5]];
+    const pts: LatLng[] = [[1, 1], [2, 2], [3, 3], [4, 4], [5, 5]];
     const runs = zoneRuns(pts, [50, 60, 150, 250, null], ZONES);
     expect(runs.map((r) => r.zone)).toEqual([1, 2, 3]);
     expect(runs[1].points[0]).toEqual([2, 2]);

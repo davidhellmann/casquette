@@ -1,18 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { trainingCalendar } from '../training/index.ts';
 import { yearCalendar } from './year-calendar.ts';
+import type { YearCalendar } from './year-calendar.ts';
 import { routes } from './routes.ts';
 
 // Days, levels and streaks are tested on trainingCalendar (src/training/training-calendar.test.ts);
 // this covers what the year review draws from it.
-const ride = (id, d, km, name = `Ride ${id}`) => ({ id, d, start: +d, distance: km * 1000, moving_time: 3600, name });
+const ride = (id: number, d: Date, km: number, name = `Ride ${id}`) => ({ id, d, start: +d, distance: km * 1000, moving_time: 3600, name });
 const rides = [
   ride(2, new Date(2025, 0, 1, 17), 30, 'Evening spin'),
   ride(1, new Date(2025, 0, 1, 9), 10),
   ride(3, new Date(2025, 5, 2, 8), 100),
 ];
-const calendar = (today) => yearCalendar(trainingCalendar(rides, { from: new Date(2025, 0, 1), to: new Date(2025, 11, 31), today, measure: 'km' }), 2025);
-const at = (C, d) => C.days[Math.round((d - new Date(2024, 11, 30)) / 86400000)];
+const calendar = (today: Date) => yearCalendar(trainingCalendar(rides, { from: new Date(2025, 0, 1), to: new Date(2025, 11, 31), today, measure: 'km' }), 2025);
+const at = (C: YearCalendar, d: Date) => C.days[Math.round((+d - +new Date(2024, 11, 30)) / 86400000)];
 
 describe('yearCalendar', () => {
   const C = calendar(new Date(2026, 1, 1));

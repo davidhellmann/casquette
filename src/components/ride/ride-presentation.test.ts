@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DECOUPLING_SCALE, rideClassification, rideDecoupling, rideTimeInZones, tizBasisLabel, toneBg, zoneBg } from './ride-presentation.ts';
 
 describe('ride classification as text', () => {
-  const ride = { w: 212.4, hr: 151.6, clsP: { zone: 3, source: 'power' }, clsH: { zone: 4, source: 'hr' } };
+  const ride = { w: 212.4, hr: 151.6, clsP: { zone: 3, source: 'power' as const }, clsH: { zone: 4, source: 'hr' as const } };
 
   it('names what decided the zone and its measured value, per basis', () => {
     expect(rideClassification(ride, 'power')).toEqual({ zone: 3, source: 'power', estimated: false, src: 'Avg power', val: '212 W', title: 'Avg power: 212 W' });

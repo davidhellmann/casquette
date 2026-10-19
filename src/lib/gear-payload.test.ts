@@ -37,7 +37,7 @@ describe('gearPayload', () => {
     expect(P.curve).toEqual({ 5: 850, 60: 400, 1200: 280, 3600: 250 });
     expect(P.curveWkg).toEqual({ 5: 12.14, 60: 5.56, 1200: 4, 3600: 3.57 });
     // Ties go to the more recent ride
-    expect(P.records.find((r) => r.key === 'longest').ride).toEqual({ href: routes.ride('demo-0002'), name: 'Demo ride 2', date: '2024-04-20', value: 50000 });
+    expect(P.records.find((r) => r.key === 'longest')?.ride).toEqual({ href: routes.ride('demo-0002'), name: 'Demo ride 2', date: '2024-04-20', value: 50000 });
   });
 
   it('describes gear known only from the athlete', async () => {
