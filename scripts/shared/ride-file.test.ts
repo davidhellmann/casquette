@@ -1,8 +1,8 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import { describe, expect, it } from 'vitest';
 import { patchRideMetrics, rideBody, rideFileName, rideFrontmatter, rideText, splitFrontmatter } from './ride-file.ts';
+import type { RideFileRecord } from './ride-file.ts';
 
-const rec = (extra = {}) => ({ id: '7', summary: { start_date: '2024-05-01T22:30:00Z', start_date_local: '2024-05-02T00:30:00', name: 'Late ride' }, ...extra });
+const rec = (extra: Partial<RideFileRecord> = {}): RideFileRecord => ({ id: '7', summary: { start_date: '2024-05-01T22:30:00Z', start_date_local: '2024-05-02T00:30:00', name: 'Late ride' }, ...extra });
 
 describe('ride file', () => {
   it('lives under <year>/<ride date>_<id>.md, by the local start date', () => {
@@ -13,10 +13,10 @@ describe('ride file', () => {
   it('splits frontmatter and body with LF or CRLF line endings, losslessly', () => {
     for (const text of ['---\nid: "7"\n---\n\nBody\n---\nmore', '---\r\nid: "7"\r\n---\r\n\r\nBody\r\n']) {
       const parts = splitFrontmatter(text);
-      expect(parts.front).toBe('id: "7"');
-      expect(parts.open + parts.front + parts.close + parts.body).toBe(text);
+      expect(parts?.front).toBe('id: "7"');
+      expect(parts && parts.open + parts.front + parts.close + parts.body).toBe(text);
     }
-    expect(splitFrontmatter('---\nid: "7"\n---').body).toBe('');
+    expect(splitFrontmatter('---\nid: "7"\n---')?.body).toBe('');
     expect(splitFrontmatter('No frontmatter')).toBeNull();
     expect(splitFrontmatter(null)).toBeNull();
   });
@@ -26,7 +26,7 @@ describe('ride file', () => {
     expect(text).toMatch(/^---\nid: "7"\nname: "Late ride"\n/);
     expect(text).toContain('gear_name: "Bike"\n');
     expect(text.endsWith('---\n\nBody\n')).toBe(true);
-    expect(splitFrontmatter(text).body).toBe('\nBody\n');
+    expect(splitFrontmatter(text)?.body).toBe('\nBody\n');
   });
 
   describe('ride body', () => {
