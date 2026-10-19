@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -6,10 +5,10 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { checkDemoBuild, normaliseBase, rootRelativeUrls } from './demo-build-check.ts';
 
 // Refs #54: the deploy publishes the demo build only when it contains nothing but the demo dataset.
-let tmp;
-let demo;
-let build;
-const put = (dir, rel, text) => {
+let tmp: string;
+let demo: string;
+let build: string;
+const put = (dir: string, rel: string, text: string | object) => {
   fs.mkdirSync(path.dirname(path.join(dir, rel)), { recursive: true });
   fs.writeFileSync(path.join(dir, rel), typeof text === 'string' ? text : JSON.stringify(text));
 };

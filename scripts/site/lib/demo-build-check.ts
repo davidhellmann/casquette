@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 // The deploy's guard for the public demo (#54): proves that a demo build contains nothing but the
 // synthetic demo dataset (demo/) and that it works under its base path. Fails on any ride, bike,
 // segment or stream page that is not in demo/, on a build without the demo marker, and on
@@ -7,20 +6,20 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
-import { DEMO_MARKER, readDemoDataset } from './demo-dataset.ts';
+import { DEMO_MARKER, readDemoDataset, type DemoDataset } from './demo-dataset.ts';
 
 /** Every file below `dir`, as paths relative to it ('/'-separated). */
-function walk(dir, rel = '') {
+function walk(dir: string, rel = ''): string[] {
   return fs.readdirSync(path.join(dir, rel), { withFileTypes: true }).flatMap((entry) => {
     const sub = rel ? `${rel}/${entry.name}` : entry.name;
     return entry.isDirectory() ? walk(dir, sub) : [sub];
   });
 }
 
-const list = (dir) => { try { return fs.readdirSync(dir, { withFileTypes: true }); } catch { return []; } };
+const list = (dir: string): fs.Dirent[] => { try { return fs.readdirSync(dir, { withFileTypes: true }); } catch { return []; } };
 
 /** IDs of the demo dataset: rides and their segments, bikes, streams. */
-function demoIds(dataset) {
+function demoIds(dataset: DemoDataset): Record<'rides' | 'segments' | 'gear' | 'streams', Set<string>> {
   return {
     rides: new Set(dataset.rides.map((r) => String(r.id))),
     segments: new Set(dataset.rides.flatMap((r) => (r.segment_efforts ?? []).map((e) => e.segment_id))),
@@ -36,8 +35,8 @@ export function normaliseBase(base = '/') {
 }
 
 /** Root-relative URLs (`/…`, not `//…`) in an HTML or CSS file – links, assets and Astro island scripts. */
-export function rootRelativeUrls(text) {
-  const urls = [];
+export function rootRelativeUrls(text: string): string[] {
+  const urls: string[] = [];
   for (const [, value] of text.matchAll(/\s(?:href|src|action|poster|component-url|renderer-url|before-hydration-url)\s*=\s*["'](\/(?!\/)[^"']*)["']/gi)) urls.push(value);
   for (const [, value] of text.matchAll(/\ssrcset\s*=\s*["']([^"']*)["']/gi)) {
     for (const candidate of value.split(',')) {
@@ -50,7 +49,7 @@ export function rootRelativeUrls(text) {
 }
 
 /** True when the URL path (inside the base) has a file in the build: the file itself or <dir>/index.html. */
-function resolves(buildDir, base, url) {
+function resolves(buildDir: string, base: string, url: string): boolean {
   const rel = decodeURIComponent(url.split(/[?#]/)[0].slice(base.length));
   const file = path.join(buildDir, rel);
   if (!path.resolve(file).startsWith(path.resolve(buildDir))) return false;
@@ -58,24 +57,23 @@ function resolves(buildDir, base, url) {
   return fs.existsSync(path.join(file, 'index.html'));
 }
 
-const SECTIONS = [
+const SECTIONS: readonly (readonly [folder: string, key: 'rides' | 'gear' | 'segments', what: string])[] = [
   ['rides', 'rides', 'ride'],
   ['gear', 'gear', 'bike'],
   ['segments', 'segments', 'segment'],
 ];
 
 /**
- * Checks a demo build. Returns the problems found (empty: the build is fine).
- * @param {{ build: string, root: string, base?: string }} options build folder, project root (holding demo/), base path
- * @returns {string[]}
+ * Checks a demo build: `build` folder, project `root` (holding demo/) and `base` path. Returns the
+ * problems found (empty: the build is fine).
  */
-export function checkDemoBuild({ build, root, base = '/' }) {
+export function checkDemoBuild({ build, root, base = '/' }: { build: string; root: string; base?: string }): string[] {
   const buildDir = path.resolve(build);
   const prefix = normaliseBase(base);
   const index = path.join(buildDir, 'index.html');
   if (!fs.existsSync(index)) return [`no index.html in ${build}`];
 
-  const problems = [];
+  const problems: string[] = [];
   if (!fs.readFileSync(index, 'utf8').includes(DEMO_MARKER)) {
     problems.push(`index.html has no demo marker (${DEMO_MARKER}): the build did not use the demo dataset (DATA_SOURCE=demo)`);
   }
@@ -106,10 +104,10 @@ export function checkDemoBuild({ build, root, base = '/' }) {
     if (!same) problems.push(`streams/${entry.name}: differs from the demo stream of the same name`);
   }
 
-  const broken = new Map();
+  const broken = new Map<string, string>();
   for (const file of walk(buildDir).filter((f) => /\.(html|css)$/.test(f))) {
     for (const url of rootRelativeUrls(fs.readFileSync(path.join(buildDir, file), 'utf8'))) {
-      let problem = null;
+      let problem: string | null = null;
       if (!url.startsWith(prefix) && url !== prefix.slice(0, -1)) problem = `outside the base path ${prefix}`;
       else if (!resolves(buildDir, prefix, url)) problem = 'no file in the build';
       if (problem && !broken.has(url)) broken.set(url, `${file}: ${url} – ${problem}`);

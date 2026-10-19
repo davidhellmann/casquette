@@ -1,8 +1,8 @@
-import { expect, test } from './fixtures';
+import { expect, test, type Page } from './fixtures';
 import { DETAIL_PAGES, STATIC_PAGES, firstLink } from './pages';
 
 // #27: the app is called Casquette everywhere – titles, the sidebar home link, the visible text.
-async function expectCasquette(page) {
+async function expectCasquette(page: Page) {
   await expect(page).toHaveTitle(/Casquette$/);
   const home = page.getByRole('link', { name: 'Casquette – home', exact: true });
   await expect(home).toBeVisible();

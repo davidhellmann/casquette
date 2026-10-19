@@ -1,7 +1,7 @@
-import { expect, test } from './fixtures';
+import { expect, test, type Page } from './fixtures';
 
-const kpi = (page, label: string) => page.getByTestId('kpis').locator('[data-slot="kpi-card"]').filter({ has: page.getByRole('heading', { name: label, exact: true }) });
-const kpiValue = (page, label: string) => kpi(page, label).locator('p').first();
+const kpi = (page: Page, label: string) => page.getByTestId('kpis').locator('[data-slot="kpi-card"]').filter({ has: page.getByRole('heading', { name: label, exact: true }) });
+const kpiValue = (page: Page, label: string) => kpi(page, label).locator('p').first();
 
 test('shows the eight key figures of the period', async ({ page }) => {
   await page.goto('/');

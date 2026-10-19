@@ -1,4 +1,4 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
+/// <reference types="vitest/config" />
 import { getViteConfig } from 'astro/config';
 
 // include is narrowed so Vitest doesn't also collect tests from .worktrees/.
