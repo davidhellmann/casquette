@@ -387,7 +387,11 @@ p, li, dd, figcaption, blockquote { text-wrap: pretty; }
 .foot-links { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 20px; }
 .foot-links a { text-decoration: none; }
 .foot-links a:hover, .foot-links a[aria-current="page"] { color: var(--ink); }
-.foot-note { flex-basis: 100%; font-size: 13px; }
+/* Last row: the Strava note left, the Ko-fi button right – a plain link, not Ko-fi's widget (no third-party requests) */
+.foot-end { flex-basis: 100%; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px 32px; }
+.foot-note { flex: 1 1 320px; font-size: 13px; }
+.foot .btn { gap: 6px; padding: 7px 13px; font-size: 13px; font-weight: 600; }
+.kofi svg { width: 15px; height: 15px; flex: none; fill: none; stroke: var(--brand); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 
 /* ---------- Legal pages (legal-notice.html, privacy-policy.html; #55) ----------
  * One reading column on the page background: eyebrow and heading as elsewhere, then plain prose.

@@ -319,11 +319,14 @@ test('step numbers sit above the step title as an eyebrow', async ({ page }) => 
   expect(Math.abs(num!.x - title!.x)).toBeLessThan(2);
 });
 
-test('footer: logo, GitHub, legal notice and privacy policy, the Strava note as plain text – no licence link, no Strava badge', async ({ page }) => {
+test('footer: logo, GitHub, legal notice and privacy policy, the Strava note as plain text and the Ko-fi button – no licence link, no Strava badge', async ({ page }) => {
   await page.goto('/');
   const foot = page.locator('footer');
   await expect(foot.locator('.foot-links a')).toHaveText(['GitHub', 'Legal notice', 'Privacy policy']);
   await expect(foot.getByRole('link', { name: 'GitHub' })).toHaveAttribute('href', REPO);
+  // A plain link, not Ko-fi's widget: that one loads Google Fonts and images from third parties the privacy policy would have to list
+  await expect(foot.locator('.foot-end > a.btn')).toHaveAttribute('href', 'https://ko-fi.com/N5K6292XFF');
+  await expect(foot.getByRole('link', { name: 'Support me on Ko-fi' })).toBeVisible();
   // The pages themselves come with the deploy (#55)
   await expect(foot.getByRole('link', { name: 'Legal notice' })).toHaveAttribute('href', 'legal-notice.html');
   await expect(foot.getByRole('link', { name: 'Privacy policy' })).toHaveAttribute('href', 'privacy-policy.html');
