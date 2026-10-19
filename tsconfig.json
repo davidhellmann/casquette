@@ -7,9 +7,8 @@
     "erasableSyntaxOnly": true,
     "allowImportingTsExtensions": true,
     "noUncheckedSideEffectImports": true,
-    // Until every module is TypeScript (docs/adr/0004): remaining .js/.mjs is imported, not checked
-    "allowJs": true,
-    "checkJs": false,
+    // Everything is TypeScript (docs/adr/0004); website/ stays plain JS and is excluded
+    "allowJs": false,
     "jsx": "react-jsx",
     "jsxImportSource": "react",
     "types": ["node"],

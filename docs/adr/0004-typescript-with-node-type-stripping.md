@@ -13,7 +13,7 @@ We decided:
 - **Strict from the start**: `astro/tsconfigs/strict`. `npm run typecheck` (`astro check`) checks `.ts`, `.tsx` and `.astro` in one pass; the deploy workflow runs it before the build.
 - **TypeScript 6**, not 7: `@astrojs/check` supports TypeScript up to 6. Revisit when it supports 7.
 
-The migration ran in two steps: every `.js`/`.mjs` was renamed to `.ts` with `// @ts-nocheck` and all references updated (behaviour unchanged), then each area removed its `@ts-nocheck` and got real types. `allowJs` goes once no JavaScript is left outside `website/`.
+The migration ran in two steps: every `.js`/`.mjs` was renamed to `.ts` with `// @ts-nocheck` and all references updated (behaviour unchanged), then each area removed its `@ts-nocheck` and got real types. `allowJs` is off; `website/` is excluded from the project.
 
 ## Considered options
 
@@ -24,6 +24,7 @@ The migration ran in two steps: every `.js`/`.mjs` was renamed to `.ts` with `//
 
 ## Consequences
 
-- New code is TypeScript. A `.js`/`.mjs` file outside `website/` is a mistake (`src/repo-hygiene.test.ts` may guard it).
-- Shared domain types (ride, athlete state, zones, dashboard period result, payloads) live next to the module that produces them and are exported from its entry point (`src/training/index.ts`, `src/ride/index.ts` …), not in a global types folder.
+- New code is TypeScript. A `.js`/`.mjs` file outside `website/` fails `src/repo-hygiene.test.ts`.
+- Shared domain types (ride, athlete state, zones, dashboard period result) live next to the module that produces them and are exported from its entry point (`src/training/index.ts`, `src/ride/index.ts` …), not in a global types folder. A page payload type is declared by the island that renders it and imported by its builder in `src/lib`; the dashboard payload types sit with its codec (`src/lib/dashboard-payload.ts`).
+- A ride file has a write side (`WrittenRideFrontmatter`, scripts/shared/ride-file.ts) and a read side (`RideFrontmatter`, src/ride); `src/content-schemas.ts` checks at compile time that the collection schema still matches the read side.
 - Node-reachable modules (everything the scripts import from `src/`) must use explicit `.ts` import paths and no `@/` alias – Node resolves neither extensionless paths nor the alias.

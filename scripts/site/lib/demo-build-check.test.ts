@@ -19,7 +19,7 @@ beforeEach(() => {
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'demo-check-'));
   demo = path.join(tmp, 'demo');
   build = path.join(tmp, 'dist');
-  put(demo, 'rides/2024/2024-06-22_demo-0001.md', '---\nid: "demo-0001"\nsegment_efforts:\n  - name: "Box Hill"\n    segment_id: "demo-seg-box-hill"\n---\n');
+  put(demo, 'rides/2024/2024-06-22_demo-0001.md', '---\nid: "demo-0001"\nstart_date_local: "2024-06-22T08:00:00"\nsegment_efforts:\n  - name: "Box Hill"\n    segment_id: "demo-seg-box-hill"\n---\n');
   put(demo, 'gear/bdemo1.md', '---\nid: "bdemo1"\n---\n');
   put(demo, 'streams/demo-0001.json', STREAM);
   put(build, 'index.html', PAGE('<a href="/demo/rides/demo-0001">Ride</a><astro-island component-url="/demo/_astro/Map.js"></astro-island>'));

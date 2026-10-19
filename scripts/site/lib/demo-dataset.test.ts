@@ -71,7 +71,7 @@ describe('readDemoDataset', () => {
 
 describe('rideYears', () => {
   it('lists every year with rides once, newest first, from the local start date', () => {
-    const rides = [{ start_date_local: '2025-12-31T23:30:00' }, { start_date_local: '2026-01-01T08:00:00' }, { start_date_local: '2025-06-01T08:00:00' }, {}];
+    const rides = [{ start_date_local: '2025-12-31T23:30:00' }, { start_date_local: '2026-01-01T08:00:00' }, { start_date_local: '2025-06-01T08:00:00' }, { start_date_local: 'not a date' }];
     expect(rideYears(rides)).toEqual([2026, 2025]);
   });
 });
@@ -89,7 +89,7 @@ describe('reviewYear', () => {
 });
 
 describe('heroRide', () => {
-  const ride = (id: string, extra = {}) => ({ id, trainer: false, device_watts: true, has_heartrate: true, summary_polyline: 'abc', ...extra });
+  const ride = (id: string, extra = {}) => ({ id, start_date_local: '2025-06-01T08:00:00', trainer: false, device_watts: true, has_heartrate: true, summary_polyline: 'abc', ...extra });
 
   it('picks the newest outdoor ride that has power, heart rate and a route', () => {
     const rides = [

@@ -21,7 +21,12 @@ export type DemoMeta = { note?: string; routes?: string; seed?: number; generate
  * A demo ride as the tooling reads it: the top-level frontmatter scalars (JSON values where they
  * parse, else the raw text) and the segment ids of its efforts.
  */
-export type DemoRide = { [key: string]: unknown; segment_efforts?: { segment_id: string }[] };
+export type DemoRide = {
+  [key: string]: unknown;
+  start_date_local: string;
+  start_date?: string | null;
+  segment_efforts?: { segment_id: string }[];
+};
 
 /** The demo dataset as a build on one day sees it (readDemoDataset). */
 export type DemoDataset = {
@@ -49,8 +54,11 @@ function scalar(raw: string): unknown {
  */
 function rideFields(text: string): DemoRide {
   const front = splitFrontmatter(text)?.front ?? '';
-  const ride: DemoRide = {};
-  for (const [, key, raw] of front.matchAll(/^([a-z_]+): (.+)$/gm)) ride[key] = scalar(raw);
+  const fields: Record<string, unknown> = {};
+  for (const [, key, raw] of front.matchAll(/^([a-z_]+): (.+)$/gm)) fields[key] = scalar(raw);
+  const { start_date_local: local, start_date: start } = fields;
+  if (typeof local !== 'string') throw new Error(`Demo ride ${String(fields.id)} has no local start date`);
+  const ride: DemoRide = { ...fields, start_date_local: local, start_date: typeof start === 'string' ? start : null };
   const segments = [...front.matchAll(/^\s+segment_id: (.+)$/gm)].map((m) => ({ segment_id: String(scalar(m[1])) }));
   if (segments.length) ride.segment_efforts = segments;
   return ride;
@@ -83,7 +91,7 @@ export function readDemoDataset({ root = ROOT, today = new Date() }: { root?: st
 
 /** The years that have rides (each one has a year-review page), from the local start dates, newest first. */
 export function rideYears(rides: readonly DemoRide[]): number[] {
-  const years = new Set(rides.map((r) => String(r.start_date_local ?? '').slice(0, 4)).filter((y) => /^\d{4}$/.test(y)));
+  const years = new Set(rides.map((r) => r.start_date_local.slice(0, 4)).filter((y) => /^\d{4}$/.test(y)));
   return [...years].map(Number).sort((a, b) => b - a);
 }
 

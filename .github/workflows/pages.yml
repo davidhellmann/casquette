@@ -33,6 +33,9 @@ jobs:
 
       - run: npm ci
 
+      - name: Type check
+        run: npm run typecheck
+
       - name: Paths
         id: paths
         env:

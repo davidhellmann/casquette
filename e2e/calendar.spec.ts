@@ -90,7 +90,7 @@ test('Enter or a click on a day with a ride opens the ride', async ({ page }) =>
  * from #dash-data, so move the second-newest stat ride onto the newest one's day (an hour earlier):
  * both entries then link to real ride pages. Returns their ids, earlier first.
  */
-// TODO(ts-b1): use the src/lib/dashboard-payload.ts type
+// The encoded wire format of #dash-data (encodeDashboard), only the fields this test moves.
 type DashRide = { id: string; start_local: string; start: number | string; stats?: boolean };
 type DashData = { rides: DashRide[] };
 
