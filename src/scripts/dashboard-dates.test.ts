@@ -1,15 +1,17 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import { expect, it } from 'vitest';
 import { processRide } from '../ride/index.ts';
+import type { Ride } from '../ride/index.ts';
 import { athleteTimeline } from '../training/index.ts';
 import { decodeDashboard, encodeDashboard } from '../lib/dashboard-payload.ts';
 import { dashboardPeriod, PERIODS } from '../dashboard-period/index.ts';
+import type { PeriodRide } from '../dashboard-period/index.ts';
 import { evalGoal } from './goals.ts';
+import type { Goal, GoalMetric } from './goals.ts';
 import { computeMetrics } from '../../scripts/shared/metrics.ts';
 import { rideFrontmatter } from '../../scripts/shared/ride-file.ts';
 import { calendarDay } from '../training/index.ts';
 
-const transport = (rides) => decodeDashboard(encodeDashboard({ rides })).rides;
+const transport = (rides: Ride[]): PeriodRide[] => decodeDashboard(encodeDashboard({ rides })).rides;
 
 it.each([
   ['2024-06-02', '2024-06-03'], // Sunday → Monday
@@ -24,20 +26,20 @@ it.each([
     device_watts: true, average_watts: 200, average_heartrate: 150, gear_id: 'bike' };
   const athleteState = timeline.at(a.start_date_local);
   const data = Array.from({ length: 1801 }, (_, i) => i);
-  const metrics = computeMetrics(a, { time: { data }, watts: { data: data.map(() => 200) }, heartrate: { data: data.map(() => 150) } }, athleteState.zones);
+  const metrics = computeMetrics(a, { time: { data }, watts: { data: data.map(() => 200) }, heartrate: { data: data.map(() => 150) } });
   const ride = processRide(rideFrontmatter({ id: a.id, summary: a, metrics }), athleteState);
   // Future instant has a plausible local day; must not leak into ANY consumer, including goals.
   const future = processRide({ ...a, id: 'future', start_date: new Date(+now + 1).toISOString(), metrics }, athleteState);
   const ebike = processRide({ ...a, id: 'ebike', sport_type: 'EBikeRide', start_date_local: '2025-01-01T00:00:00', metrics }, athleteState);
   const all = transport([ride, future, ebike]);
-  for (const days of PERIODS) for (const basis of ['power', 'hr']) {
+  for (const days of PERIODS) for (const basis of ['power', 'hr'] as const) {
     const d = dashboardPeriod(all, { days, basis, now, athleteState, gear: [{ id: 'bike', type: 'bike' }] });
     expect(d.rides.map(r => r.id)).toEqual(['done']);
     expect(d.S).toMatchObject({ n: 1, dist: 10000, tss: 50, time: 1800, avgWkg: 2.5 });
     expect(d.fitness.at(-1)).toMatchObject({ day: localDay, load: 50 });
     expect(d.S.ctl).toBeCloseTo(50 / 42);
     expect(d.S.atl).toBeCloseTo(50 / 7);
-    expect(d.pmc.at(-1).day).toBe(localDay);
+    expect(d.pmc.at(-1)?.day).toBe(localDay);
     expect(d.load).toMatchObject({ last7: 50, streak: 1, rest14: 0 });
     expect(d.history).toMatchObject({ cy: Number(localDay.slice(0, 4)), ytdNow: 10, km: 10 });
     const ordinal = (Date.parse(localDay) - Date.parse(localDay.slice(0, 4) + '-01-01')) / 86400000;
@@ -51,7 +53,7 @@ it.each([
     expect(d.weekly.buckets.reduce((s, b) => s + b.total, 0)).toBe(.5);
     expect(d.sparks.tss.reduce((s, v) => s + v, 0)).toBe(50);
     expect(d.rhythm.total).toBe(.5);
-    expect(d.records.np.id).toBe('done');
+    expect(d.records.np?.id).toBe('done');
     expect(d.S.curve[1200]).toMatchObject({ w: 200, id: 'done' });
     expect(d.curves.wkg.curve[1200]).toBe(2.5);
     expect(d.tiz.power.total).toBe(1800);
@@ -59,10 +61,11 @@ it.each([
     expect(d.nutrition.fluid).toBe(.325);
     expect(d.days).toBe(days || 1);
   }
-  for (const period of ['week', 'month', 'year']) for (const [metric, value, extra] of [
+  const cases: [GoalMetric, number, Partial<Goal>][] = [
     ['distance', 10, {}], ['time', .5, {}], ['count', 1, {}], ['tss', 50, {}],
     ['zone_time', .5, { zone: 4, basis: 'power' }], ['long_rides', 1, { min_km: 5 }],
-  ]) {
+  ];
+  for (const period of ['week', 'month', 'year'] as const) for (const [metric, value, extra] of cases) {
     const result = evalGoal({ period, metric, target: 100, ...extra }, all, now);
     expect(result.value).toBe(value);
     expect(new Date(localDay + 'T00:30:00') >= result.P.start).toBe(true);
@@ -79,7 +82,7 @@ it('goals respect the local new year/new week, not future actual starts', () => 
     processRide({ ...base, id: 'done', start_date: '2023-12-31T10:30:00Z' }, athleteState),
     processRide({ ...base, id: 'future', start_date: '2023-12-31T11:45:00.001Z' }, athleteState),
   ]);
-  for (const period of ['week', 'month', 'year']) {
+  for (const period of ['week', 'month', 'year'] as const) {
     expect(evalGoal({ period, metric: 'distance', target: 10 }, all, now)).toMatchObject({ value: 10, done: true });
   }
 });
@@ -105,7 +108,7 @@ it.each([
     expect(d.log[0].d.getHours()).toBe(hour);
     expect(d.log[0]).toMatchObject({ ftp: day >= 2 ? 300 : 200, avg_wkg: day >= 2 ? 5 : 3, tss: day >= 2 ? 100 : 225 });
   }
-  expect(transported.find(r => r.id === 'past').start).toBe(+new Date(start));
+  expect(transported.find(r => r.id === 'past')?.start).toBe(+new Date(start));
   // Inclusive actual-start boundary, retaining millisecond accuracy after JSON.
   const atStart = dashboardPeriod(transported, { days: 14, basis: 'power', now: new Date(start) });
   expect(atStart.log.map(r => r.id)).toEqual(['past']);
