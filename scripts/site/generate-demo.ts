@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck – typed in phase B of docs/adr/0004
 /**
  * Regenerates the synthetic demo dataset in demo/ (rides, gear, streams, data).
  *
@@ -15,7 +14,7 @@ import path from 'node:path';
 import { ROOT } from '../shared/env.ts';
 import { DEFAULT_SEED, generateDemoData, renderDemoFiles } from './lib/demo-data.ts';
 
-const arg = (name) => { const i = process.argv.indexOf(name); return i > 0 ? process.argv[i + 1] : undefined; };
+const arg = (name: string) => { const i = process.argv.indexOf(name); return i > 0 ? process.argv[i + 1] : undefined; };
 const seed = Number(arg('--seed') ?? DEFAULT_SEED);
 if (!Number.isInteger(seed)) throw new Error('--seed must be an integer');
 

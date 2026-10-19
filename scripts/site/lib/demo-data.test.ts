@@ -1,15 +1,15 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import fs from 'node:fs';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
-import { generateDemoData, renderDemoFiles } from './demo-data.ts';
-import { CITIES } from './demo-cities.ts';
-import { loadRouteCache, metres, offSegment, ROUTE_ATTRIBUTION, routeCacheFile } from './demo-route-cache.ts';
+import { generateDemoData, renderDemoFiles, type DemoData, type DemoRideFile } from './demo-data.ts';
+import { CITIES, type DemoCity } from './demo-cities.ts';
+import { loadRouteCache, metres, offSegment, ROUTE_ATTRIBUTION, routeCacheFile, type RouteCacheFile } from './demo-route-cache.ts';
+import type { LatLng, RideGeo } from '../../shared/ride-file.ts';
 import { ROOT } from '../../shared/env.ts';
 import { rideSchema, gearSchema } from '../../../src/content-schemas.ts';
 import { decodePolyline } from '../../../src/scripts/polyline.ts';
 import { athleteTimeline, countsInStats } from '../../../src/training/index.ts';
 
-let demo;
+let demo: DemoData;
 beforeAll(() => {
   // The generator must work offline: any network access fails the whole suite.
   vi.stubGlobal('fetch', () => { throw new Error('demo:generate must not use the network'); });
@@ -17,8 +17,16 @@ beforeAll(() => {
 }, 60_000); // generating the whole dataset can exceed the 10 s hook default on a busy machine
 
 const cache = loadRouteCache(ROOT, CITIES.map((c) => c.key));
-const cityOf = (ride) => CITIES.find((c) => c.country === ride.data.geo?.country);
-const outdoorRides = () => demo.rides.filter((r) => r.data.summary_polyline);
+/** The city of an outdoor ride (every one has a `geo:` block in one of the five cities). */
+const cityOf = (ride: DemoRideFile): DemoCity => CITIES.find((c) => c.country === ride.data.geo?.country)!;
+/** Start date of a demo ride (always set). */
+const localStart = (ride: DemoRideFile) => ride.data.start_date_local!;
+/** The chart streams of a ride with a route. */
+const streamsOf = (id: string) => demo.streams[id]!;
+/** An outdoor ride: one with a route – and with it places, a distance and start and end points. */
+type OutdoorRide = DemoRideFile & { data: { geo: RideGeo & { country: string }; distance: number; summary_polyline: string; start_latlng: LatLng; end_latlng: LatLng } };
+const isOutdoor = (r: DemoRideFile): r is OutdoorRide => Boolean(r.data.summary_polyline);
+const outdoorRides = () => demo.rides.filter(isOutdoor);
 
 describe('demo data generator – deterministic and offline', () => {
   it('generates without any network access (fetch is stubbed to throw)', () => {
@@ -46,7 +54,7 @@ describe('demo data generator – deterministic and offline', () => {
   });
 
   it('does not depend on the current date', () => {
-    expect(demo.data['meta.json'].newest_day).toBe(demo.rides.map((r) => r.data.start_date_local.slice(0, 10)).sort().pop());
+    expect(demo.data['meta.json'].newest_day).toBe(demo.rides.map((r) => localStart(r).slice(0, 10)).sort().pop());
   });
 });
 
@@ -57,7 +65,7 @@ describe('demo data generator – valid for the app', () => {
   });
 
   it('spans a few years with a reasonable number of rides', () => {
-    const years = new Set(demo.rides.map((r) => r.data.start_date_local.slice(0, 4)));
+    const years = new Set(demo.rides.map((r) => localStart(r).slice(0, 4)));
     expect(years.size).toBeGreaterThanOrEqual(3);
     expect(demo.rides.length).toBeGreaterThanOrEqual(150);
     expect(demo.rides.length).toBeLessThanOrEqual(300);
@@ -67,7 +75,7 @@ describe('demo data generator – valid for the app', () => {
     const gearIds = new Set(demo.gear.map((g) => g.data.id));
     for (const r of demo.rides) {
       const d = r.data;
-      expect(r.file).toBe(`rides/${d.start_date_local.slice(0, 4)}/${d.start_date_local.slice(0, 10)}_${d.id}.md`);
+      expect(r.file).toBe(`rides/${d.start_date_local!.slice(0, 4)}/${d.start_date_local!.slice(0, 10)}_${d.id}.md`);
       if (d.streams) expect(demo.streams[d.id], d.id).toBeTruthy();
       if (d.gear_id) expect(gearIds.has(d.gear_id), d.gear_id).toBe(true);
     }
@@ -104,7 +112,7 @@ describe('demo data generator – valid for the app', () => {
   it('ships a zones file with dated HR zones that change within the demo period, power stays Coggan', () => {
     const zonesFile = demo.data['zones.json'];
     const timeline = athleteTimeline({ athlete: demo.data['athlete.json'], zonesFile });
-    const days = demo.rides.map((r) => r.data.start_date_local.slice(0, 10)).sort();
+    const days = demo.rides.map((r) => localStart(r).slice(0, 10)).sort();
     const first = timeline.at(days[0]).zones, last = timeline.at(days.at(-1)).zones;
     expect(first.source).toEqual({ hr: 'file', power: 'default' });
     expect(first.heart_rate_zones).not.toEqual(last.heart_rate_zones);
@@ -129,7 +137,7 @@ describe('demo data generator – synthetic only', () => {
 });
 
 /** Distance (m) from p to the closest cached road geometry of the city. */
-function offRoad(p, city) {
+function offRoad(p: LatLng, city: DemoCity): number {
   let best = Infinity;
   for (const route of city.routes) {
     const pts = cache[route.key].points;
@@ -147,7 +155,7 @@ function offRoad(p, city) {
 describe('demo routes – cached road geometry', () => {
   it('has a cached geometry for every route, fetched with the waypoints and profile defined today', () => {
     for (const city of CITIES) {
-      const file = JSON.parse(fs.readFileSync(routeCacheFile(ROOT, city.key), 'utf8'));
+      const file: RouteCacheFile = JSON.parse(fs.readFileSync(routeCacheFile(ROOT, city.key), 'utf8'));
       expect(file.attribution, city.key).toBe(ROUTE_ATTRIBUTION);
       expect(Object.keys(file.routes).sort(), city.key).toEqual(city.routes.map((r) => r.key).sort());
       for (const route of city.routes) {
@@ -174,7 +182,7 @@ describe('demo routes – cached road geometry', () => {
 
 describe('demo rides – five real cities', () => {
   it('spreads the outdoor rides over all five cities', () => {
-    const perCountry = {};
+    const perCountry: Record<string, number> = {};
     for (const r of outdoorRides()) perCountry[r.data.geo.country] = (perCountry[r.data.geo.country] || 0) + 1;
     expect(Object.keys(perCountry).sort()).toEqual(['CA', 'DE', 'FR', 'GB', 'US']);
     for (const n of Object.values(perCountry)) expect(n).toBeGreaterThanOrEqual(10);
@@ -199,7 +207,7 @@ describe('demo rides – five real cities', () => {
     for (const r of outdoorRides()) {
       const city = cityOf(r);
       expect(city, r.file).toBeTruthy();
-      const track = demo.streams[r.data.id].latlng.filter(Boolean);
+      const track = streamsOf(r.data.id).latlng!.filter((q): q is LatLng => Boolean(q));
       for (const p of track.filter((_, i) => i % 4 === 0)) expect(offRoad(p, city), `${r.file} ${p}`).toBeLessThan(15);
     }
   });
@@ -219,9 +227,9 @@ describe('demo rides – five real cities', () => {
   });
 
   it('has roughly plausible altitudes per city', () => {
-    const range = {};
+    const range: Record<string, { lo: number; hi: number }> = {};
     for (const r of outdoorRides()) {
-      const k = cityOf(r).key, alt = demo.streams[r.data.id].altitude.filter((a) => a != null);
+      const k = cityOf(r).key, alt = streamsOf(r.data.id).altitude!.filter((a) => a != null);
       range[k] = { lo: Math.min(range[k]?.lo ?? Infinity, ...alt), hi: Math.max(range[k]?.hi ?? -Infinity, ...alt) };
     }
     expect(range.munich.lo).toBeGreaterThan(450); // Munich lies at ~520 m
@@ -241,7 +249,7 @@ describe('demo rides – places along the route', () => {
       expect(geo.start, r.file).toBe(city.name);
       expect(geo.countries, r.file).toEqual([city.country]);
       for (const p of geo.places) {
-        const known = city.places.find((x) => x.name === p.name);
+        const known = city.places.find((x) => x.name === p.name)!;
         expect(known, `${r.file} ${p.name}`).toBeTruthy();
         expect(p.region).toBe(known.region);
       }
@@ -250,9 +258,9 @@ describe('demo rides – places along the route', () => {
 
   it('only lists places the track actually passes', () => {
     for (const r of outdoorRides()) {
-      const city = cityOf(r), track = demo.streams[r.data.id].latlng.filter(Boolean);
+      const city = cityOf(r), track = streamsOf(r.data.id).latlng!.filter((q): q is LatLng => Boolean(q));
       for (const p of r.data.geo.places) {
-        const known = city.places.find((x) => x.name === p.name);
+        const known = city.places.find((x) => x.name === p.name)!;
         const closest = Math.min(...track.map((q) => metres(q, known.at)));
         expect(closest / 1000, `${r.file} ${p.name}`).toBeLessThan(known.r + 0.5);
       }
@@ -275,7 +283,7 @@ describe('demo rides – places along the route', () => {
 
 describe('demo rides – segments on real roads', () => {
   const efforts = () => demo.rides.flatMap((r) => r.data.segment_efforts.map((e) => ({ ...e, ride: r })));
-  const byName = (name) => efforts().filter((e) => e.name === name);
+  const byName = (name: string) => efforts().filter((e) => e.name === name);
 
   it('only uses the curated segments of the ride\'s city, each ridden several times', () => {
     const count = new Map();
@@ -292,14 +300,14 @@ describe('demo rides – segments on real roads', () => {
 
   it('starts and ends every effort on the ride\'s own track', () => {
     for (const e of efforts()) {
-      const seg = cityOf(e.ride).segments.find((s) => s.id === e.segment_id);
-      const track = demo.streams[e.ride.data.id].latlng.filter(Boolean);
+      const seg = cityOf(e.ride).segments.find((s) => s.id === e.segment_id)!;
+      const track = streamsOf(e.ride.data.id).latlng!.filter((q): q is LatLng => Boolean(q));
       for (const end of [seg.from, seg.to]) expect(Math.min(...track.map((q) => metres(q, end))), `${e.ride.file} ${seg.id}`).toBeLessThan(250);
     }
   });
 
   it('gives the famous climbs their real character', () => {
-    const one = (name) => { const list = byName(name); expect(list.length, name).toBeGreaterThan(0); return list[0]; };
+    const one = (name: string) => { const list = byName(name); expect(list.length, name).toBeGreaterThan(0); return list[0]; };
     expect(one('Box Hill Zig Zag').average_grade).toBeGreaterThan(3);
     expect(one('Box Hill Zig Zag').distance).toBeGreaterThan(2000);
     expect(one("Swain's Lane").average_grade).toBeGreaterThan(5);

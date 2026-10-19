@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck – typed in phase B of docs/adr/0004
 /**
  * Refreshes the cached road geometries of the demo routes (Refs #25).
  *
@@ -16,17 +15,17 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT, sleep } from '../shared/env.ts';
-import { CITIES } from './lib/demo-cities.ts';
-import { compactRoute, renderRouteCache, routeCacheFile, routerUrl } from './lib/demo-route-cache.ts';
+import { CITIES, type DemoRouteSpec } from './lib/demo-cities.ts';
+import { compactRoute, renderRouteCache, routeCacheFile, routerUrl, type CachedRoute, type RouteCacheFile } from './lib/demo-route-cache.ts';
 
 const USER_AGENT = 'casquette-demo-routes/0.1 (one-off demo data refresh; https://github.com/davidhellmann/casquette)';
 const PAUSE_MS = 2000;
 
-const arg = (name) => { const i = process.argv.indexOf(name); return i > 0 ? process.argv[i + 1] : undefined; };
+const arg = (name: string) => { const i = process.argv.indexOf(name); return i > 0 ? process.argv[i + 1] : undefined; };
 const all = process.argv.includes('--all');
 const only = arg('--only');
 
-async function fetchRoute(spec) {
+async function fetchRoute(spec: DemoRouteSpec): Promise<CachedRoute> {
   for (let attempt = 1; attempt <= 4; attempt++) {
     const res = await fetch(routerUrl(spec), { headers: { 'User-Agent': USER_AGENT, Accept: 'application/geo+json, application/json' } });
     if (res.ok) return compactRoute(spec, await res.json());
@@ -41,17 +40,18 @@ async function fetchRoute(spec) {
 let fetched = 0;
 for (const city of CITIES) {
   const file = routeCacheFile(ROOT, city.key);
-  const cached = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')).routes : {};
-  const routes = {};
+  const cached: Partial<RouteCacheFile['routes']> = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')).routes : {};
+  const routes: Record<string, CachedRoute | undefined> = {};
   for (const spec of city.routes) {
     const old = cached[spec.key];
     const stale = !old || old.profile !== spec.profile || JSON.stringify(old.waypoints) !== JSON.stringify(spec.waypoints);
     const wanted = only ? only === spec.key || only === city.key : all || stale;
     if (!wanted) { routes[spec.key] = old; continue; }
     if (fetched) await sleep(PAUSE_MS);
-    routes[spec.key] = await fetchRoute(spec);
+    const route = await fetchRoute(spec);
+    routes[spec.key] = route;
     fetched++;
-    console.log(`  ${spec.key}: ${routes[spec.key].elevation.length} points`);
+    console.log(`  ${spec.key}: ${route.elevation.length} points`);
   }
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, renderRouteCache(routes));

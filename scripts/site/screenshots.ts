@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck – typed in phase B of docs/adr/0004
 // Refs #14, #41: product screenshots (README, website) from the demo dataset.
 //
 //   npm run build && npm run preview      # terminal 1 (demo mode: no real rides present)
@@ -12,10 +11,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
+import type { Browser } from '@playwright/test';
 import { captureWebp, launchBrowser, openDemoPage, waitUntilReady } from './lib/capture.ts';
 import { DEMO_MARKER, heroRide, readDemoDataset, reviewYear } from './lib/demo-dataset.ts';
-import { ROOT } from '../shared/env.ts';
-import { SHOTS, VIEWPORT, planShots } from './lib/screenshots.ts';
+import { ROOT, errorMessage } from '../shared/env.ts';
+import { SHOTS, VIEWPORT, planShots, type PlannedShot } from './lib/screenshots.ts';
 
 const OUT_DIR = path.join(ROOT, 'docs', 'screenshots');
 // Marketing framing only: hide the demo indicator (its whole sidebar menu item, so no gap is left).
@@ -23,7 +23,7 @@ const SHOT_CSS = `[data-sidebar=menu-item]:has([${DEMO_MARKER}]){display:none!im
 
 const { values: args } = parseArgs({ options: { url: { type: 'string', default: 'http://localhost:4321' }, only: { type: 'string' } } });
 
-async function capture(browser, shot) {
+async function capture(browser: Browser, shot: PlannedShot): Promise<Buffer> {
   const { width, height, deviceScaleFactor } = VIEWPORT;
   const { page, close } = await openDemoPage(browser, shot.url, { theme: shot.theme, viewport: { width, height }, scale: deviceScaleFactor });
   try {
@@ -69,4 +69,4 @@ async function main() {
   }
 }
 
-main().catch((err) => { console.error(err.message); process.exit(1); });
+main().catch((err: unknown) => { console.error(errorMessage(err)); process.exit(1); });

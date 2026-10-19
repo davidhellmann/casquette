@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 /**
  * The demo rider's five cities (Refs #25): hand-picked routes on real roads, the towns
  * they pass and well-known segments. Pure configuration, no I/O.
@@ -17,8 +16,42 @@
  * - `segments`: start and end on the road (direction matters); a ride gets an effort when it
  *   passes both in that order.
  */
+import type { LatLng } from '../../shared/ride-file.ts';
 
-export const CITIES = [
+/** When the rider picks a route. */
+export type RouteUse = 'weekday' | 'weekend' | 'gravel' | 'errand';
+/** BRouter profile of a route. */
+export type RouteProfile = 'fastbike' | 'trekking' | 'gravel';
+
+/** A gazetteer place: a real town with its region and a radius (km) that roughly covers it. */
+export type DemoPlace = { name: string; region: string; at: LatLng; r: number };
+
+/**
+ * A hand-picked route: a loop, or an out-and-back whose rides turn around somewhere in `turn`
+ * (a share of the way out, [min, max]).
+ */
+export type DemoRouteSpec = { key: string; name: string; use: RouteUse; profile: RouteProfile; waypoints: LatLng[] }
+  & ({ kind: 'loop' } | { kind: 'out-back'; turn: [number, number] });
+
+/** A curated segment: start and end on the road, in riding direction. */
+export type DemoSegmentSpec = { id: string; name: string; from: LatLng; to: LatLng };
+
+/** One of the demo rider's cities: where the rider is based there, its places, routes and segments. */
+export type DemoCity = {
+  key: string;
+  name: string;
+  /** ISO country code, as in the `geo:` block. */
+  country: string;
+  countryName: string;
+  region: string;
+  timezone: string;
+  base: LatLng;
+  places: DemoPlace[];
+  routes: DemoRouteSpec[];
+  segments: DemoSegmentSpec[];
+};
+
+export const CITIES: readonly DemoCity[] = [
   {
     key: 'munich', name: 'Munich', country: 'DE', countryName: 'Germany', region: 'Bavaria', timezone: 'Europe/Berlin',
     base: [48.1293, 11.5762],
