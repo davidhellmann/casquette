@@ -31,7 +31,7 @@ What the build does:
 - It fails, and writes nothing, when a legal variable is missing or invalid. It also fails when any `{{…}}` is left in a page.
 - `--demo <dir>` copies a demo build into `<out>/demo/` and injects Cabin into its pages as well.
 
-It reads only the process environment, never a `.env` file. Values are public once deployed, but keep them out of the repository: set them as repository variables of the deploy.
+It reads only the process environment, never a `.env` file. Values are public once deployed, but keep them out of the repository and out of the public Actions logs: set them as repository secrets of the deploy (secrets are masked in logs, variables are not).
 
 The custom events Cabin counts are the `data-cabin-event` attributes in `index.html`: *See the demo*, *Open GitHub*, *Copy clone command*, *Copy demo command*, *Copy connect command* and *Copy sync command*. The privacy policy lists the same names; a unit test (`scripts/site/lib/site-template.test.ts`) checks that both agree. When you add an event, add it to the policy too. Keep the names fixed and free of personal data.
 
@@ -42,12 +42,12 @@ The custom events Cabin counts are the `data-cabin-event` attributes in `index.h
 ```bash
 DATA_SOURCE=demo PUBLIC_LEGAL_URL=https://casquette.es/ npx astro build --base /demo/ --outDir dist-demo
 npm run demo:check -- dist-demo --base /demo/   # fails on anything but demo data, or links outside /demo/
-npm run site:build -- --demo dist-demo   # SITE_* from repository variables → dist-site/ (+ dist-site/demo/)
+npm run site:build -- --demo dist-demo   # SITE_LEGAL_* from repository secrets, SITE_CABIN_HOST from a variable → dist-site/ (+ dist-site/demo/)
 ```
 
 `dist-site/` is the artifact. `PUBLIC_LEGAL_URL` (the site's origin) gives the demo its links back to the legal pages. The app's sidebar then shows "Legal notice · Privacy policy". Without it, nothing is shown, so self-hosted copies stay clean.
 
-Repository variables (*Settings → Secrets and variables → Actions → Variables*): the `SITE_*` variables above, and `PAGES_DOMAIN` for a custom domain (`casquette.es`). With it, the website is served at `https://<domain>/` and the demo at `/demo/`. Without it, the deploy falls back to `https://<owner>.github.io/<repo>/` and derives the paths from that (base path `/<repo>/demo/`), so a fork deploys too once it sets its own `SITE_LEGAL_*`.
+*Settings → Secrets and variables → Actions*: the `SITE_LEGAL_*` values as **secrets** (masked in the public logs), `SITE_CABIN_HOST` and `PAGES_DOMAIN` as **variables** – both end up on the site anyway. `PAGES_DOMAIN` is the custom domain (`casquette.es`). With it, the website is served at `https://<domain>/` and the demo at `/demo/`. Without it, the deploy falls back to `https://<owner>.github.io/<repo>/` and derives the paths from that (base path `/<repo>/demo/`), so a fork deploys too once it sets its own `SITE_LEGAL_*`.
 
 One-time setup on GitHub (owner):
 

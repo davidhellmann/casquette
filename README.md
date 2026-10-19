@@ -229,7 +229,7 @@ npm run build      # static site in dist/
 The promo website and the public demo (synthetic data only) are built separately: `npm run site:build` fills the website's legal pages from `SITE_LEGAL_*` variables and can add Cabin analytics. With `PUBLIC_LEGAL_URL` set at build time, the app links to those legal pages from its sidebar. See [`website/README.md`](website/README.md).
 
 The live website and demo deploy themselves: on every push to `main`, [`.github/workflows/pages.yml`](.github/workflows/pages.yml) publishes the website at `/` and the demo (built from the demo dataset, checked by `npm run demo:check`) at `/demo/` on GitHub Pages.
-It reads the custom domain (`PAGES_DOMAIN`) and the legal details (`SITE_LEGAL_*`, optional `SITE_CABIN_HOST`) from repository variables; your own copy of Casquette needs none of this ([details](website/README.md#in-the-deploy-54)).
+It reads the legal details (`SITE_LEGAL_*`) from repository secrets and the custom domain (`PAGES_DOMAIN`, optional `SITE_CABIN_HOST`) from repository variables; your own copy of Casquette needs none of this ([details](website/README.md#in-the-deploy-54)).
 
 ## Tech stack
 

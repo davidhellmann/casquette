@@ -1,9 +1,11 @@
 # Website and live demo on GitHub Pages (#54, #55): on every push to main the website (website/)
 # goes to / and the app, built from the synthetic demo dataset only, to /demo/.
-# Repository variables (Settings → Secrets and variables → Actions → Variables):
+# Settings → Secrets and variables → Actions.
+# Secrets (masked in the public logs):
+#   SITE_LEGAL_*   legal notice and privacy policy details – required, the build fails without them
+# Variables (public anyway – they end up on the site):
 #   PAGES_DOMAIN   custom domain, e.g. casquette.es (also set it in Settings → Pages). Without it the
 #                  site is served from <owner>.github.io/<repo>/ and the paths are derived from that.
-#   SITE_LEGAL_*   legal notice and privacy policy details – required, the build fails without them
 #   SITE_CABIN_HOST  Cabin analytics script host – optional, no analytics without it
 # Details: website/README.md → "In the deploy".
 name: Pages
@@ -65,10 +67,10 @@ jobs:
 
       - name: Build the website with the demo
         env:
-          SITE_LEGAL_NAME: ${{ vars.SITE_LEGAL_NAME }}
-          SITE_LEGAL_ADDRESS: ${{ vars.SITE_LEGAL_ADDRESS }}
-          SITE_LEGAL_COUNTRY: ${{ vars.SITE_LEGAL_COUNTRY }}
-          SITE_LEGAL_EMAIL: ${{ vars.SITE_LEGAL_EMAIL }}
+          SITE_LEGAL_NAME: ${{ secrets.SITE_LEGAL_NAME }}
+          SITE_LEGAL_ADDRESS: ${{ secrets.SITE_LEGAL_ADDRESS }}
+          SITE_LEGAL_COUNTRY: ${{ secrets.SITE_LEGAL_COUNTRY }}
+          SITE_LEGAL_EMAIL: ${{ secrets.SITE_LEGAL_EMAIL }}
           SITE_CABIN_HOST: ${{ vars.SITE_CABIN_HOST }}
         run: npm run site:build -- --demo dist-demo
 
