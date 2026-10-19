@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 /**
  * English UI strings.
  * `{name}` = placeholder, `{ one, other }` = plural form chosen by `n`.

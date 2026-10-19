@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import { describe, it, expect } from 'vitest';
 import { zoneIdx, cogganZones, DEFAULT_ZONES, DEFAULT_HR_ZONES, POWER_ZONE_NAMES, HR_ZONE_NAMES } from './index.ts';
 

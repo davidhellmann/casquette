@@ -1,8 +1,8 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import { describe, expect, it } from 'vitest';
 import { trainingCalendar, yearTotals } from './index.ts';
+import type { TrainingCalendar } from './index.ts';
 
-const ride = (id, d, km, extra = {}) => ({ id, d, start: +d, distance: km * 1000, moving_time: 3600, h: 1, elev: 100, load: km, name: `Ride ${id}`, ...extra });
+const ride = (id: string | number, d: Date, km: number, extra = {}) => ({ id, d, start: +d, distance: km * 1000, moving_time: 3600, h: 1, elev: 100, load: km, name: `Ride ${id}`, ...extra });
 // 2025 starts on a Wednesday and ends on a Wednesday
 const year = [
   ride(2, new Date(2025, 0, 1, 17), 30),
@@ -11,7 +11,7 @@ const year = [
   ride(4, new Date(2025, 5, 3, 8), 5),
   ride(5, new Date(2025, 11, 31, 8), 60),
 ];
-const of = (C, y, m, d) => C.cells.find((c) => c.key === `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
+const of = <R>(C: TrainingCalendar<R>, y: number, m: number, d: number) => C.cells.find((c) => c.key === `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
 const yearCal = (today = new Date(2026, 1, 1)) => trainingCalendar(year, { from: new Date(2025, 0, 1), to: new Date(2025, 11, 31), today, measure: 'km' });
 
 describe('trainingCalendar – grid', () => {
@@ -43,20 +43,29 @@ describe('trainingCalendar – grid', () => {
     expect(byLoad.days['2025-06-02'].value).toBe(100);
   });
 
+  it('leaves out a ride without a valid ride date instead of giving it a day', () => {
+    const rides = [ride('broken', new Date(NaN), 10, { start: +new Date(2025, 0, 6, 9) }), ride('ok', new Date(2025, 0, 6, 10), 10)];
+    const C = trainingCalendar(rides, { from: new Date(2025, 0, 6), to: new Date(2025, 0, 12), measure: 'km' });
+    expect(Object.keys(C.days)).toEqual(['2025-01-06']);
+    expect(C.days['2025-01-06'].rides.map((r) => r.id)).toEqual(['ok']);
+    expect(C.activeDays).toBe(1);
+  });
+
   it('rejects an unknown measure', () => {
+    // @ts-expect-error an unknown measure, as an untyped caller could pass it
     expect(() => trainingCalendar(year, { from: new Date(2025, 0, 1), to: new Date(2025, 0, 2), measure: 'hours' })).toThrow('measure');
   });
 });
 
 describe('trainingCalendar – levels', () => {
   it('colours ride days by the quartiles of the positive day values', () => {
-    const C = yearCal(), level = (m, d) => of(C, 2025, m, d).level;
+    const C = yearCal(), level = (m: number, d: number) => of(C, 2025, m, d)?.level;
     expect([level(5, 3), level(0, 1), level(11, 31), level(5, 2), level(0, 2)]).toEqual([1, 2, 3, 4, 0]);
   });
 
   it('gives ride days without distance or load the lowest level and keeps them out of the quartiles', () => {
     const rides = [ride('a', new Date(2025, 0, 6), 0), ride('b', new Date(2025, 0, 7), 10), ride('c', new Date(2025, 0, 8), 20)];
-    for (const measure of ['km', 'load']) {
+    for (const measure of ['km', 'load'] as const) {
       const C = trainingCalendar(rides, { from: new Date(2025, 0, 6), to: new Date(2025, 0, 12), measure });
       expect(C.cells.map((c) => c.level)).toEqual([1, 1, 4, 0, 0, 0, 0]);
     }
@@ -66,10 +75,10 @@ describe('trainingCalendar – levels', () => {
 });
 
 describe('trainingCalendar – streaks', () => {
-  const at = (d) => ride(String(d), new Date(2025, 2, d, 10), 10);
+  const at = (d: number) => ride(String(d), new Date(2025, 2, d, 10), 10);
   // March 2025: rides on 3–5, 10, 15–16; 1 March is a Saturday
   const rides = [3, 4, 5, 10, 15, 16].map(at);
-  const cal = (to, from = new Date(2025, 2, 1)) => trainingCalendar(rides, { from, to, measure: 'load' });
+  const cal = (to: Date, from = new Date(2025, 2, 1)) => trainingCalendar(rides, { from, to, measure: 'load' });
 
   it('finds the longest run of consecutive ride days within the range', () => {
     expect(cal(new Date(2025, 2, 31))).toMatchObject({ activeDays: 6, longestStreak: 3 });

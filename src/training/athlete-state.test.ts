@@ -1,6 +1,6 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import { describe, it, expect } from 'vitest';
 import { athleteTimeline, cogganZones, DEFAULT_HR_ZONES } from './index.ts';
+import type { AthleteHistoryEntry } from './index.ts';
 
 const STRAVA_HR = [{ min: 0, max: 141 }, { min: 141, max: 155 }, { min: 155, max: 165 }, { min: 165, max: 178 }, { min: 178, max: null }];
 // Deliberately not Coggan: Strava's power zones must not override the date-based derivation.
@@ -91,7 +91,8 @@ describe('athleteTimeline – athlete state on a date', () => {
     const t = athleteTimeline({ athlete: { profile: { weight: -1 }, zones: { ftp: -200 } }, history: [
       { date: '2020-01-01', ftp: 220, weight: 90 },
       { date: '2021-01-01', ftp: 0, weight: -10 },
-      { date: '2022-01-01', ftp: Infinity, weight: '80' },
+      // A string is no measurement, even when it reads like one (deliberately invalid file contents).
+      { date: '2022-01-01', ftp: Infinity, weight: '80' as unknown as number },
     ] });
     expect(t.at('2023-01-01')).toMatchObject({ ftp: 220, weight: 90 });
     expect(athleteTimeline({ athlete: { profile: { weight: -1 }, zones: { ftp: -200 } } }).at('2020-01-01'))
@@ -109,7 +110,8 @@ describe('athleteTimeline – athlete state on a date', () => {
   });
 
   it('exposes the history sorted ascending, without entries lacking a valid date', () => {
-    const t = athleteTimeline({ history: [...HISTORY, { ftp: 300 }, { date: 'broken', ftp: 1 }] });
+    // Deliberately invalid file contents: an entry without a date.
+    const t = athleteTimeline({ history: [...HISTORY, { ftp: 300 } as AthleteHistoryEntry, { date: 'broken', ftp: 1 }] });
     expect(t.history.map((x) => x.date)).toEqual(['2020-01-01', '2024-06-01']);
     expect(t.history[0].d).toEqual(new Date(2020, 0, 1));
   });

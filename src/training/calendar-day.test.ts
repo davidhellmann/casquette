@@ -1,11 +1,10 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import { describe, expect, it } from 'vitest';
 import {
   addDays, calendarDate, calendarDay, dayOrdinal, daysBetween, isoWeek, ordinalDay, rideDate, sameDayLastYear,
   startOfDay, weekStart, yearDayIndex,
 } from './index.ts';
 
-const day = (s, time = '12:00:00') => new Date(`${s}T${time}`);
+const day = (s: string, time = '12:00:00') => new Date(`${s}T${time}`);
 
 describe('calendar day – day keys and the ride date', () => {
   it('keeps the written local date of strings, even with Z or an offset', () => {
@@ -20,7 +19,8 @@ describe('calendar day – day keys and the ride date', () => {
     expect(calendarDay(undefined)).toBeNull();
   });
   it('takes the ride date from the written local start time', () => {
-    expect(rideDate({ start_local: '2024-01-01T00:30:00+14:00', start: Date.parse('2023-12-31T10:30:00Z') })).toBe('2024-01-01');
+    const ride = { start_local: '2024-01-01T00:30:00+14:00', start: Date.parse('2023-12-31T10:30:00Z') };
+    expect(rideDate(ride)).toBe('2024-01-01');
   });
 });
 
