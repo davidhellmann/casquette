@@ -1,4 +1,5 @@
 ---
+import type { InferGetStaticPropsType } from 'astro';
 import Base from '../../layouts/Base.astro';
 import { render } from 'astro:content';
 import { RideView } from '../../components/ride/RideView';
@@ -9,11 +10,14 @@ import { t } from '../../i18n/index.ts';
 export async function getStaticPaths() {
   return (await getDataset()).rides.map((r) => ({ params: { id: r.id }, props: { id: r.id } }));
 }
+type Props = InferGetStaticPropsType<typeof getStaticPaths>;
 
 const { id } = Astro.props;
 const data = await getDataset();
 const R = ridePayload(data, { id });
 const entry = data.entry('rides', id);
+// Every ride comes from a ride entry
+if (!entry) throw new Error(`No ride entry ${id}`);
 const { Content } = await render(entry);
 const raw = JSON.stringify(entry.data, null, 2);
 const hasDescription = !!entry.body?.trim();

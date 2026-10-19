@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { ExternalLink } from 'lucide-react';
 import { CardLabel } from '@/components/app/CardLabel';
-import { DataTable, dataTableColumns, numeric, numSort, type DataTableColumn } from '@/components/app/DataTable';
+import { DataTable, dataTableColumns, numeric, numSort } from '@/components/app/DataTable';
 import { routes } from '@/lib/routes.ts';
 import { Card, CardAction, CardContent, CardHeader } from '@/components/ui/card';
 import { SegmentedToggle } from '@/components/app/SegmentedToggle';

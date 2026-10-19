@@ -1,4 +1,5 @@
 ---
+import type { InferGetStaticPropsType } from 'astro';
 import Base from '../../layouts/Base.astro';
 import { SegmentView } from '../../components/segments/SegmentView';
 import { getDataset } from '../../lib/data.ts';
@@ -7,6 +8,8 @@ import { segmentPageIds, segmentPayload } from '../../lib/segment-payload.ts';
 export async function getStaticPaths() {
   return segmentPageIds(await getDataset()).map((id) => ({ params: { id }, props: { id } }));
 }
+type Props = InferGetStaticPropsType<typeof getStaticPaths>;
+
 const { id } = Astro.props;
 const payload = segmentPayload(await getDataset(), { id });
 ---
