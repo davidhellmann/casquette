@@ -172,7 +172,8 @@ p, li, dd, figcaption, blockquote { text-wrap: pretty; }
  * day its place in the fill-up (--n), and on #hero --late (seconds the fragments took, so the
  * sequence keeps its order) and .is-live. Fragments are scaled as a whole and never styled from
  * here – only animated through their hooks (website/ui/README.md).
- * Phone (≤ 860 px): the training load card sits under the shot, the calendar is left out. */
+ * Phone (≤ 860 px): the training load card sits under the shot, overlapping its faded bottom;
+ * the calendar is left out. */
 .hero { text-align: center; padding-top: 56px; }
 .hero .h-hero { margin: 22px auto 20px; } /* two lines from tablet up: "Training dashboard" ≈ 8.3em */
 .hero .h-hero .w { display: inline-block; }
@@ -184,7 +185,12 @@ p, li, dd, figcaption, blockquote { text-wrap: pretty; }
   --hero-shadow: 0 1px 2px light-dark(rgb(13 20 36 / .06), rgb(0 0 0 / .3)), 0 28px 56px -26px light-dark(rgb(13 20 36 / .4), rgb(0 0 0 / .7));
   position: relative; max-width: 1240px; height: clamp(300px, 40vw, 600px); margin: 56px auto 0;
 }
-.hero-shot { position: absolute; inset: 0; overflow: hidden; border-radius: var(--radius) var(--radius) 0 0; }
+/* The panel's corner shrinks with the dashboard (card radius 8 px + --pad, scaled), so the cards
+ * sit concentric in it on a phone too; from ~600 px wide it stays at --radius */
+.hero-shot {
+  --r: min(var(--radius), calc((8px + var(--pad)) * var(--s, 1)));
+  position: absolute; inset: 0; overflow: hidden; border-radius: var(--r) var(--r) 0 0;
+}
 .hero-panel { position: absolute; inset: 0; border-radius: inherit; background: var(--surface); transform-origin: 50% 0; }
 /* A fragment keeps its own layout width and is scaled as a whole */
 .hero-fit { position: absolute; top: 0; left: 0; width: var(--fw); transform-origin: 0 0; }
@@ -208,7 +214,8 @@ p, li, dd, figcaption, blockquote { text-wrap: pretty; }
   .hero-stage { height: auto; }
   .hero-shot { position: relative; height: calc((var(--fh, 771px) + 2 * var(--pad)) * var(--s, .3)); }
   .hero-card--calendar { display: none; }
-  .hero-card--load { --cs: 1; position: relative; left: auto; top: auto; width: fit-content; margin: 12px auto 0; }
+  /* pulled up into the shot's faded bottom (fade-bottom from 55 %), like the overhang on desktop */
+  .hero-card--load { --cs: 1; position: relative; left: auto; top: auto; width: fit-content; margin: -56px auto 0; }
 }
 
 /* Intro: plays once on load; the stage waits for its fragments (.is-live). Its delays count from
@@ -288,7 +295,7 @@ p, li, dd, figcaption, blockquote { text-wrap: pretty; }
 /* The year's head ends with its training calendar: a taller shot, fading later, so it shows */
 #year { --shot-h: clamp(420px, 46vw, 720px); }
 #year .feature-shot { --fade-from: 72%; --fade-to: 100%; }
-.feature-shot > picture > img { width: calc(1120px * var(--ui-zoom)); max-width: none; height: auto; border-radius: 10px; }
+.feature-shot > img { width: calc(1120px * var(--ui-zoom)); max-width: none; height: auto; }
 @media (max-width: 860px) {
   /* Stacked; every shot runs off the right edge */
   .feature, .feature--flip { grid-template-columns: 1fr; gap: 28px; --ui-zoom: .65; --shot-pad: 16px; --shot-h: 300px; }

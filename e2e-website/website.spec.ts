@@ -551,7 +551,7 @@ for (const scheme of ['light', 'dark'] as const) {
 }
 
 for (const scheme of ['light', 'dark'] as const) {
-  test(`hero on a phone: the training load card under the shot, no overlap (390 px, ${scheme})`, async ({ page }) => {
+  test(`hero on a phone: the training load card under the shot, overlapping only its faded bottom (390 px, ${scheme})`, async ({ page }) => {
     await page.emulateMedia({ colorScheme: scheme, reducedMotion: 'reduce' });
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
@@ -559,7 +559,9 @@ for (const scheme of ['light', 'dark'] as const) {
     const box = async (selector: string) => (await page.locator(selector).boundingBox())!;
     const [buttons, shot, card] = [await box('#hero .btns'), await box('#hero .hero-shot'), await box('#hero .hero-card--load')];
     expect(shot.y).toBeGreaterThanOrEqual(buttons.y + buttons.height);
-    expect(card.y).toBeGreaterThanOrEqual(shot.y + shot.height);
+    // Pulled up into the shot, but only into its faded bottom (fade-bottom from 55 %)
+    expect(card.y).toBeLessThan(shot.y + shot.height);
+    expect(card.y).toBeGreaterThan(shot.y + shot.height * .55);
     for (const b of [shot, card]) {
       expect(b.x).toBeGreaterThanOrEqual(0);
       expect(b.x + b.width).toBeLessThanOrEqual(390);
@@ -569,5 +571,21 @@ for (const scheme of ['light', 'dark'] as const) {
     const dashboard = await box('#hero [data-fragment="dashboard"]');
     expect(dashboard.x + dashboard.width).toBeLessThanOrEqual(shot.x + shot.width);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+    // The panel's corner shrinks with the dashboard: concentric with its scaled cards (8 px + --pad)
+    const radius = await page.locator('#hero .hero-shot').evaluate((el) => parseFloat(getComputedStyle(el).borderTopLeftRadius));
+    expect(radius).toBeLessThanOrEqual(32 * dashboard.width / 1120 + 1);
+  });
+}
+
+for (const width of [390, 1440]) {
+  test(`map crop keeps its aspect ratio (${width} px)`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/');
+    const img = page.locator('#map .map-dark');
+    await img.scrollIntoViewIfNeeded();
+    await expect(img).toHaveJSProperty('complete', true);
+    const { width: w, height: h } = (await img.boundingBox())!;
+    expect(h / w).toBeCloseTo(820 / 1120, 2);
   });
 }
