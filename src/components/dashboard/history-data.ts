@@ -7,6 +7,15 @@ import { t } from '../../i18n/index.ts';
 import type { TParams } from '../../i18n/index.ts';
 import type { DashboardRide, DecodedPeriod } from '../../lib/dashboard-payload.ts';
 
+/** Key of a year's series in the kilometre race ('y2024'). */
+export type RaceYearKey = `y${number}`;
+/** One day of the kilometre race: label, month label on the 1st, cumulative km per year. */
+export interface RaceRow {
+  label: string;
+  month: string | null;
+  [year: RaceYearKey]: number | null;
+}
+
 const rides = (n: number) => t('common.rides', { n: nf(n) });
 
 /** Rides since the first year – the subline of the history cards. */
@@ -42,8 +51,8 @@ export function kilometreRace(D: DecodedPeriod) {
   const { cumulative, cy, labels, ytdNow, ytdPrev, ytdDelta } = D.history;
   if (!cumulative.length) return null;
   return {
-    years: cumulative.map(({ y }) => ({ key: `y${y}`, label: String(y), current: y === cy })),
-    rows: labels.map((d, i) => ({
+    years: cumulative.map(({ y }): { key: RaceYearKey; label: string; current: boolean } => ({ key: `y${y}`, label: String(y), current: y === cy })),
+    rows: labels.map((d, i): RaceRow => ({
       label: fmtDayMonth(d),
       month: d.getDate() === 1 ? fmtMonthShort(d) : null,
       ...Object.fromEntries(cumulative.map(({ y, data }) => [`y${y}`, data[i]])),

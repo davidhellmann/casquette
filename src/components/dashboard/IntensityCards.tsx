@@ -1,22 +1,24 @@
 import * as React from 'react';
-import { Area, Bar, BarChart, CartesianGrid, Cell, ComposedChart, Line, Pie, PieChart, ReferenceArea, XAxis, YAxis } from 'recharts';
+import { Area, Bar, BarChart, CartesianGrid, Cell, ComposedChart, Line, Pie, PieChart, ReferenceArea, XAxis, YAxis, type TooltipContentProps } from 'recharts';
 import { ChartCard } from '@/components/app/ChartCard';
 import { EmptyState } from '@/components/app/EmptyState';
 import { ChartContainer, ChartTooltip, type ChartConfig } from '@/components/ui/chart';
 import { ShareStrip, ZoneBars, ZoneLabel } from '@/components/charts/ZoneBars';
 import { SERIES, barRadius, niceTicks, zoneColor } from '@/components/charts/series';
-import { SeriesLegend, TooltipBox } from '@/components/charts/chart-parts';
+import { SeriesLegend, TooltipBox, activeRow } from '@/components/charts/chart-parts';
 import { nf } from '@/scripts/format.ts';
 import { t } from '@/i18n/index.ts';
 import { powerHr, rhythm, timeInZones, zoneShare, zoneWeeks } from './intensity-data.ts';
 import { Figure } from '@/components/app/KeyFigures';
 import { BasisToggle, type Basis } from './parts';
 import { routes } from '@/lib/routes.ts';
+import type { DecodedPeriod } from '@/lib/dashboard-payload.ts';
+import type { AthleteZones } from '@/training/index.ts';
 
 const cd = (key: string, x?: Record<string, unknown>) => t('dash.card.' + key, x);
 
 /** Hours per week (month) stacked by zone. */
-export function ZoneWeeksCard({ D, basis }: { D: any; basis: Basis }) {
+export function ZoneWeeksCard({ D, basis }: { D: DecodedPeriod; basis: Basis }) {
   const W = zoneWeeks(D, basis);
   const monthly = D.days > 400;
   const title = cd(monthly ? 'monthlyZone' : 'weeklyZone'), sub = cd(monthly ? 'perMonth' : 'perWeek');
@@ -27,10 +29,10 @@ export function ZoneWeeksCard({ D, basis }: { D: any; basis: Basis }) {
   const Tip = ({ active, payload }: { active?: boolean; payload?: { payload: Row }[] }) => {
     const row = active && payload?.[0]?.payload;
     if (!row) return null;
-    const lines = series.filter((s) => (row as any)[s.key] > 0).map((s) => ({ label: s.label, color: s.color, value: `${nf((row as any)[s.key], 1)} h` }));
+    const lines = series.filter((s) => row[s.key] > 0).map((s) => ({ label: s.label, color: s.color, value: `${nf(row[s.key], 1)} h` }));
     return <TooltipBox title={row.title} lines={lines} footer={row.total} className="min-w-52" />;
   };
-  const max = Math.max(...W.rows.map((r) => series.reduce((s, x) => s + ((r as any)[x.key] || 0), 0)));
+  const max = Math.max(...W.rows.map((r) => series.reduce((s, x) => s + (r[x.key] || 0), 0)));
   const ticks = niceTicks(0, max, 4);
   return (
     <ChartCard title={title} description={sub} data-testid="zone-weeks-chart">
@@ -50,7 +52,7 @@ export function ZoneWeeksCard({ D, basis }: { D: any; basis: Basis }) {
 }
 
 /** Ride time by zone of the ride classification – donut with the classified hours in its centre. */
-export function ZoneShareCard({ D, basis }: { D: any; basis: Basis }) {
+export function ZoneShareCard({ D, basis }: { D: DecodedPeriod; basis: Basis }) {
   const Z = zoneShare(D, basis);
   const sub = cd(basis === 'hr' ? 'hrZones5' : 'powerZones7');
   return (
@@ -60,8 +62,8 @@ export function ZoneShareCard({ D, basis }: { D: any; basis: Basis }) {
           <div className="relative mx-auto aspect-square w-full max-w-52">
             <ChartContainer config={Object.fromEntries(Z.rows.map((r) => [`z${r.zone}`, { label: r.label, color: zoneColor(r.zone) }]))} className="aspect-square w-full">
               <PieChart>
-                <ChartTooltip content={({ active, payload }: any) => {
-                  const r = active && payload?.[0]?.payload;
+                <ChartTooltip content={({ active, payload }: TooltipContentProps) => {
+                  const r: (typeof Z.rows)[number] | undefined = active ? payload?.[0]?.payload : undefined;
                   return r ? <TooltipBox title={r.label} lines={[{ label: t('metric.hours'), color: zoneColor(r.zone), value: r.value }]} /> : null;
                 }} />
                 <Pie data={Z.rows} dataKey="hours" nameKey="label" innerRadius="70%" outerRadius="96%" paddingAngle={1.5} cornerRadius={2} stroke="var(--card)" strokeWidth={2} isAnimationActive={false}>
@@ -89,7 +91,7 @@ export function ZoneShareCard({ D, basis }: { D: any; basis: Basis }) {
 }
 
 /** Time in zone from the ride histograms (power or HR switchable in the card). */
-export function TimeInZonesCard({ D }: { D: any }) {
+export function TimeInZonesCard({ D }: { D: DecodedPeriod }) {
   const [basis, setBasis] = React.useState<Basis>('power');
   const X = timeInZones(D, basis);
   return (
@@ -108,7 +110,10 @@ export function TimeInZonesCard({ D }: { D: any }) {
   );
 }
 
-function RhythmBars({ rows, dataKey, color, label, tick }: { rows: any[]; dataKey: string; color: string; label: string; tick?: (v: string, i: number) => string }) {
+/** A bar of the rhythm card: its label, tooltip title and value, and whether it is the top one. */
+interface RhythmRow { label: string; title?: string; value: string; top: boolean }
+
+function RhythmBars({ rows, dataKey, color, label, tick }: { rows: RhythmRow[]; dataKey: string; color: string; label: string; tick?: (v: string, i: number) => string }) {
   return (
     <div className="min-w-0">
       <h4 className="mb-2 font-mono text-[10.5px] tracking-[0.06em] text-muted-foreground uppercase">{label}</h4>
@@ -117,8 +122,8 @@ function RhythmBars({ rows, dataKey, color, label, tick }: { rows: any[]; dataKe
           <CartesianGrid vertical={false} stroke="var(--grid)" />
           <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={6} interval={0} tickFormatter={tick} />
           <YAxis tickLine={false} axisLine={false} width={32} allowDecimals={false} tickCount={4} tickFormatter={(v) => nf(v)} />
-          <ChartTooltip cursor={{ fill: 'var(--background)' }} content={({ active, payload }: any) => {
-            const r = active && payload?.[0]?.payload;
+          <ChartTooltip cursor={{ fill: 'var(--background)' }} content={({ active, payload }: TooltipContentProps) => {
+            const r: RhythmRow | undefined = active ? payload?.[0]?.payload : undefined;
             return r ? <TooltipBox title={r.title ?? r.label} lines={[{ label, color, value: r.value }]} /> : null;
           }} />
           <Bar dataKey={dataKey} radius={barRadius(rows.length)} isAnimationActive={false}>
@@ -131,7 +136,7 @@ function RhythmBars({ rows, dataKey, color, label, tick }: { rows: any[]; dataKe
 }
 
 /** Rhythm: hours per weekday, starts per hour, indoor vs. outdoor. */
-export function RhythmCard({ D }: { D: any }) {
+export function RhythmCard({ D }: { D: DecodedPeriod }) {
   const R = rhythm(D);
   return (
     <ChartCard title={cd('rhythm')} description={cd('rhythmSub')} data-testid="rhythm-card">
@@ -159,7 +164,7 @@ export function RhythmCard({ D }: { D: any }) {
 }
 
 /** Average power and heart rate per ride, Z2 power window as a band; a click opens the ride. */
-export function PowerHrCard({ D, zones }: { D: any; zones: any }) {
+export function PowerHrCard({ D, zones }: { D: DecodedPeriod; zones: AthleteZones }) {
   const P = powerHr(D, zones);
   const config = {
     w: { label: t('metric.avgPower'), color: SERIES.ridePower.color },
@@ -189,7 +194,7 @@ export function PowerHrCard({ D, zones }: { D: any; zones: any }) {
           ]} />
           <ChartContainer config={config} className="aspect-auto h-[300px] w-full [&_.recharts-surface]:cursor-pointer">
             <ComposedChart data={P.rows} margin={{ top: 8, right: 0, bottom: 0, left: -8 }}
-              onClick={(e: any) => { const r = P.rows[e?.activeIndex ?? e?.activeTooltipIndex]; if (r) location.href = routes.ride(r.id); }}>
+              onClick={(e) => { const r = activeRow(P.rows, e); if (r) location.href = routes.ride(r.id); }}>
               <defs>
                 <linearGradient id="fill-phr" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="var(--color-w)" stopOpacity={0.22} />

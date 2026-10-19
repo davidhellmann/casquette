@@ -11,6 +11,8 @@ const DISTANCE = SERIES.distance.color;
 
 const km = (v: number) => `${nf(v)} km`;
 const ROUNDED: [number, number, number, number] = [3, 3, 0, 0];
+/** A Cell's corner radii: Recharts' Bar reads a corner array from it, but Cell types `radius` as the SVG attribute (library seam). */
+const cellRadius = (rounded: boolean) => (rounded ? ROUNDED : 0) as unknown as number;
 
 type TipProps<R> = { active?: boolean; payload?: { payload: R }[] };
 
@@ -144,7 +146,7 @@ export function BikesPerYearChart({ bikes, rows }: { bikes: { id: string; name: 
           <ChartTooltip cursor={{ fill: 'var(--muted)', opacity: 0.5 }} content={<Tip />} />
           {bikes.map((b) => (
             <Bar key={b.id} dataKey={b.id} stackId="km" fill={`var(--color-${b.id})`} maxBarSize={80} isAnimationActive={false}>
-              {rows.map((r, i) => <Cell key={r.year} radius={(top[i] === b.id ? ROUNDED : 0) as any} />)}
+              {rows.map((r, i) => <Cell key={r.year} radius={cellRadius(top[i] === b.id)} />)}
             </Bar>
           ))}
         </BarChart>

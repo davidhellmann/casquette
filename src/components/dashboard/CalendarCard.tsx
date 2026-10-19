@@ -2,9 +2,10 @@ import { ChartCard } from '@/components/app/ChartCard';
 import { CalendarLegend, CalendarStats, TrainingCalendar } from '@/components/charts/TrainingCalendar';
 import { t } from '@/i18n/index.ts';
 import { calendarDays, calendarMonths, calendarStats } from './calendar-data.ts';
+import type { DecodedPeriod } from '@/lib/dashboard-payload.ts';
 
 /** Training calendar of the last 52 weeks (colour = training load) – independent of the period. */
-export function CalendarCard({ D }: { D: any }) {
+export function CalendarCard({ D }: { D: DecodedPeriod }) {
   const H = D.heatmap;
   return (
     <ChartCard title={t('dash.sec.calendar')} description={t('dash.card.heatmapSub')}>

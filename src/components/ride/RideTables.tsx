@@ -18,11 +18,10 @@ export interface Split {
 
 const v = (x: number | null | undefined) => (x == null ? undefined : x);
 const round = (x: number | undefined) => (x == null ? '–' : String(Math.round(x)));
-const cols = (key: string) => t(key) as unknown as string[];
 
 const lap = dataTableColumns<Lap>();
 function lapColumns(): DataTableColumn<Lap>[] {
-  const L = cols('ride.lapCols');
+  const L: readonly string[] = t('ride.lapCols');
   return lap.columns([
     lap.accessor('index', { id: 'index', meta: numeric(L[0]), ...numSort }),
     lap.accessor((l) => l.name ?? '', { id: 'name', meta: { label: L[1] }, sortFn: 'text' }),
@@ -42,7 +41,7 @@ const RANK = ['', 'bg-brand-surface text-brand-surface-foreground', 'bg-muted te
 
 const seg = dataTableColumns<SegmentEffort>();
 function segmentColumns(): DataTableColumn<SegmentEffort>[] {
-  const L = cols('ride.segCols');
+  const L: readonly string[] = t('ride.segCols');
   return seg.columns([
     seg.accessor((s) => s.name ?? '', {
       id: 'name', meta: { label: L[0] }, sortFn: 'text',
@@ -75,7 +74,7 @@ function segmentColumns(): DataTableColumn<SegmentEffort>[] {
 
 const split = dataTableColumns<Split>();
 function splitColumns(): DataTableColumn<Split>[] {
-  const L = cols('ride.splitCols');
+  const L: readonly string[] = t('ride.splitCols');
   return split.columns([
     split.accessor('split', { id: 'split', meta: numeric(L[0]), ...numSort }),
     split.accessor((s) => v(s.moving_time), { id: 'time', meta: numeric(L[1]), ...numSort, cell: (c) => fmtClock(c.getValue()) }),

@@ -5,6 +5,7 @@ import { SERIES, niceTicks } from '@/components/charts/series';
 import { fmtDate, nf, fmtWeekdayDate, fmtMonthYearShort } from '@/scripts/format.ts';
 import { t } from '@/i18n/index.ts';
 import { fitnessChartData } from './fitness-data.ts';
+import type { DecodedPeriod } from '@/lib/dashboard-payload.ts';
 
 type Row = ReturnType<typeof fitnessChartData>[number];
 
@@ -36,7 +37,7 @@ function FitnessTooltip({ active, payload }: { active?: boolean; payload?: { pay
 }
 
 /** Fitness (smooth area), fatigue (hard, dashed) and daily form (square bars) over the period. */
-export function FitnessChart({ D }: { D: any }) {
+export function FitnessChart({ D }: { D: DecodedPeriod }) {
   const rows = fitnessChartData(D);
   if (!rows.length) return <EmptyState>{t('common.noData')}</EmptyState>;
   const long = D.days > 400;

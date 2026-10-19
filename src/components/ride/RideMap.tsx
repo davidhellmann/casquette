@@ -1,4 +1,5 @@
 import * as React from 'react';
+import type * as Leaflet from 'leaflet';
 import { t } from '@/i18n/index.ts';
 import { useLeaflet, withColors } from '@/components/map/use-leaflet';
 import { rollingMean } from '@/lib/chart-streams.ts';
@@ -21,7 +22,7 @@ export interface RideMapProps {
 /** The ride's route on monochrome tiles, coloured by zone, with start/finish pins and a hover marker. Client-only. */
 export const RideMap = React.forwardRef<RideMapHandle, RideMapProps>(function RideMap({ points, values, zones }, ref) {
   const el = React.useRef<HTMLDivElement>(null);
-  const marker = React.useRef<any>(null);
+  const marker = React.useRef<Leaflet.CircleMarker | null>(null);
   const { lf, theme } = useLeaflet(el, { scrollZoomOnClick: true, init: ({ L, map }) => ({ layer: L.layerGroup().addTo(map) }) });
 
   const runs = React.useMemo(() => zoneRuns(points, values ? rollingMean(values, 3) : null, zones), [points, values, zones]);

@@ -7,12 +7,14 @@ import { t } from '@/i18n/index.ts';
 import * as React from 'react';
 import { garage, nutrition, zoneTable, zonesSub } from './nutrition-data.ts';
 import { BasisToggle, type Basis } from './parts';
+import type { DecodedPeriod } from '@/lib/dashboard-payload.ts';
+import type { AthleteZones } from '@/training/index.ts';
 
 const n = (key: string) => t('dash.nutrition.' + key);
 const rich = '[&_b]:font-medium [&_b]:text-foreground';
 
 /** Daily needs (carbs, protein, fat, water) and what the period's rides burned and needed. */
-export function NutritionCard({ D, kg }: { D: any; kg: number }) {
+export function NutritionCard({ D, kg }: { D: DecodedPeriod; kg: number }) {
   const N = nutrition(D, kg);
   return (
     <ChartCard title={n('title')} description={<RichText html={N.subHtml} className={rich} />} data-testid="nutrition-card">
@@ -40,7 +42,7 @@ export function NutritionCard({ D, kg }: { D: any; kg: number }) {
 }
 
 /** Today's power or heart-rate zones on one scale; Z2 is the focus zone. */
-export function ZonesCard({ zones }: { zones: any }) {
+export function ZonesCard({ zones }: { zones: AthleteZones }) {
   const [basis, setBasis] = React.useState<Basis>('power');
   const rows = zoneTable(zones, basis);
   return (
@@ -65,7 +67,7 @@ export function ZonesCard({ zones }: { zones: any }) {
 }
 
 /** Active bikes by distance, with what was ridden on each in the period. */
-export function GarageCard({ D }: { D: any }) {
+export function GarageCard({ D }: { D: DecodedPeriod }) {
   const G = garage(D);
   return (
     <ChartCard title={t('dash.garage.title')} description={<RichText html={G.subHtml} className={rich} />} data-testid="garage-card">

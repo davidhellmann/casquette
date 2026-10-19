@@ -13,11 +13,12 @@ import { allTime, historySince, kilometreRace, records, yearsCompared } from './
 import { Figure } from '@/components/app/KeyFigures';
 import { Section } from './parts';
 import { routes } from '@/lib/routes.ts';
+import type { DecodedPeriod } from '@/lib/dashboard-payload.ts';
 
 const cd = (key: string) => t('dash.card.' + key);
 
 /** All-time totals, the best year and the longest ride. */
-export function AllTimeCard({ D }: { D: any }) {
+export function AllTimeCard({ D }: { D: DecodedPeriod }) {
   const A = allTime(D);
   return (
     <ChartCard title={t('dash.allTime.title')} description={historySince(D)} data-testid="all-time-card">
@@ -34,7 +35,7 @@ export function AllTimeCard({ D }: { D: any }) {
 }
 
 /** Kilometres (bars) and hours (line) per year. */
-export function YearsCard({ D }: { D: any }) {
+export function YearsCard({ D }: { D: DecodedPeriod }) {
   const Y = yearsCompared(D);
   const config = {
     km: { label: t('metric.kilometres'), color: SERIES.cumulative.color },
@@ -74,7 +75,7 @@ export function YearsCard({ D }: { D: any }) {
 }
 
 /** Cumulative kilometres per year – this year highlighted against the five before. */
-export function CumulativeCard({ D }: { D: any }) {
+export function CumulativeCard({ D }: { D: DecodedPeriod }) {
   const K = kilometreRace(D);
   const earlier = K ? K.years.filter((y) => !y.current) : [];
   const years = K ? K.years.map((y) => ({ ...y, color: y.current ? SERIES.cumulative.color : COMPARE_COLORS[earlier.indexOf(y) % COMPARE_COLORS.length] })) : [];
@@ -83,8 +84,8 @@ export function CumulativeCard({ D }: { D: any }) {
   const Tip = ({ active, payload }: { active?: boolean; payload?: { payload: Row }[] }) => {
     const r = active && payload?.[0]?.payload;
     if (!r) return null;
-    const lines = years.filter((y) => (r as any)[y.key] != null).sort((a, b) => ((r as any)[b.key] || 0) - ((r as any)[a.key] || 0))
-      .map((y) => ({ label: y.label, color: y.color, value: `${nf((r as any)[y.key])} km` }));
+    const lines = years.filter((y) => r[y.key] != null).sort((a, b) => (r[b.key] || 0) - (r[a.key] || 0))
+      .map((y) => ({ label: y.label, color: y.color, value: `${nf(r[y.key])} km` }));
     return <TooltipBox title={r.label} lines={lines} />;
   };
   const badge = K?.ytd && <DeltaBadge pct={K.ytd.pct} tip={K.ytd.tip} label={K.ytd.text} />;
@@ -119,7 +120,7 @@ export function CumulativeCard({ D }: { D: any }) {
 }
 
 /** The eight records of the period – each card opens its ride. */
-export function RecordsSection({ D, allTime: all }: { D: any; allTime: boolean }) {
+export function RecordsSection({ D, allTime: all }: { D: DecodedPeriod; allTime: boolean }) {
   const title = t(all ? 'dash.sec.recordsAll' : 'dash.sec.records');
   if (!D.rides.length) {
     return (

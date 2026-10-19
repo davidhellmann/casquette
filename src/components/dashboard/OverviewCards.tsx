@@ -12,9 +12,11 @@ import { t } from '@/i18n/index.ts';
 import { FORM_SCALE, formToday, polarization, powerProfile, trainingLoad } from './overview-data.ts';
 import { Row, WithTip } from '@/components/app/KeyFigures';
 import { Status } from './parts';
+import type { DecodedPeriod } from '@/lib/dashboard-payload.ts';
+import type { AthleteZones } from '@/training/index.ts';
 
 /** Form today: gauge of form (TSB), its status and fitness / fatigue / form. */
-export function FormCard({ D }: { D: any }) {
+export function FormCard({ D }: { D: DecodedPeriod }) {
   const F = formToday(D);
   return (
     <ChartCard title={t('dash.form.title')} description={t('dash.form.sub')} data-testid="form-card">
@@ -40,7 +42,7 @@ export function FormCard({ D }: { D: any }) {
 }
 
 /** 80/20 check: easy share as a ring against the 80 % target, zone split and a hint. */
-export function PolarizationCard({ D, zones }: { D: any; zones: any }) {
+export function PolarizationCard({ D, zones }: { D: DecodedPeriod; zones: AthleteZones }) {
   const P = polarization(D, zones);
   return (
     <ChartCard title={t('dash.pol.title')} description={t('dash.pol.sub')} data-testid="polarization-card">
@@ -69,7 +71,7 @@ export function PolarizationCard({ D, zones }: { D: any; zones: any }) {
 }
 
 /** Power profile: W/kg at FTP and the period's best 5 s … 20 min. */
-export function ProfileCard({ D, zones, kg }: { D: any; zones: any; kg: number }) {
+export function ProfileCard({ D, zones, kg }: { D: DecodedPeriod; zones: AthleteZones; kg: number }) {
   const P = powerProfile(D, { ftp: zones.ftp, kg });
   return (
     <ChartCard title={t('dash.profile.title')} description={t('dash.profile.sub')} data-testid="profile-card">
@@ -101,7 +103,7 @@ export function ProfileCard({ D, zones, kg }: { D: any; zones: any; kg: number }
 }
 
 /** Training load from all rides: daily load of the last 28 days, ramp, ACWR and a verdict. */
-export function LoadCard({ D }: { D: any }) {
+export function LoadCard({ D }: { D: DecodedPeriod }) {
   const L = trainingLoad(D);
   const Tip = ({ active, payload }: { active?: boolean; payload?: { payload: (typeof L.days)[number] }[] }) => {
     const row = active && payload?.[0]?.payload;

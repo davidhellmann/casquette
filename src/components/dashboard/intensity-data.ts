@@ -10,6 +10,11 @@ import type { Basis, Zones } from '../../training/index.ts';
 import { t } from '../../i18n/index.ts';
 import type { DecodedPeriod } from '../../lib/dashboard-payload.ts';
 
+/** Key of a zone series in the zone weeks chart (zones 1 … 5+; 'u' = no data). */
+export type ZoneWeekKey = 'z1' | 'z2' | 'z3' | 'z4' | 'z5' | 'u';
+/** One week (or month) of the zone weeks chart: hours per zone series. */
+export type ZoneWeekRow = { label: string; title: string; total: string } & Record<ZoneWeekKey, number>;
+
 const zoneNames = (basis: Basis): readonly string[] => (basis === 'hr' ? HR_ZONE_NAMES : POWER_ZONE_NAMES);
 
 /** Hours per calendar week (or month for long periods), stacked by zone 1 … 5+ and "no data". */
@@ -19,12 +24,12 @@ export function zoneWeeks(D: DecodedPeriod, basis: Basis) {
   const names: readonly string[] = basis === 'hr' ? t('zones.bucketsHr') : t('zones.bucketsPower');
   return {
     monthly,
-    series: [1, 2, 3, 4, 5].map((z) => ({ key: `z${z}`, zone: z, label: names[z - 1] })),
-    unknown: buckets.some((w) => w.u > 0) ? { key: 'u', label: t('dash.chart.noDataSeries') } : null,
-    rows: buckets.map((w) => ({
+    series: ([1, 2, 3, 4, 5] as const).map((z) => ({ key: `z${z}` as const, zone: z, label: names[z - 1] })),
+    unknown: buckets.some((w) => w.u > 0) ? { key: 'u' as const, label: t('dash.chart.noDataSeries') } : null,
+    rows: buckets.map((w): ZoneWeekRow => ({
       label: monthly ? fmtMonthYearShort(w.d) : `${t('common.weekPrefix')} ${isoWeek(w.d)}`,
       title: monthly ? fmtMonthYear(w.d) : t('dash.chart.weekFrom', { d: fmtDate(w.d) }),
-      ...Object.fromEntries([1, 2, 3, 4, 5].map((z) => [`z${z}`, +w.z[z].toFixed(2)])),
+      z1: +w.z[1].toFixed(2), z2: +w.z[2].toFixed(2), z3: +w.z[3].toFixed(2), z4: +w.z[4].toFixed(2), z5: +w.z[5].toFixed(2),
       u: +w.u.toFixed(2),
       total: t('common.total', { v: fmtH(w.tooltipTotal) }),
     })),
