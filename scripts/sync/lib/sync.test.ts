@@ -9,7 +9,6 @@ import { rebuild } from './rebuild.ts';
 import { runSync } from './sync.ts';
 import type { GeocodeRides, SyncOptions } from './sync.ts';
 import { createStravaFake } from './strava-fake.ts';
-import type { StravaFake } from './strava-fake.ts';
 import type { StravaStreams } from './strava.ts';
 import { rideFrontmatter } from '../../shared/ride-file.ts';
 import type { ActivitySummary, RideGeo } from '../../shared/ride-file.ts';

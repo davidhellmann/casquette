@@ -116,7 +116,7 @@ describe('HR backfill', () => {
     fixture('7'); hrOnly('8');
     const both = JSON.parse(read(cache('7')));
     put(cache('7'), JSON.stringify({ ...both, metrics: { ...both.metrics, time_in_hr_zones: [1, 2] } }));
-    const strava = createStravaFake((url, { keys }) => String(keys).includes('watts') ? { ...streams, ...hrStreams, time: streams.time } : hrStreams);
+    const strava = createStravaFake((_path, { keys }) => String(keys).includes('watts') ? { ...streams, ...hrStreams, time: streams.time } : hrStreams);
     expect(await run(strava, ['power', 'hr'])).toMatchObject({ total: 2, saved: 2, remaining: 0 });
     expect(strava.calls).toContainEqual(['/activities/7/streams', { keys: 'time,watts,heartrate', key_by_type: true }, { wait: false }]);
     expect(strava.calls).toContainEqual(['/activities/8/streams', { keys: 'time,heartrate', key_by_type: true }, { wait: false }]);
