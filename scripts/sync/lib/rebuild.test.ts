@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import fs from 'node:fs';
 import path from 'node:path';
 import { afterAll, expect, it, vi } from 'vitest';
@@ -10,8 +9,8 @@ vi.mock('./geo.ts', () => { throw new Error('Offline must not import geocoding')
 import { rebuild } from './rebuild.ts';
 import { writeGear } from './gear-file.ts';
 
-const put = (name, text) => { const file = path.join(root, name); fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, text); };
-const get = (name) => fs.readFileSync(path.join(root, name), 'utf8');
+const put = (name: string, text: string) => { const file = path.join(root, name); fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, text); };
+const get = (name: string) => fs.readFileSync(path.join(root, name), 'utf8');
 afterAll(() => fs.rmSync(root, { recursive: true, force: true }));
 
 it('rebuild reads only the local cache, removes old derived values, keeps ride body and gear custom/body, is idempotent', () => {

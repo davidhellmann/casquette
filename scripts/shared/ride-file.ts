@@ -116,9 +116,9 @@ export type RideSegmentEffort = {
   average_cadence: number | null;
   pr_rank: number | null;
   kom_rank: number | null;
-  average_grade: number | null;
-  climb_category: number | null;
-  city: string | null;
+  average_grade?: number | null;
+  climb_category?: number | null;
+  city?: string | null;
   /** Achievement types (`pr`, `overall` …). */
   achievements: string[];
   start_index?: number;

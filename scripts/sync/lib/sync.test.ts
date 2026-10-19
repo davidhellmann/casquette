@@ -1,31 +1,45 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import fs from 'node:fs';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createRideStorage } from './ride-storage.ts';
+import { createRideStorage, isRideRecord } from './ride-storage.ts';
+import type { RideRecord, RideStorage } from './ride-storage.ts';
 import { createAthleteStorage } from './athlete-storage.ts';
+import type { CachedGear } from './athlete-storage.ts';
 import { rebuild } from './rebuild.ts';
 import { runSync } from './sync.ts';
+import type { GeocodeRides, SyncOptions } from './sync.ts';
 import { createStravaFake } from './strava-fake.ts';
+import type { StravaFake } from './strava-fake.ts';
+import type { StravaStreams } from './strava.ts';
 import { rideFrontmatter } from '../../shared/ride-file.ts';
+import type { ActivitySummary, RideGeo } from '../../shared/ride-file.ts';
 import { computeMetrics } from '../../shared/metrics.ts';
+import type { RideMetrics } from '../../shared/metrics.ts';
+import type { AthleteFile } from '../../shared/athlete-file.ts';
+import type { Clock } from '../../shared/env.ts';
 import { processRide } from '../../../src/ride/index.ts';
 import { athleteTimeline } from '../../../src/training/index.ts';
 import { calendarDay } from '../../../src/training/index.ts';
 
-let root;
-const put = (name, value) => {
+let root: string;
+const put = (name: string, value: unknown) => {
   const file = path.join(root, name);
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, typeof value === 'string' ? value : JSON.stringify(value));
 };
-const text = (name) => fs.readFileSync(path.join(root, name), 'utf8');
-const json = (name) => JSON.parse(text(name));
+const text = (name: string) => fs.readFileSync(path.join(root, name), 'utf8');
+const json = (name: string): unknown => JSON.parse(text(name));
 const ridePath = (date = '2024-05-01', id = '7') => `src/content/rides/${date.slice(0, 4)}/${date}_${id}.md`;
-const summary = (id = '7', gear_id = 'b7') => ({ id, name: 'Test ride', sport_type: 'Ride', type: 'Ride', start_date: '2024-05-01T12:00:00Z', start_date_local: '2024-05-01T12:00:00', gear_id, moving_time: 120, device_watts: true, average_watts: 201 });
-const rec = () => ({ id: '7', summary: summary(), detail: { description: 'Description from Strava' }, _sync: { summary: 1000 } });
-const streams = { time: { data: [0, 1, 2] }, watts: { data: [100, 201.25, 300] }, heartrate: { data: [110, 140, 170] } };
+const summary = (id = '7', gear_id = 'b7'): ActivitySummary & { id: string; start_date: string } => ({ id, name: 'Test ride', sport_type: 'Ride', type: 'Ride', start_date: '2024-05-01T12:00:00Z', start_date_local: '2024-05-01T12:00:00', gear_id, moving_time: 120, device_watts: true, average_watts: 201 });
+const rec = (): RideRecord => ({ id: '7', summary: summary(), detail: { description: 'Description from Strava' }, _sync: { summary: 1000 } });
+const streams: StravaStreams = { time: { data: [0, 1, 2] }, watts: { data: [100, 201.25, 300] }, heartrate: { data: [110, 140, 170] } };
 const athlete = { profile: { weight: 80 }, zones: { ftp: 240, heart_rate_zones: [{ min: 0, max: 149 }, { min: 150, max: null }] }, gear: [{ id: 'b7', name: 'Athlete bike', type: 'bike' }, { id: 'b8', name: 'Athlete only', type: 'bike' }] };
+/** A cached ride record that must exist. */
+function readRide(store: RideStorage, id: string): RideRecord {
+  const rec = store.read(id);
+  if (!isRideRecord(rec)) throw new Error(`Ride ${id} missing from cache`);
+  return rec;
+}
 const open = () => createRideStorage({ root, gear: createAthleteStorage({ root }).gear().byId });
 
 beforeEach(() => {
@@ -37,7 +51,8 @@ beforeEach(() => {
 });
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); fs.rmSync(root, { recursive: true, force: true }); });
 
-function fakeSync({ failDetail = false, failGear = false, noDetail = false, noStreams = false, activities } = {}) {
+type FakeSyncOptions = { failDetail?: boolean; failGear?: boolean; noDetail?: boolean; noStreams?: boolean; activities?: ActivitySummary[] };
+function fakeSync({ failDetail = false, failGear = false, noDetail = false, noStreams = false, activities }: FakeSyncOptions = {}) {
   const strava = createStravaFake((url) => {
     if (url === '/athlete') return { id: 1, weight: 80, ftp: 240, bikes: [{ id: 'b10', name: 'New bike' }] };
     if (url === '/athlete/zones') return { heart_rate: { zones: athlete.zones.heart_rate_zones } };
@@ -54,8 +69,9 @@ function fakeSync({ failDetail = false, failGear = false, noDetail = false, noSt
     }
     throw new Error(`Unexpected API call: ${url}`);
   });
-  const geocodeRides = vi.fn(async (recs, { onRide }) => {
-    for (const r of recs) { r.geo = { countries: ['Austria'] }; onRide(r); }
+  const geocodeRides = vi.fn<GeocodeRides>(async (recs, { onRide }) => {
+    // A partial geo block is enough to see it saved.
+    for (const r of recs) { r.geo = { countries: ['Austria'] } as Partial<RideGeo> as RideGeo; onRide(r); }
   });
   return { strava, geocodeRides, run: () => runSync({ root, strava, geocodeRides, options: { noDetail, noStreams } }) };
 }
@@ -64,15 +80,15 @@ it('normal sync (list, details/streams, geo) and offline rebuild produce identic
   put('src/content/gear/b7.md', '---\nid: "b7"\ncustom:\n  notes: "keep" # comment\n---\n\nBike history\n');
   const fake = fakeSync(); await fake.run();
   const store = open();
-  const files = store.list().map((r) => [r.file, text(r.file)]);
+  const files = store.list().map((r) => [r.file ?? '', text(r.file ?? '')]);
   expect(files).toHaveLength(4);
   for (const [id, name] of [['7', 'Cache bike'], ['8', 'API bike'], ['9', 'Cache only'], ['10', 'API bike']]) {
     expect(text(ridePath('2024-05-01', id))).toContain(`gear_name: "${name}"`);
   }
   expect(text(ridePath())).toContain('API description');
   expect(text(ridePath())).toContain('Austria');
-  expect(store.read('7').metrics.power_distribution.samples).toEqual([[201.25, 1], [300, 1]]);
-  expect(store.read('7').metrics.hr_distribution.samples).toEqual([[140, 1], [170, 1]]);
+  expect(readRide(store, '7').metrics?.power_distribution?.samples).toEqual([[201.25, 1], [300, 1]]);
+  expect(readRide(store, '7').metrics?.hr_distribution?.samples).toEqual([[140, 1], [170, 1]]);
   const gearBefore = text('src/content/gear/b7.md');
   expect(gearBefore).toContain('notes: "keep" # comment');
   expect(gearBefore).toContain('Bike history');
@@ -100,18 +116,18 @@ it('list/geo and rebuild keep the legacy basis and independent power distributio
   await fakeSync({ noStreams: true, noDetail: true }).run();
   const { np, ...independent } = r.metrics;
   const expected = { ...independent, metric_sources: { np: 'summary' } };
-  expect(open().read('7').metrics).toEqual(expected);
+  expect(readRide(open(), '7').metrics).toEqual(expected);
   const before = text(ridePath());
   rebuild({ root });
   expect(text(ridePath())).toBe(before);
-  expect(open().read('7').metrics).toEqual(expected);
+  expect(readRide(open(), '7').metrics).toEqual(expected);
 });
 
-it.each(['summary', 'streams'])('updates summary NP without losing independent %s data, also on rebuild', async (source) => {
+it.each(['summary', 'streams'] as const)('updates summary NP without losing independent %s data, also on rebuild', async (source) => {
   const r = rec();
   r.summary = { ...r.summary, moving_time: 3600, weighted_average_watts: 200 };
   r._sync = { summary: 1000, detail: 1000, streams: 1000 };
-  const independent = { power_curve: { 60: 333 }, time_in_power_zones: [10, 20],
+  const independent: RideMetrics = { power_curve: { 60: 333 }, time_in_power_zones: [10, 20],
     time_in_power_zones_basis: { source: 'legacy', ftp: 260, zones: null, exact: false },
     time_in_hr_zones: [30, 40], power_distribution: { version: 1, method: 'right-sample-dt-0-10s', samples: [[111.25, 2.5]] }, computed_at: '2020-01-01' };
   r.metrics = { source, np: 200, ...independent };
@@ -119,10 +135,10 @@ it.each(['summary', 'streams'])('updates summary NP without losing independent %
   const fake = fakeSync({ activities: [{ ...r.summary, weighted_average_watts: 300 }] });
   await fake.run();
   const check = () => {
-    const saved = open().read('7');
+    const saved = readRide(open(), '7');
     expect(saved.metrics).toMatchObject(independent);
     const np = source === 'summary' ? 300 : 200;
-    expect(saved.metrics.np).toBe(np);
+    expect(saved.metrics?.np).toBe(np);
     expect(processRide(rideFrontmatter(saved), athleteTimeline({ athlete: { zones: { ftp: 200 } } }).at('2024-05-01')))
       .toMatchObject({ np, tss: source === 'summary' ? 225 : 100 });
     expect(text(ridePath())).toContain(`np: ${np}`);
@@ -134,7 +150,7 @@ it.each(['summary', 'streams'])('updates summary NP without losing independent %
   expect(text(ridePath())).toBe(before);
   // Independently stale cache must also refresh on an offline rebuild.
   if (source === 'summary') {
-    const saved = open().read('7'); saved.metrics.np = 123;
+    const saved = readRide(open(), '7'); saved.metrics = { ...saved.metrics, np: 123 };
     put('.strava-cache/activities/7.json', saved);
     rebuild({ root }); check();
   }
@@ -146,21 +162,21 @@ it.each(['hr-only', 'hr-unknown', 'short', 'interrupted', 'measured', 'zero'])('
     average_heartrate: 150, has_heartrate: true, suffer_score: 99 };
   r._sync = { summary: 1000, detail: 1000, streams: 1000 };
   const n = kind === 'short' ? 30 : 3601, time = Array.from({ length: n }, (_, i) => i);
-  const raw = { time: { data: time }, heartrate: { data: time.map(() => 150) } };
+  const raw: StravaStreams = { time: { data: time }, heartrate: { data: time.map(() => 150) } };
   if (!kind.startsWith('hr-')) raw.watts = { data: time.map(i => kind === 'zero' ? 0 : kind === 'interrupted' && i % 30 === 29 ? null : 200) };
   r.metrics = { ...computeMetrics(r.summary, raw), computed_at: '2020-01-01' };
   const genuine = kind === 'measured' || kind === 'zero';
-  const expectedNP = fallback => genuine ? kind === 'zero' ? 0 : 200 : fallback;
+  const expectedNP = (fallback: number | null) => genuine ? kind === 'zero' ? 0 : 200 : fallback;
   const { np, variability_index, efficiency_factor, metric_sources, ...independent } = r.metrics;
   open().save(r);
   const updated = { ...r.summary, weighted_average_watts: 300, average_watts: 150, average_heartrate: 100 };
   const fake = fakeSync({ activities: [updated] });
   await fake.run();
-  const check = fallback => {
-    const saved = open().read('7'), np = expectedNP(fallback);
+  const check = (fallback: number | null) => {
+    const saved = readRide(open(), '7'), np = expectedNP(fallback);
     expect(saved.metrics).toMatchObject(independent);
-    expect(saved.metrics.np ?? null).toBe(np);
-    expect(saved.metrics.metric_sources.np).toBe(genuine ? 'streams' : 'summary');
+    expect(saved.metrics?.np ?? null).toBe(np);
+    expect(saved.metrics?.metric_sources?.np).toBe(genuine ? 'streams' : 'summary');
     const fm = rideFrontmatter(saved);
     expect(fm.metrics).toEqual(saved.metrics);
     expect(processRide(fm, athleteTimeline({ athlete: { zones: { ftp: 200 } } }).at('2024-05-01')))
@@ -170,9 +186,9 @@ it.each(['hr-only', 'hr-unknown', 'short', 'interrupted', 'measured', 'zero'])('
       expect(saved.metrics).not.toHaveProperty('efficiency_factor');
       expect(text(ridePath())).not.toMatch(/^  np:/m);
     } else {
-      expect(saved.metrics.variability_index).toBe(Math.round(np / 150 * 1000) / 1000);
-      expect(saved.metrics.efficiency_factor).toBe(np / 100);
-      expect(saved.metrics.metric_sources).toMatchObject({ variability_index: 'np+summary', efficiency_factor: 'np+summary' });
+      expect(saved.metrics?.variability_index).toBe(Math.round(np / 150 * 1000) / 1000);
+      expect(saved.metrics?.efficiency_factor).toBe(np / 100);
+      expect(saved.metrics?.metric_sources).toMatchObject({ variability_index: 'np+summary', efficiency_factor: 'np+summary' });
       expect(text(ridePath())).toContain(`np: ${np}`);
     }
     expect(text(ridePath())).toContain('metric_sources:');
@@ -184,16 +200,16 @@ it.each(['hr-only', 'hr-unknown', 'short', 'interrupted', 'measured', 'zero'])('
   expect(text(ridePath())).toBe(before);
   // Independently stale cache, changed / removed / reintroduced summary; no raw stream refetch.
   for (const fallback of [250, null, 0, 300]) {
-    const saved = open().read('7');
+    const saved = readRide(open(), '7');
     saved.summary.weighted_average_watts = fallback;
     put('.strava-cache/activities/7.json', saved);
     rebuild({ root }); check(fallback);
   }
-  const saved = open().read('7'); saved.summary.device_watts = false;
+  const saved = readRide(open(), '7'); saved.summary.device_watts = false;
   put('.strava-cache/activities/7.json', saved);
   rebuild({ root });
-  expect(open().read('7').metrics.np ?? null).toBe(expectedNP(null));
-  expect(open().read('7').metrics).not.toHaveProperty('variability_index');
+  expect(readRide(open(), '7').metrics?.np ?? null).toBe(expectedNP(null));
+  expect(readRide(open(), '7').metrics).not.toHaveProperty('variability_index');
 });
 
 it('normal sync resumes after a stream write failure without false completion flags', async () => {
@@ -205,11 +221,11 @@ it('normal sync resumes after a stream write failure without false completion fl
   });
   await fakeSync().run();
   expect(failed).toBe(true);
-  expect(open().read('7')._sync.streams).toBeUndefined();
-  expect(open().read('7')._sync.detail).toBeUndefined();
+  expect(readRide(open(), '7')._sync?.streams).toBeUndefined();
+  expect(readRide(open(), '7')._sync?.detail).toBeUndefined();
   expect(fs.existsSync(path.join(root, 'public/streams/7.json'))).toBe(false);
   await fakeSync().run();
-  expect(open().read('7').streamsFile).toBe(true);
+  expect(readRide(open(), '7').streamsFile).toBe(true);
   expect(text(ridePath())).toContain('API description');
 });
 
@@ -217,22 +233,22 @@ it('a list without details already gets all names; failed details leave no strea
   await fakeSync({ noDetail: true, noStreams: true }).run();
   expect(text(ridePath('2024-05-01', '10'))).toContain('gear_name: "API bike"');
   await fakeSync({ failDetail: true }).run();
-  expect(open().read('7')._sync.streams).toBeUndefined();
+  expect(readRide(open(), '7')._sync?.streams).toBeUndefined();
   expect(fs.existsSync(path.join(root, 'public/streams/7.json'))).toBe(false);
   await fakeSync().run();
-  expect(open().read('7').streamsFile).toBe(true);
-  expect(open().read('7')._sync.detail).toBeTypeOf('number');
+  expect(readRide(open(), '7').streamsFile).toBe(true);
+  expect(readRide(open(), '7')._sync?.detail).toBeTypeOf('number');
 });
 
 describe('sync run steps', () => {
   const now = Date.parse('2024-06-01T10:00:00Z');
-  const clock = { now: () => now, sleep: async () => {} };
-  const run = (fake) => runSync({ root, strava: fake.strava, geocodeRides: fake.geocodeRides, clock, options: { noDetail: true, noStreams: true, noGeo: true } });
+  const clock: Clock = { now: () => now, sleep: async () => {} };
+  const run = (fake: ReturnType<typeof fakeSync>) => runSync({ root, strava: fake.strava, geocodeRides: fake.geocodeRides, clock, options: { noDetail: true, noStreams: true, noGeo: true } });
 
   it('stamps summaries, gear, the athlete file and a new athlete history entry with the injected clock', async () => {
     await run(fakeSync());
-    expect(open().read('7')._sync.summary).toBe(now);
-    expect(json('.strava-cache/gear.json').b8._at).toBe(now);
+    expect(readRide(open(), '7')._sync?.summary).toBe(now);
+    expect((json('.strava-cache/gear.json') as Record<string, CachedGear>).b8._at).toBe(now);
     expect(text('src/content/gear/b8.md')).toContain('synced_at: "2024-06-01T10:00:00.000Z"');
     expect(json('src/data/athlete.json')).toMatchObject({ synced_at: '2024-06-01T10:00:00.000Z', zones: { ftp: 240 }, sync: { list_complete: true, oldest: '2024-05-01T12:00:00.000Z' } });
     expect(json('src/data/fitness-history.json')).toEqual([{ id: calendarDay(new Date(now)), date: calendarDay(new Date(now)), ftp: 240, weight: 80, source: 'strava', note: 'Initial value from Strava' }]);
@@ -265,16 +281,16 @@ describe('sync run steps', () => {
       return url === '/athlete' ? { id: 1, weight: 80, ftp: 240 } : url.startsWith('/gear/') ? null : {};
     });
     await run(fake);
-    expect(json('src/data/athlete.json').sync.list_complete).toBe(false);
+    expect((json('src/data/athlete.json') as AthleteFile).sync.list_complete).toBe(false);
     const resumed = fakeSync();
     await run(resumed);
-    expect(resumed.strava.calls.find(([url, params]) => url === '/athlete/activities' && params.before)[1].before)
+    expect(resumed.strava.calls.find(([url, params]) => url === '/athlete/activities' && params.before)?.[1].before)
       .toBe(Date.parse('2024-04-01T12:00:00Z') / 1000);
   });
 });
 
 describe('places budget', () => {
-  const budget = async (options) => {
+  const budget = async (options: SyncOptions) => {
     const fake = fakeSync();
     await runSync({ root, strava: fake.strava, geocodeRides: fake.geocodeRides, options: { noDetail: true, noStreams: true, ...options } });
     return fake.geocodeRides.mock.calls[0][1].budgetMs;

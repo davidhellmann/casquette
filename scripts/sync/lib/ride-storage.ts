@@ -18,6 +18,9 @@ export type ActivityRecord = RideFileRecord & {
 /** A ride record: an activity cache record with a summary (what `list()` returns and `save` takes). */
 export type RideRecord = ActivityRecord & { summary: ActivitySummary };
 
+/** Whether a cache record has a summary, i.e. is a ride record. */
+export const isRideRecord = (rec: ActivityRecord | null | undefined): rec is RideRecord => !!rec?.summary;
+
 /** Known gear by id, the source of `gear_name`. */
 export type GearById = Readonly<Record<string, Pick<Gear, 'name'>>>;
 
@@ -83,7 +86,7 @@ export function createRideStorage({ root = ROOT, gear = {} }: { root?: string; g
     recover();
     if (!fs.existsSync(cacheDir)) return [];
     return fs.readdirSync(cacheDir).filter((f) => f.endsWith('.json'))
-      .map((f) => readRecord(path.join(cacheDir, f))).filter((rec): rec is RideRecord => !!rec?.summary)
+      .map((f) => readRecord(path.join(cacheDir, f))).filter(isRideRecord)
       .sort((a, b) => String(b.summary.start_date).localeCompare(String(a.summary.start_date)));
   }
   function commit(writes: Write[]) {

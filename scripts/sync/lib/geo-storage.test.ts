@@ -1,12 +1,14 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import fs from 'node:fs';
 import path from 'node:path';
 import { afterAll, expect, it, vi } from 'vitest';
+import type { GeoRide } from './geo.ts';
+import type { RideGeo } from '../../shared/ride-file.ts';
 
 const { root, geocodeRides } = vi.hoisted(() => ({
   root: `${process.cwd()}/logs/t09-geo-fixture`,
-  geocodeRides: vi.fn(async (recs, { onRide }) => {
-    for (const rec of recs) { rec.geo = { countries: ['Austria'] }; onRide(rec); }
+  geocodeRides: vi.fn(async (recs: GeoRide[], { onRide }: { onRide: (rec: GeoRide) => void }) => {
+    // A partial geo block is enough to see it saved.
+    for (const rec of recs) { rec.geo = { countries: ['Austria'] } as Partial<RideGeo> as RideGeo; onRide(rec); }
     return { changed: recs.length };
   }),
 }));
@@ -25,8 +27,8 @@ it('standalone geo saves through the same public ride storage; offline rebuild i
   store.save({ id: '7', summary: { start_date_local: '2024-05-01T12:00:00', gear_id: 'b7' }, detail: { description: 'Description' } });
   await import('../geo.ts');
   expect(geocodeRides).toHaveBeenCalledOnce();
-  expect(store.read('7').geo).toEqual({ countries: ['Austria'] });
-  const file = path.join(root, store.read('7').file);
+  expect(store.read('7')?.geo).toEqual({ countries: ['Austria'] });
+  const file = path.join(root, store.read('7')?.file ?? '');
   const before = fs.readFileSync(file, 'utf8');
   expect(before).toContain('gear_name: "Geo bike"');
   expect(before).toContain('Description');

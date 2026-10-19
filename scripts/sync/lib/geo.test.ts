@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -6,9 +5,10 @@ import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../shared/env.ts', async (original) => ({ ...await original(), ROOT: `${process.cwd()}/logs/geo-config-fixture` }));
 import { geocodeRides, isGeoRide, nominatimConfig, rideGeo, routeCells } from './geo.ts';
+import type { GeoCells, GeoRide } from './geo.ts';
 
 /** Google polyline encoding (the format of Strava's summary_polyline). */
-function encode(points) {
+function encode(points: number[][]): string {
   let out = '', prev = [0, 0];
   for (const p of points) {
     for (const k of [0, 1]) {
@@ -23,7 +23,7 @@ function encode(points) {
   return out;
 }
 // Due north from 48.000 °N in steps of 0.0045° (~500 m): about 1 km between every other point.
-const north = (n) => Array.from({ length: n }, (_, i) => [48 + i * 0.0045, 11.5]);
+const north = (n: number) => Array.from({ length: n }, (_, i) => [48 + i * 0.0045, 11.5]);
 
 describe('nominatimConfig', () => {
   it('asks Nominatim for English place names by default', () => {
@@ -50,7 +50,7 @@ describe('routeCells', () => {
 
 describe('rideGeo', () => {
   const polyline = encode(north(7));
-  const cells = {
+  const cells: GeoCells = {
     '3200:767': { n: 'Munich', r: 'Bavaria', c: 'DE' },
     '3201:767': { none: 1 },
     '3202:767': { n: 'Garching', r: 'Bavaria', c: 'DE' },
@@ -85,7 +85,7 @@ describe('geocodeRides', () => {
       const legacy = path.join(root, '.strava-cache', 'geo-cells.json');
       fs.mkdirSync(path.dirname(legacy), { recursive: true });
       fs.writeFileSync(legacy, JSON.stringify({ '3200:767': { n: 'Munich', r: 'Bavaria', c: 'DE' } }));
-      const ride = { summary: { summary_polyline: encode([[48, 11.5]]), sport_type: 'Ride' } };
+      const ride: GeoRide = { summary: { summary_polyline: encode([[48, 11.5]]), sport_type: 'Ride' } };
       const onRide = vi.fn();
       vi.stubGlobal('fetch', () => { throw new Error('No geocoding requests expected'); });
       const log = vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -93,7 +93,7 @@ describe('geocodeRides', () => {
       log.mockRestore();
       vi.unstubAllGlobals();
       expect(onRide).toHaveBeenCalledWith(ride);
-      expect(ride.geo.start).toBe('Munich');
+      expect(ride.geo?.start).toBe('Munich');
       expect(fs.existsSync(legacy)).toBe(false);
       expect(JSON.parse(fs.readFileSync(path.join(root, 'src/data/geo-cells.json'), 'utf8'))).toHaveProperty('3200:767');
     } finally {

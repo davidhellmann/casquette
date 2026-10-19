@@ -1,4 +1,3 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -11,30 +10,31 @@ import { describe, expect, it } from 'vitest';
 // Only the guard tests in scripts/ itself sit outside the three folders.
 const root = path.resolve(import.meta.dirname, '..');
 const scriptsDir = path.join(root, 'scripts');
-const SIDES = ['sync', 'site', 'shared'];
+type Side = 'sync' | 'site' | 'shared';
+const SIDES: Side[] = ['sync', 'site', 'shared'];
 /** Which side may import which; src/ (the app's pure modules) is open to all of them. */
-const MAY_IMPORT = { sync: ['sync', 'shared', 'src'], site: ['site', 'shared', 'src'], shared: ['shared', 'src'] };
+const MAY_IMPORT: Record<Side, string[]> = { sync: ['sync', 'shared', 'src'], site: ['site', 'shared', 'src'], shared: ['shared', 'src'] };
 /** Your own data, as listed in .gitignore – the site side and shared code never name these paths. */
 const PERSONAL_PATHS = [
   'src/content/rides', 'src/content/gear', 'public/streams', '.strava-cache', '.strava-token.json',
   'src/data/athlete.json', 'src/data/fitness-history.json', 'src/data/geo-cells.json', 'src/data/goals.json', 'src/data/zones.json',
 ];
 
-const files = fs.readdirSync(scriptsDir, { recursive: true })
+const files = fs.readdirSync(scriptsDir, { recursive: true, encoding: 'utf8' })
   .filter((f) => /\.ts$/.test(f))
   .map((f) => f.split(path.sep).join('/'));
-const read = (f) => fs.readFileSync(path.join(scriptsDir, f), 'utf8');
-const sideOf = (f) => (SIDES.includes(f.split('/')[0]) ? f.split('/')[0] : null);
-const onSide = (...sides) => files.filter((f) => sides.includes(sideOf(f)));
+const read = (f: string) => fs.readFileSync(path.join(scriptsDir, f), 'utf8');
+const sideOf = (f: string): Side | null => SIDES.find((side) => side === f.split('/')[0]) ?? null;
+const onSide = (...sides: (Side | null)[]) => files.filter((f) => sides.includes(sideOf(f)));
 
 /** Relative module specifiers: static and dynamic imports, re-exports and vi.mock. */
-function relativeImports(source) {
+function relativeImports(source: string): string[] {
   const re = /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+|\bvi\.mock\(\s*)(['"])(\.\.?\/[^'"]+)\1/g;
   return [...source.matchAll(re)].map((m) => m[2]);
 }
 
 /** Where an import from `file` lands: a side folder, or the top-level folder outside scripts/. */
-function targetOf(file, spec) {
+function targetOf(file: string, spec: string): { abs: string; area: string | null } {
   const abs = path.resolve(path.dirname(path.join(scriptsDir, file)), spec);
   const inScripts = path.relative(scriptsDir, abs);
   const area = inScripts.startsWith('..') ? path.relative(root, abs).split(path.sep)[0] : sideOf(inScripts.split(path.sep).join('/'));
@@ -42,7 +42,7 @@ function targetOf(file, spec) {
 }
 
 /** `a/b/c` written as a path string or as path.join segments ('a', 'b', 'c'). */
-const pathPattern = (p) => new RegExp(p.split('/').map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join(`(?:/|['"\`]\\s*,\\s*['"\`])`));
+const pathPattern = (p: string) => new RegExp(p.split('/').map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join(`(?:/|['"\`]\\s*,\\s*['"\`])`));
 
 describe('scripts are split into a sync side and a site side', () => {
   it('puts every script into sync/, site/ or shared/ (only the guard tests stay in scripts/)', () => {
@@ -52,12 +52,14 @@ describe('scripts are split into a sync side and a site side', () => {
   });
 
   it('keeps imports within the side: sync never imports site, site never imports sync, shared imports neither', () => {
-    const crossing = [];
+    const crossing: string[] = [];
     for (const f of onSide(...SIDES)) {
+      const side = sideOf(f);
+      if (!side) continue;
       for (const spec of relativeImports(read(f))) {
         const { abs, area } = targetOf(f, spec);
         if (!fs.existsSync(abs)) crossing.push(`${f} → ${spec} (missing)`);
-        else if (!MAY_IMPORT[sideOf(f)].includes(area)) crossing.push(`${f} → ${spec} (${area})`);
+        else if (!MAY_IMPORT[side].includes(String(area))) crossing.push(`${f} → ${spec} (${area})`);
       }
     }
     expect(crossing).toEqual([]);

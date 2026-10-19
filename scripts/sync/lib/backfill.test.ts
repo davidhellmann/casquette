@@ -1,29 +1,32 @@
-// @ts-nocheck – typed in phase B of docs/adr/0004
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { runBackfill } from './backfill.ts';
+import type { BackfillKind } from './backfill.ts';
 import { createRideStorage } from './ride-storage.ts';
 import { createStravaFake } from './strava-fake.ts';
+import type { StravaFake } from './strava-fake.ts';
+import type { StravaStreams } from './strava.ts';
+import type { Distribution } from '../../shared/metrics.ts';
 
-let root;
-const ride = id => `src/content/rides/2024/2024-05-01_${id}.md`;
-const cache = id => `.strava-cache/activities/${id}.json`;
-const read = file => fs.readFileSync(path.join(root, file), 'utf8');
-const put = (file, text) => {
+let root: string;
+const ride = (id: string) => `src/content/rides/2024/2024-05-01_${id}.md`;
+const cache = (id: string) => `.strava-cache/activities/${id}.json`;
+const read = (file: string) => fs.readFileSync(path.join(root, file), 'utf8');
+const put = (file: string, text: string) => {
   fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
   fs.writeFileSync(path.join(root, file), text);
 };
-const before = id => `---\nid: "${id}"\ngeo: "newer than cache"\nmetrics:\n  source: "streams"\n  np: 220\n  time_in_power_zones: [10, 20]\n  time_in_power_zones_basis:\n    source: "legacy"\n    ftp: 300\n    zones: null\n    exact: false\n  power_curve:\n    60: 300\n  time_in_hr_zones: [1, 2]\nlaps: []\n---\n\nOwn text\n`;
-const fixture = id => {
+const before = (id: string) => `---\nid: "${id}"\ngeo: "newer than cache"\nmetrics:\n  source: "streams"\n  np: 220\n  time_in_power_zones: [10, 20]\n  time_in_power_zones_basis:\n    source: "legacy"\n    ftp: 300\n    zones: null\n    exact: false\n  power_curve:\n    60: 300\n  time_in_hr_zones: [1, 2]\nlaps: []\n---\n\nOwn text\n`;
+const fixture = (id: string) => {
   put(cache(id), JSON.stringify({ id, summary: { start_date: '2024-05-01T12:00:00Z' }, geo: 'stale',
     metrics: { np: 220, ftp_used: 300, time_in_power_zones: [10, 20], power_curve: { 60: 300 } }, _sync: { streams: 123 } }));
   put(ride(id), before(id));
 };
-const streams = { time: { data: [0, 1, 2, 30, 31] }, watts: { data: [50, 0, 201.25, 100, 300] } };
-const run = (strava, kinds = ['power']) => runBackfill({ root, strava, kinds });
-const answering = (value) => createStravaFake(() => value);
+const streams: StravaStreams = { time: { data: [0, 1, 2, 30, 31] }, watts: { data: [50, 0, 201.25, 100, 300] } };
+const run = (strava: StravaFake, kinds: BackfillKind[] = ['power']) => runBackfill({ root, strava, kinds });
+const answering = (value: unknown) => createStravaFake(() => value);
 beforeEach(() => { root = fs.mkdtempSync(path.join(os.tmpdir(), 'backfill-')); });
 afterEach(() => { vi.restoreAllMocks(); fs.rmSync(root, { recursive: true, force: true }); });
 
@@ -47,8 +50,8 @@ it('adds only the power distribution despite completed streams; keeps unrelated 
 
 it('keeps legacy data when streams are missing and stops resumably at the daily limit', async () => {
   fixture('7'); fixture('8'); fixture('9');
-  const answers = [streams, null];
-  const strava = createStravaFake(() => { if (!answers.length) throw strava.dailyLimit(); return answers.shift(); });
+  const answers: (StravaStreams | null)[] = [streams, null];
+  const strava: StravaFake = createStravaFake(() => { if (!answers.length) throw strava.dailyLimit(); return answers.shift(); });
   expect(await run(strava)).toMatchObject({ saved: 1, unavailable: ['8'], stopped: true, remaining: 2 });
   expect(read(ride('8'))).toBe(before('8'));
   expect(read(ride('9'))).toBe(before('9'));
@@ -74,7 +77,8 @@ it('refuses unknown Markdown and invalid distributions without writing', () => {
   fixture('7');
   const store = createRideStorage({ root });
   expect(() => store.saveDistributions('7', { hr_distribution: { version: 1, method: 'right-sample-dt-0-10s', samples: [[-1, 1]] } })).toThrow('Invalid HR distribution');
-  expect(() => store.saveDistributions('7', { power_distribution: { samples: [] } })).toThrow('Invalid power distribution');
+  // An incomplete distribution on purpose: storage checks what it gets.
+  expect(() => store.saveDistributions('7', { power_distribution: { samples: [] } as Partial<Distribution> as Distribution })).toThrow('Invalid power distribution');
   put(ride('7'), '---\nid: "7"\n---\nText');
   const oldCache = read(cache('7'));
   expect(() => store.saveDistributions('7', { power_distribution: { version: 1, method: 'right-sample-dt-0-10s', samples: [[200, 1]] } })).toThrow('metrics missing');
@@ -82,9 +86,9 @@ it('refuses unknown Markdown and invalid distributions without writing', () => {
 });
 
 describe('HR backfill', () => {
-  const hrStreams = { time: { data: [0, 1, 2, 30, 31] }, heartrate: { data: [120, 0, 141, 150, 175] } };
+  const hrStreams: StravaStreams = { time: { data: [0, 1, 2, 30, 31] }, heartrate: { data: [120, 0, 141, 150, 175] } };
   const hrBasis = '  time_in_hr_zones_basis:\n    source: "sync"\n    zones:\n      - min: 0\n        max: 139\n      - min: 140\n        max: null\n';
-  const hrOnly = id => {
+  const hrOnly = (id: string) => {
     put(cache(id), JSON.stringify({ id, summary: { start_date: '2024-05-01T12:00:00Z' },
       metrics: { np: 220, power_distribution: { version: 1, method: 'right-sample-dt-0-10s', samples: [[200, 5]] }, time_in_hr_zones: [1, 2] } }));
     put(ride(id), `---\nid: "${id}"\nmetrics:\n  source: "streams"\n  np: 220\n  time_in_hr_zones: [1, 2]\n${hrBasis}  hr_curve:\n    60: 170\nlaps: []\n---\n\nOwn text\n`);
@@ -112,7 +116,7 @@ describe('HR backfill', () => {
     fixture('7'); hrOnly('8');
     const both = JSON.parse(read(cache('7')));
     put(cache('7'), JSON.stringify({ ...both, metrics: { ...both.metrics, time_in_hr_zones: [1, 2] } }));
-    const strava = createStravaFake((url, { keys }) => keys.includes('watts') ? { ...streams, ...hrStreams, time: streams.time } : hrStreams);
+    const strava = createStravaFake((url, { keys }) => String(keys).includes('watts') ? { ...streams, ...hrStreams, time: streams.time } : hrStreams);
     expect(await run(strava, ['power', 'hr'])).toMatchObject({ total: 2, saved: 2, remaining: 0 });
     expect(strava.calls).toContainEqual(['/activities/7/streams', { keys: 'time,watts,heartrate', key_by_type: true }, { wait: false }]);
     expect(strava.calls).toContainEqual(['/activities/8/streams', { keys: 'time,heartrate', key_by_type: true }, { wait: false }]);
