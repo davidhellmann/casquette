@@ -91,6 +91,14 @@ test('switching the zone basis relabels the intensity cards', async ({ page }) =
   await expect(card(page, 'zone-share-chart')).toContainText('5 HR zones');
 });
 
+test('a card that follows the zone basis switches it for the whole page', async ({ page }) => {
+  await page.goto('/');
+  await card(page, 'zone-share-chart').getByRole('radiogroup', { name: /whole page/ }).getByRole('radio', { name: 'HR' }).click();
+  await expect(card(page, 'zone-share-chart')).toContainText('5 HR zones');
+  await expect(page.getByRole('radiogroup', { name: 'Zones by' }).getByRole('radio', { name: 'HR' })).toHaveAttribute('aria-checked', 'true');
+  await expect(card(page, 'efficiency-chart').getByRole('radio', { name: 'HR' })).toHaveAttribute('aria-checked', 'true');
+});
+
 test('the power curve shows watts and W/kg on hover', async ({ page }) => {
   await page.goto('/');
   const chart = card(page, 'period-curve-chart');

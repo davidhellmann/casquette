@@ -1,25 +1,17 @@
-import * as React from 'react';
-import { Heart, Zap } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SegmentedToggle } from './SegmentedToggle';
+import { basisOptions } from './BasisSwitch';
 import { PERIODS } from '@/dashboard-period/index.ts';
-import { PERIOD_EVENT, isPeriod, readPeriod, writePeriod, type PeriodChoice } from '@/lib/period-store.ts';
+import { isPeriod, writePeriod } from '@/lib/period-store.ts';
+import { usePeriodChoice } from './use-period-choice.ts';
 import { t } from '@/i18n/index.ts';
 
-type Period = PeriodChoice;
 /** Store the period of a select value (always one of PERIODS). */
 const choose = (v: string) => { const days = +v; if (isPeriod(days)) writePeriod({ days }); };
 
 /** Period (7 days … all time) and zone basis (power / heart rate) for the page header. */
 export function PeriodControl() {
-  // Static HTML shows the defaults; the stored choice is read after hydration.
-  const [period, setPeriod] = React.useState<Period>({ days: 30, basis: 'power' });
-  React.useEffect(() => {
-    setPeriod(readPeriod());
-    const onChange = (e: Event) => setPeriod((e as CustomEvent<Period>).detail);
-    window.addEventListener(PERIOD_EVENT, onChange);
-    return () => window.removeEventListener(PERIOD_EVENT, onChange);
-  }, []);
+  const period = usePeriodChoice();
   const days = String(period.days);
 
   return (
@@ -34,10 +26,7 @@ export function PeriodControl() {
           {PERIODS.map((d) => <SelectItem key={d} value={String(d)}>{t(`period.long.${d}`)}</SelectItem>)}
         </SelectContent>
       </Select>
-      <SegmentedToggle value={period.basis} onChange={(v) => writePeriod({ basis: v })} label={t('basis.label')} options={[
-        { value: 'power', ariaLabel: t('basis.power'), label: <><Zap /><span className="hidden sm:inline">{t('basis.power')}</span></> },
-        { value: 'hr', ariaLabel: t('basis.hr'), label: <><Heart /><span className="hidden sm:inline">{t('basis.hr')}</span></> },
-      ]} />
+      <SegmentedToggle value={period.basis} onChange={(v) => writePeriod({ basis: v })} label={t('basis.label')} options={basisOptions({ text: true })} />
     </div>
   );
 }

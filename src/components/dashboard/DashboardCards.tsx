@@ -35,7 +35,7 @@ export function DashboardCards({ D, source, athleteState, basis }: { D: DecodedP
       <Section title={s('fitness')} sub={s('fitnessSub')}>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <FormCard D={D} />
-          <PolarizationCard D={D} zones={zones} />
+          <PolarizationCard D={D} zones={zones} basis={basis} />
           <ProfileCard D={D} zones={zones} kg={kg} />
           <LoadCard D={D} />
         </div>
@@ -47,7 +47,7 @@ export function DashboardCards({ D, source, athleteState, basis }: { D: DecodedP
           <div className="grid lg:col-span-4"><ZoneShareCard D={D} basis={basis} /></div>
         </div>
         <div className="grid gap-3 lg:grid-cols-2">
-          <TimeInZonesCard D={D} />
+          <TimeInZonesCard D={D} basis={basis} />
           <RhythmCard D={D} />
         </div>
         <PowerHrCard D={D} zones={zones} />
@@ -73,13 +73,13 @@ export function DashboardCards({ D, source, athleteState, basis }: { D: DecodedP
       <RecordsSection D={D} allTime={!D.hasPrevious} />
       <Section title={s('nutrition')} sub={s('nutritionSub')}>
         <div className="grid gap-3 lg:grid-cols-12">
-          <div className="grid lg:col-span-7"><NutritionCard D={D} kg={kg} /></div>
-          <div className="grid lg:col-span-5"><FuelingMatrixCard cell={cell} /></div>
+          <div className="grid lg:col-span-7"><NutritionCard D={D} kg={kg} basis={basis} /></div>
+          <div className="grid lg:col-span-5"><FuelingMatrixCard cell={cell} basis={basis} /></div>
         </div>
       </Section>
       <Section title={s('zonesGear')}>
         <div className="grid gap-3 lg:grid-cols-2">
-          <ZonesCard zones={zones} />
+          <ZonesCard zones={zones} basis={basis} />
           <GarageCard D={D} />
         </div>
       </Section>

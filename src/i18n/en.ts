@@ -169,6 +169,7 @@ export default {
     label: 'Zones by',
     power: 'Power',
     hr: 'HR',
+    pageWide: 'Zone basis – applies to the whole page',
   },
 
   fuel: {

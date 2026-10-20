@@ -1,4 +1,5 @@
 import { Bar as RBar, BarChart, Cell, XAxis } from 'recharts';
+import { BasisSwitch } from '@/components/app/BasisSwitch';
 import { ChartCard } from '@/components/app/ChartCard';
 import { EmptyState } from '@/components/app/EmptyState';
 import { Hint } from '@/components/app/Hint';
@@ -11,7 +12,7 @@ import { barRadius, zoneColor } from '@/components/charts/series';
 import { t } from '@/i18n/index.ts';
 import { FORM_SCALE, formToday, polarization, powerProfile, trainingLoad } from './overview-data.ts';
 import { Row, WithTip } from '@/components/app/KeyFigures';
-import { Status } from './parts';
+import { Status, type Basis } from './parts';
 import type { DecodedPeriod } from '@/lib/dashboard-payload.ts';
 import type { AthleteZones } from '@/training/index.ts';
 
@@ -42,10 +43,10 @@ export function FormCard({ D }: { D: DecodedPeriod }) {
 }
 
 /** 80/20 check: easy share as a ring against the 80 % target, zone split and a hint. */
-export function PolarizationCard({ D, zones }: { D: DecodedPeriod; zones: AthleteZones }) {
+export function PolarizationCard({ D, zones, basis }: { D: DecodedPeriod; zones: AthleteZones; basis: Basis }) {
   const P = polarization(D, zones);
   return (
-    <ChartCard title={t('dash.pol.title')} description={t('dash.pol.sub')} data-testid="polarization-card">
+    <ChartCard title={t('dash.pol.title')} description={t('dash.pol.sub')} action={<BasisSwitch />} data-testid="polarization-card">
       {P.empty ? <EmptyState>{t('dash.chart.noIntensity')}</EmptyState> : (
         <>
           <div className="flex items-center gap-4">

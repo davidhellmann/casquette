@@ -2,8 +2,25 @@
 import { LOCALE } from '../i18n/index.ts';
 import { calendarDate } from '../training/index.ts';
 const pad = (n: number) => String(n).padStart(2, '0');
+// Intl formatters are built once per option set – `toLocaleString(locale, options)` builds a new one on
+// every call, which dominated re-rendering the dashboard (thousands of labels per period or basis switch).
+const numberFormats = new Map<number, Intl.NumberFormat>();
+const dateFormats = new Map<string, Intl.DateTimeFormat>();
+/** `d` formatted with a cached formatter; an invalid date reads 'Invalid Date' as with `toLocaleDateString`. */
+const fmt = (d: Date, options: Intl.DateTimeFormatOptions): string => {
+  if (isNaN(+d)) return 'Invalid Date';
+  const key = JSON.stringify(options);
+  let f = dateFormats.get(key);
+  if (!f) dateFormats.set(key, f = new Intl.DateTimeFormat(LOCALE, options));
+  return f.format(d);
+};
 /** A number with `dec` decimals in the UI locale; '–' when unknown. */
-export const nf = (v: number | null | undefined, dec = 0): string => (v == null || isNaN(v) ? '–' : Number(v).toLocaleString(LOCALE, { minimumFractionDigits: dec, maximumFractionDigits: dec }));
+export const nf = (v: number | null | undefined, dec = 0): string => {
+  if (v == null || isNaN(v)) return '–';
+  let f = numberFormats.get(dec);
+  if (!f) numberFormats.set(dec, f = new Intl.NumberFormat(LOCALE, { minimumFractionDigits: dec, maximumFractionDigits: dec }));
+  return f.format(Number(v));
+};
 /** Seconds → "1:05 h" / "45 min". */
 export const fmtDur = (s: number | null | undefined): string => { const tm = Math.round((s || 0) / 60), h = Math.floor(tm / 60), m = tm % 60; return h ? `${h}:${pad(m)} h` : `${m} min`; };
 /** Seconds → "m:ss" / "h:mm:ss"; `hours` always shows the hour ("0:05:12", elapsed time on a ride). */
@@ -12,24 +29,24 @@ export const fmtClock = (s: number | null | undefined, hours = false): string =>
 export const fmtHm = (s: number | null | undefined): string => `${Math.floor((s || 0) / 3600)}:${pad(Math.floor(((s || 0) % 3600) / 60))}`;
 /** Hours → "1.5 h". */
 export const fmtH = (h: number | null | undefined): string => nf(h, 1) + ' h';
-export const fmtDate = (d: Date): string => d.toLocaleDateString(LOCALE, { day: '2-digit', month: '2-digit' });
-export const fmtDateL = (d: Date): string => d.toLocaleDateString(LOCALE, { day: '2-digit', month: '2-digit', year: 'numeric' });
+export const fmtDate = (d: Date): string => fmt(d, { day: '2-digit', month: '2-digit' });
+export const fmtDateL = (d: Date): string => fmt(d, { day: '2-digit', month: '2-digit', year: 'numeric' });
 /** "Mon, 03/06/2024" – `year`: 'numeric', '2-digit' or false (no year). */
-export const fmtWeekdayDate = (d: Date, year: 'numeric' | '2-digit' | false = 'numeric'): string => d.toLocaleDateString(LOCALE, { weekday: 'short', day: '2-digit', month: '2-digit', ...(year ? { year } : {}) });
+export const fmtWeekdayDate = (d: Date, year: 'numeric' | '2-digit' | false = 'numeric'): string => fmt(d, { weekday: 'short', day: '2-digit', month: '2-digit', ...(year ? { year } : {}) });
 /** "Monday, 03 June 2024" (ride headers). */
-export const fmtLongDate = (d: Date): string => d.toLocaleDateString(LOCALE, { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+export const fmtLongDate = (d: Date): string => fmt(d, { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
 /** "3 Jun" or, with `withYear`, "3 Jun 2024". */
-export const fmtDayMonth = (d: Date, withYear = false): string => d.toLocaleDateString(LOCALE, { day: 'numeric', month: 'short', ...(withYear ? { year: 'numeric' } : {}) });
+export const fmtDayMonth = (d: Date, withYear = false): string => fmt(d, { day: 'numeric', month: 'short', ...(withYear ? { year: 'numeric' } : {}) });
 /** Short weekday, e.g. "Sun" (second line of a date cell). */
-export const fmtWeekday = (d: Date): string => d.toLocaleDateString(LOCALE, { weekday: 'short' });
+export const fmtWeekday = (d: Date): string => fmt(d, { weekday: 'short' });
 /** "June 2024" (tooltips, key figures). */
-export const fmtMonthYear = (d: Date): string => d.toLocaleDateString(LOCALE, { month: 'long', year: 'numeric' });
+export const fmtMonthYear = (d: Date): string => fmt(d, { month: 'long', year: 'numeric' });
 /** "Jun 24" (axis ticks). */
-export const fmtMonthYearShort = (d: Date): string => d.toLocaleDateString(LOCALE, { month: 'short', year: '2-digit' });
+export const fmtMonthYearShort = (d: Date): string => fmt(d, { month: 'short', year: '2-digit' });
 /** "Jun" (calendar month labels). */
-export const fmtMonthShort = (d: Date): string => d.toLocaleDateString(LOCALE, { month: 'short' });
+export const fmtMonthShort = (d: Date): string => fmt(d, { month: 'short' });
 /** "14:05" – time of day. */
-export const fmtTime = (d: Date): string => d.toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' });
+export const fmtTime = (d: Date): string => fmt(d, { hour: '2-digit', minute: '2-digit' });
 /** Month key 'YYYY-MM' → local first-of-month date. */
 export const monthStart = (key: string): Date => { const [y, m] = key.split('-'); return new Date(+y, +m - 1, 1); };
 /** Month key 'YYYY-MM' → "June 2024". */

@@ -1,9 +1,9 @@
-import * as React from 'react';
 import { ArrowRight, ChevronLeft, ChevronRight, Home, Bike } from 'lucide-react';
 import { Area, CartesianGrid, ComposedChart, Line, XAxis, YAxis } from 'recharts';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChartContainer, ChartTooltip, type ChartConfig } from '@/components/ui/chart';
+import { BasisSwitch } from '@/components/app/BasisSwitch';
 import { CardLabel } from '@/components/app/CardLabel';
 import { EmptyState } from '@/components/app/EmptyState';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -14,7 +14,7 @@ import { nf } from '@/scripts/format.ts';
 import { t } from '@/i18n/index.ts';
 import { analysisStreams, rideAnalysis } from './ride-analysis-data.ts';
 import { WithTip } from '@/components/app/KeyFigures';
-import { BasisToggle, type Basis } from './parts';
+import { type Basis } from './parts';
 import { useChartStreams } from '@/components/app/use-chart-streams';
 import type { ChartStreams } from '@/lib/chart-streams.ts';
 import { DecouplingScale } from '@/components/ride/DecouplingScale';
@@ -77,7 +77,6 @@ const mini = 'mb-2 flex items-center justify-between gap-2 font-mono text-[10.5p
 export function RideAnalysisCard({ D, id, onSelect, basis }: { D: DecodedPeriod; id: string | null; onSelect: (id: string) => void; basis: Basis }) {
   const A = id ? rideAnalysis(D, id, { basis }) : null;
   const streams = useChartStreams(A ? A.id : null);
-  const [tab, setTab] = React.useState<Basis>('power');
   if (!A) {
     return (
       <Card className="px-5" data-testid="ride-analysis">
@@ -86,7 +85,8 @@ export function RideAnalysisCard({ D, id, onSelect, basis }: { D: DecodedPeriod;
       </Card>
     );
   }
-  const kind = (tab === 'power' && A.tiz.power) || !A.tiz.hr ? 'power' : 'hr';
+  // The page's basis, or the other one when the ride has no histogram for it
+  const kind = (basis === 'power' && A.tiz.power) || !A.tiz.hr ? 'power' : 'hr';
   const tiz = A.tiz[kind];
   const Icon = A.indoor ? Home : Bike;
   return (
@@ -106,7 +106,8 @@ export function RideAnalysisCard({ D, id, onSelect, basis }: { D: DecodedPeriod;
           </p>
         </div>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="size-8" disabled={!A.olderId} onClick={() => A.olderId && onSelect(A.olderId)} aria-label={t('dash.deep.olderTip')}>
+          <BasisSwitch />
+          <Button variant="ghost" size="icon" className="size-8 ml-2" disabled={!A.olderId} onClick={() => A.olderId && onSelect(A.olderId)} aria-label={t('dash.deep.olderTip')}>
             <ChevronLeft aria-hidden="true" />
           </Button>
           <span className="min-w-14 text-center font-mono text-xs tabular-nums" aria-live="polite">{A.position}</span>
@@ -132,10 +133,7 @@ export function RideAnalysisCard({ D, id, onSelect, basis }: { D: DecodedPeriod;
         </div>
         <div className="grid content-start gap-5">
           <div>
-            <div className={mini}>
-              <h4>{t('dash.deep.tiz')}</h4>
-              <BasisToggle value={kind} onChange={setTab} label={t('dash.deep.tiz')} />
-            </div>
+            <h4 className={mini}>{t('dash.deep.tiz')}</h4>
             {tiz ? (
               <>
                 <p className="mb-2 text-xs text-muted-foreground">{tiz.label}</p>

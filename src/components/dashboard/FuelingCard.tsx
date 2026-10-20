@@ -1,8 +1,10 @@
+import { BasisSwitch } from '@/components/app/BasisSwitch';
 import { ChartCard } from '@/components/app/ChartCard';
 import { zoneColor } from '@/components/charts/series';
 import { t } from '@/i18n/index.ts';
 import { cn } from 'cn';
 import { fuelMatrix } from './fueling-data.ts';
+import type { Basis } from './parts';
 
 const f = (key: string) => t('dash.fueling.' + key);
 
@@ -10,10 +12,10 @@ const f = (key: string) => t('dash.fueling.' + key);
  * Carbs per hour by ride length and intensity; the selected ride's cell is highlighted.
  * A static grid, not a DataTable (DESIGN.md "Tables"): 3 × 2 cells, nothing to sort or search.
  */
-export function FuelingMatrixCard({ cell }: { cell: string | null }) {
+export function FuelingMatrixCard({ cell, basis }: { cell: string | null; basis: Basis }) {
   const M = fuelMatrix();
   return (
-    <ChartCard title={f('matrix')} description={f('matrixSub')} data-testid="fuel-matrix">
+    <ChartCard title={f('matrix')} description={f('matrixSub')} action={<BasisSwitch />} data-testid="fuel-matrix">
       <table className="w-full table-fixed border-separate border-spacing-1.5 text-xs">
         <thead>
           <tr>
