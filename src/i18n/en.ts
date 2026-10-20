@@ -169,6 +169,7 @@ export default {
     label: 'Zones by',
     power: 'Power',
     hr: 'HR',
+    pageWide: 'Zone basis – applies to the whole page',
   },
 
   fuel: {
@@ -274,7 +275,9 @@ export default {
       intense: 'Intense (Z4+)',
       empty: 'No intensity data in this period yet.',
       balanced: '<b>Great distribution!</b> {low} % easy, {hard} % hard – exactly the 80/20 principle.',
-      middle: '<b>Too much middle ground:</b> {z3} % in Z3. Keep easy days deliberately below {max} W – that leaves more in the tank for real power sessions.',
+      middle: '<b>Too much middle ground:</b> {z3} % in Z3. Keep easy days deliberately below {max} – that leaves more in the tank for real power sessions.',
+      limitPower: '{v} W',
+      limitHr: '{v} bpm',
       easyHeavy: '<b>Lots of easy riding – great for the base.</b> Plan targeted intervals (Z4/Z5) 1–2 × per week for more power.',
     },
     profile: {

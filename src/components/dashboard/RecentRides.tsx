@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { ArrowRight } from 'lucide-react';
 import { ChartCard } from '@/components/app/ChartCard';
+import { BasisSwitch } from '@/components/app/BasisSwitch';
 import { RideList } from '@/components/rides/RideList';
 import type { RideColumnId } from '@/components/rides/ride-columns';
 import { rideRows } from '@/components/rides/ride-list.ts';
@@ -19,7 +20,12 @@ export function RecentRides({ D, basis }: { D: DecodedPeriod; basis: 'power' | '
       data-testid="recent-rides"
       title={t('dash.card.recent')}
       description={t('dash.card.recentSub')}
-      action={<Button variant="ghost" size="sm" asChild><a href={routes.rides()}>{t('dash.card.logOpen')}<ArrowRight aria-hidden="true" /></a></Button>}
+      action={(
+        <div className="flex items-center gap-2">
+          <BasisSwitch />
+          <Button variant="ghost" size="sm" asChild><a href={routes.rides()}>{t('dash.card.logOpen')}<ArrowRight aria-hidden="true" /></a></Button>
+        </div>
+      )}
     >
       <RideList label={t('dash.card.recent')} rides={rows} columns={COLUMNS} pageSize={false} storageId="recent" empty={t('dash.chart.noRidesPeriod')} />
     </ChartCard>

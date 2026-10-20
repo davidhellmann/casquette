@@ -1,12 +1,12 @@
+import { BasisSwitch } from '@/components/app/BasisSwitch';
 import { ChartCard } from '@/components/app/ChartCard';
 import { EmptyState } from '@/components/app/EmptyState';
 import { RichText } from '@/components/app/RichText';
 import { Bar, ZoneLabel } from '@/components/charts/ZoneBars';
 import { zoneColor } from '@/components/charts/series';
 import { t } from '@/i18n/index.ts';
-import * as React from 'react';
 import { garage, nutrition, zoneTable, zonesSub } from './nutrition-data.ts';
-import { BasisToggle, type Basis } from './parts';
+import { type Basis } from './parts';
 import type { DecodedPeriod } from '@/lib/dashboard-payload.ts';
 import type { AthleteZones } from '@/training/index.ts';
 
@@ -14,10 +14,10 @@ const n = (key: string) => t('dash.nutrition.' + key);
 const rich = '[&_b]:font-medium [&_b]:text-foreground';
 
 /** Daily needs (carbs, protein, fat, water) and what the period's rides burned and needed. */
-export function NutritionCard({ D, kg }: { D: DecodedPeriod; kg: number }) {
+export function NutritionCard({ D, kg, basis }: { D: DecodedPeriod; kg: number; basis: Basis }) {
   const N = nutrition(D, kg);
   return (
-    <ChartCard title={n('title')} description={<RichText html={N.subHtml} className={rich} />} data-testid="nutrition-card">
+    <ChartCard title={n('title')} description={<RichText html={N.subHtml} className={rich} />} action={<BasisSwitch />} data-testid="nutrition-card">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {N.macros.map((m) => (
           <div key={m.key} className="rounded-md bg-background px-3 py-2.5">
@@ -42,12 +42,11 @@ export function NutritionCard({ D, kg }: { D: DecodedPeriod; kg: number }) {
 }
 
 /** Today's power or heart-rate zones on one scale; Z2 is the focus zone. */
-export function ZonesCard({ zones }: { zones: AthleteZones }) {
-  const [basis, setBasis] = React.useState<Basis>('power');
+export function ZonesCard({ zones, basis }: { zones: AthleteZones; basis: Basis }) {
   const rows = zoneTable(zones, basis);
   return (
     <ChartCard title={t('dash.zonesCard.title')} description={zonesSub(zones, basis)} data-testid="zones-card"
-      action={<BasisToggle value={basis} onChange={setBasis} label={t('dash.zonesCard.title')} />}>
+      action={<BasisSwitch />}>
       <ul className="grid gap-2">
         {rows.map((r) => (
           <li key={r.zone} className="grid grid-cols-[2.25rem_minmax(0,1fr)_5.5rem] items-center gap-x-3 text-xs sm:grid-cols-[2.25rem_minmax(0,8rem)_minmax(0,1fr)_5.5rem_7rem]">

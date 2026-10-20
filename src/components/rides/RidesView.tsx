@@ -1,8 +1,9 @@
 import * as React from 'react';
+import { BasisSwitch } from '@/components/app/BasisSwitch';
 import { CardLabel } from '@/components/app/CardLabel';
 import { EmptyState } from '@/components/app/EmptyState';
 import { useDashboard } from '@/components/dashboard/use-dashboard';
-import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
+import { Card, CardAction, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { t } from '@/i18n/index.ts';
 import { RideList } from './RideList';
@@ -31,6 +32,7 @@ function RideLog() {
       <CardHeader>
         <CardLabel as="h2">{t('log.title')}</CardLabel>
         <CardDescription className="text-xs">{t('log.intro')}</CardDescription>
+        <CardAction><BasisSwitch /></CardAction>
       </CardHeader>
       <CardContent>
         {data.D ? (

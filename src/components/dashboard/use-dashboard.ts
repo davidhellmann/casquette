@@ -23,7 +23,8 @@ export function useDashboard() {
   const [state, setState] = React.useState<{ source: Source; period: Period } | null>(null);
   React.useEffect(() => {
     setState({ source: readSource(), period: readPeriod() });
-    const onChange = (e: Event) => setState((s) => s && { ...s, period: (e as CustomEvent<Period>).detail });
+    // A transition: the controls flip at once (usePeriodChoice), the cards follow without blocking the page
+    const onChange = (e: Event) => React.startTransition(() => setState((s) => s && { ...s, period: (e as CustomEvent<Period>).detail }));
     window.addEventListener(PERIOD_EVENT, onChange);
     return () => window.removeEventListener(PERIOD_EVENT, onChange);
   }, []);

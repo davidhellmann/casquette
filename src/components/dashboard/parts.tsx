@@ -1,6 +1,4 @@
 import * as React from 'react';
-import { SegmentedToggle } from '@/components/app/SegmentedToggle';
-import { t } from '@/i18n/index.ts';
 import { cn } from 'cn';
 
 export type Basis = 'power' | 'hr';
@@ -17,11 +15,6 @@ export function Section({ title, sub, children, testId }: { title: string; sub?:
       {children}
     </section>
   );
-}
-
-/** Power / heart rate switch in a card header. */
-export function BasisToggle({ value, onChange, label }: { value: Basis; onChange: (v: Basis) => void; label: string }) {
-  return <SegmentedToggle size="sm" value={value} onChange={onChange} label={label} options={[{ value: 'power', label: t('basis.power') }, { value: 'hr', label: t('basis.hr') }]} />;
 }
 
 /** Small status word with a dot in its data colour (e.g. "sweet spot"); the text stays ink for contrast. */

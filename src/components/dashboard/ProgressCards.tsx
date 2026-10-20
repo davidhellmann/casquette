@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { Area, CartesianGrid, ComposedChart, Line, ReferenceLine, Scatter, XAxis, YAxis, useActiveTooltipDataPoints, type ScatterShapeProps } from 'recharts';
 import { ChartCard } from '@/components/app/ChartCard';
+import { BasisSwitch } from '@/components/app/BasisSwitch';
 import { DeltaBadge } from '@/components/app/DeltaBadge';
 import { EmptyState } from '@/components/app/EmptyState';
 import { ChartContainer, ChartTooltip, type ChartConfig } from '@/components/ui/chart';
@@ -48,8 +49,9 @@ export function EfficiencyCard({ D, basis }: { D: DecodedPeriod; basis: Basis })
     ) : null;
   };
   const badge = E?.trend && <DeltaBadge pct={E.trend.pct} tip={E.trend.tip} decimals={1} />;
+  const action = <div className="flex items-center gap-2">{badge}<BasisSwitch /></div>;
   return (
-    <ChartCard title={cd('ef')} description={cd('efSub')} action={badge} data-testid="efficiency-chart">
+    <ChartCard title={cd('ef')} description={cd('efSub')} action={action} data-testid="efficiency-chart">
       {!E ? <EmptyState>{t('dash.chart.fewEf')}</EmptyState> : (
         <>
           <SeriesLegend items={[{ label: config.ef.label, color: config.ef.color, kind: 'bar' }, { label: config.trend.label, color: config.trend.color }]} />

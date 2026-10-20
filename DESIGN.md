@@ -102,7 +102,7 @@ Look here first. If something fits 80 %, extend it rather than writing a second 
 | Figures inside a card | `Row` (label/value line in a `<dl>`), `Figure` (number + small label), `WithTip` | `app/KeyFigures.tsx` |
 | Change in % | `DeltaBadge` | `app/DeltaBadge.tsx` |
 | Status word with a dot | `Status` (`tone` = a status token) | `dashboard/parts.tsx` |
-| A few exclusive options | `SegmentedToggle` (`size="sm"` in card headers); power/HR switch `BasisToggle` | `app/SegmentedToggle.tsx`, `dashboard/parts.tsx` |
+| A few exclusive options | `SegmentedToggle` (`size="sm"` in card headers); power/HR: one zone basis per page, set in the header and repeated as `BasisSwitch` (icons only – bolt / heart, words as accessible names) on every card that follows it, all in sync | `app/SegmentedToggle.tsx`, `dashboard/parts.tsx`, `app/BasisSwitch.tsx` |
 | No data | `EmptyState` | `app/EmptyState.tsx` |
 | Coaching hint | `Hint` (muted text + bulb, no box) | `app/Hint.tsx` |
 | i18n string with `<b>` | `RichText` | `app/RichText.tsx` |

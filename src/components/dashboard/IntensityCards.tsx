@@ -1,6 +1,6 @@
-import * as React from 'react';
 import { Area, Bar, BarChart, CartesianGrid, Cell, ComposedChart, Line, Pie, PieChart, ReferenceArea, XAxis, YAxis, type TooltipContentProps } from 'recharts';
 import { ChartCard } from '@/components/app/ChartCard';
+import { BasisSwitch } from '@/components/app/BasisSwitch';
 import { EmptyState } from '@/components/app/EmptyState';
 import { ChartContainer, ChartTooltip, type ChartConfig } from '@/components/ui/chart';
 import { ShareStrip, ZoneBars, ZoneLabel } from '@/components/charts/ZoneBars';
@@ -10,7 +10,7 @@ import { nf } from '@/scripts/format.ts';
 import { t } from '@/i18n/index.ts';
 import { powerHr, rhythm, timeInZones, zoneShare, zoneWeeks } from './intensity-data.ts';
 import { Figure } from '@/components/app/KeyFigures';
-import { BasisToggle, type Basis } from './parts';
+import { type Basis } from './parts';
 import { routes } from '@/lib/routes.ts';
 import type { DecodedPeriod } from '@/lib/dashboard-payload.ts';
 import type { AthleteZones } from '@/training/index.ts';
@@ -22,7 +22,8 @@ export function ZoneWeeksCard({ D, basis }: { D: DecodedPeriod; basis: Basis }) 
   const W = zoneWeeks(D, basis);
   const monthly = D.days > 400;
   const title = cd(monthly ? 'monthlyZone' : 'weeklyZone'), sub = cd(monthly ? 'perMonth' : 'perWeek');
-  if (!W) return <ChartCard title={title} description={sub} data-testid="zone-weeks-chart"><EmptyState>{t('dash.chart.noRidesPeriod')}</EmptyState></ChartCard>;
+  const action = <BasisSwitch />;
+  if (!W) return <ChartCard title={title} description={sub} action={action} data-testid="zone-weeks-chart"><EmptyState>{t('dash.chart.noRidesPeriod')}</EmptyState></ChartCard>;
   const series = [...W.series.map((s) => ({ ...s, color: zoneColor(s.zone) })), ...(W.unknown ? [{ ...W.unknown, color: 'var(--muted-foreground)' }] : [])];
   const config = Object.fromEntries(series.map((s) => [s.key, { label: s.label, color: s.color }])) satisfies ChartConfig;
   type Row = (typeof W.rows)[number];
@@ -35,7 +36,7 @@ export function ZoneWeeksCard({ D, basis }: { D: DecodedPeriod; basis: Basis }) 
   const max = Math.max(...W.rows.map((r) => series.reduce((s, x) => s + (r[x.key] || 0), 0)));
   const ticks = niceTicks(0, max, 4);
   return (
-    <ChartCard title={title} description={sub} data-testid="zone-weeks-chart">
+    <ChartCard title={title} description={sub} action={action} data-testid="zone-weeks-chart">
       <SeriesLegend items={series.map((s) => ({ label: s.label, color: s.color, kind: 'bar' as const }))} />
       <ChartContainer config={config} className="aspect-auto h-[260px] w-full">
         <BarChart data={W.rows} margin={{ top: 4, right: 4, bottom: 0, left: -12 }} barCategoryGap="22%">
@@ -56,7 +57,7 @@ export function ZoneShareCard({ D, basis }: { D: DecodedPeriod; basis: Basis }) 
   const Z = zoneShare(D, basis);
   const sub = cd(basis === 'hr' ? 'hrZones5' : 'powerZones7');
   return (
-    <ChartCard title={cd('timeByZone')} description={sub} data-testid="zone-share-chart">
+    <ChartCard title={cd('timeByZone')} description={sub} action={<BasisSwitch />} data-testid="zone-share-chart">
       {!Z ? <EmptyState>{t('dash.chart.noIntensity')}</EmptyState> : (
         <>
           <div className="relative mx-auto aspect-square w-full max-w-52">
@@ -90,13 +91,12 @@ export function ZoneShareCard({ D, basis }: { D: DecodedPeriod; basis: Basis }) 
   );
 }
 
-/** Time in zone from the ride histograms (power or HR switchable in the card). */
-export function TimeInZonesCard({ D }: { D: DecodedPeriod }) {
-  const [basis, setBasis] = React.useState<Basis>('power');
+/** Time in zone from the ride histograms, by the page's zone basis. */
+export function TimeInZonesCard({ D, basis }: { D: DecodedPeriod; basis: Basis }) {
   const X = timeInZones(D, basis);
   return (
     <ChartCard title={cd('tiz')} description={cd('tizSub')} data-testid="time-in-zones"
-      action={<BasisToggle value={basis} onChange={setBasis} label={cd('tiz')} />}>
+      action={<BasisSwitch />}>
       {'empty' in X ? <EmptyState>{X.empty}</EmptyState> : (
         <>
           <div className="mb-3 grid grid-cols-3 gap-3">
