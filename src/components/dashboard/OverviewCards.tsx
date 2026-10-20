@@ -44,7 +44,7 @@ export function FormCard({ D }: { D: DecodedPeriod }) {
 
 /** 80/20 check: easy share as a ring against the 80 % target, zone split and a hint. */
 export function PolarizationCard({ D, zones, basis }: { D: DecodedPeriod; zones: AthleteZones; basis: Basis }) {
-  const P = polarization(D, zones);
+  const P = polarization(D, zones, basis);
   return (
     <ChartCard title={t('dash.pol.title')} description={t('dash.pol.sub')} action={<BasisSwitch />} data-testid="polarization-card">
       {P.empty ? <EmptyState>{t('dash.chart.noIntensity')}</EmptyState> : (

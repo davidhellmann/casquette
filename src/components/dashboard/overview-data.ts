@@ -7,7 +7,7 @@ import { nf, fmtWeekdayDate } from '../../scripts/format.ts';
 import { t } from '../../i18n/index.ts';
 import type { TParams } from '../../i18n/index.ts';
 import type { AcwrStatus, FormStatus, RampStatus } from '../../dashboard-period/index.ts';
-import type { Zones } from '../../training/index.ts';
+import type { Basis, Zones } from '../../training/index.ts';
 import type { DecodedPeriod } from '../../lib/dashboard-payload.ts';
 
 /** A colour token the cards use for a status. */
@@ -32,13 +32,19 @@ export function formToday(D: DecodedPeriod) {
   };
 }
 
-/** 80/20 check: share of easy riding time, zone split and a coaching hint. */
-export function polarization(D: DecodedPeriod, zones: Pick<Zones, 'power_zones'>) {
+/** Upper bound of Z2 in the basis' unit ("150 W", "146 bpm") – where easy riding ends. */
+function easyLimit(zones: Pick<Zones, 'power_zones' | 'heart_rate_zones'>, basis: Basis): string {
+  const z = basis === 'hr' ? zones.heart_rate_zones : zones.power_zones;
+  return t(basis === 'hr' ? 'dash.pol.limitHr' : 'dash.pol.limitPower', { v: nf(z[1].max ?? z[2].min - 1) });
+}
+
+/** 80/20 check: share of easy riding time, zone split and a coaching hint – zones by the page's basis. */
+export function polarization(D: DecodedPeriod, zones: Pick<Zones, 'power_zones' | 'heart_rate_zones'>, basis: Basis) {
   const S = D.S, p = (key: string, x?: TParams) => t('dash.pol.' + key, x);
   const empty = S.polarization === 'empty';
   const hintHtml = empty ? p('empty')
     : S.polarization === 'balanced' ? p('balanced', { low: nf(S.low), hard: nf(S.pZ4) })
-    : S.polarization === 'middle' ? p('middle', { z3: nf(S.pZ3), max: zones.power_zones[1].max })
+    : S.polarization === 'middle' ? p('middle', { z3: nf(S.pZ3), max: easyLimit(zones, basis) })
     : p('easyHeavy');
   const figures: [string, string][] = [[p('zone2'), `${nf(S.pZ2)} %`], [p('z2Week'), `${nf(S.z2hWeek, 1)} h`], [p('intense'), `${nf(S.pZ4)} %`]];
   const segments: [number, number, string][] = [[1, S.pZ1, 'Z1'], [2, S.pZ2, 'Z2'], [3, S.pZ3, 'Z3'], [4, S.pZ4, 'Z4+']];
