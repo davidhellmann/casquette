@@ -52,7 +52,7 @@ test('in the collapsed sidebar the logo, the nav icons, the demo note and the th
   await hydrated(page);
   await page.getByRole('button', { name: 'Toggle sidebar' }).first().click();
   await expect(page.locator('[data-slot="sidebar"]')).toHaveAttribute('data-state', 'collapsed');
-  const centres = await page.evaluate(() => {
+  const iconCentres = () => page.evaluate(() => {
     const icons = [
       document.querySelector('[data-slot="app-mark"]'),
       ...document.querySelectorAll('[data-sidebar="sidebar"] nav a svg'),
@@ -61,6 +61,9 @@ test('in the collapsed sidebar the logo, the nav icons, the demo note and the th
     ].filter((el): el is Element => !!el && el.getBoundingClientRect().width > 0);
     return icons.map((el) => { const b = el.getBoundingClientRect(); return Math.round(b.left + b.width / 2); });
   });
+  // data-state flips before the width transition ends: measure once the layout has settled
+  await expect.poll(async () => new Set(await iconCentres()).size).toBe(1);
+  const centres = await iconCentres();
   expect(centres.length).toBeGreaterThan(5);
   expect(new Set(centres).size, `icon centres: ${centres.join(', ')}`).toBe(1);
 });

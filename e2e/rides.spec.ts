@@ -107,8 +107,11 @@ test('a row click opens the ride', async ({ page }) => {
 
 test('the period chosen on the ride log is active on the dashboard and filters the log', async ({ page }) => {
   await page.goto('/rides/');
-  await period(page).getByRole('radio', { name: 'All time' }).click();
   await expect(summary(page)).toBeVisible();
+  const initial = (await summary(page).textContent())!;
+  await period(page).getByRole('radio', { name: 'All time' }).click();
+  // The summary is already there: wait for the re-render instead of reading the previous count
+  await expect(summary(page)).not.toHaveText(initial);
   const all = num((await summary(page).textContent())!.split(' ')[0])!;
   await period(page).getByRole('radio', { name: '7 days' }).click();
   await expect(summary(page)).not.toHaveText(new RegExp(`^${all} rides`));
