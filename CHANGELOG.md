@@ -2,6 +2,12 @@
 
 All notable changes to Casquette. Versioning: [README → Versioning](README.md#versioning).
 
+## Unreleased
+
+### Requirements
+
+- Node.js 22.23.4 or newer (was 22.18). Astro 7.4.2 and later require it, and the Astro update fixes two security advisories (GHSA-mh32-jxcr-mh9f, GHSA-r3h5-4585-7x3w).
+
 ## 1.0.0 – 2026-10-19
 
 First public release.

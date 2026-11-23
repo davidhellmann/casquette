@@ -76,7 +76,7 @@ Every page shares the same frame: a collapsible sidebar with all pages, a slim h
 
 ## Quick start
 
-You need Node.js 22.18 or newer (it runs the TypeScript scripts directly). To sync your own rides you also need a **Strava subscription**: since June 2026 Strava only lets subscribers create the personal API application the sync uses (one per Strava account). The demo runs without any account.
+You need Node.js 22.23.4 or newer (it runs the TypeScript scripts directly). To sync your own rides you also need a **Strava subscription**: since June 2026 Strava only lets subscribers create the personal API application the sync uses (one per Strava account). The demo runs without any account.
 
 ### 1. Try it with demo data
 

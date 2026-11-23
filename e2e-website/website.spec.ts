@@ -199,7 +199,8 @@ test('privacy panel: stays on your disk', async ({ page }) => {
 test('what you need: four chips, the two to get linked – technical, no hand-holding', async ({ page }) => {
   await page.goto('/');
   const needs = page.getByRole('list', { name: 'What you need' });
-  const node = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).engines.node.match(/(\d+\.\d+)/)[1];
+  // The engines floor as shown: "22.18" for >=22.18.0, "22.23.4" for >=22.23.4
+  const node = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).engines.node.match(/(\d+\.\d+)(?:\.0\b|(\.\d+))?/).slice(1).join('');
   await expect(needs.getByRole('listitem')).toHaveText(['Strava subscription', `Node.js ${node}+`, 'Git · terminal', '~10 min setup']);
   expect(README).toContain(`Node.js ${node} or newer`);
   await expect(needs.getByRole('link', { name: 'Strava subscription' })).toHaveAttribute('href', 'https://www.strava.com/subscribe');
