@@ -9,7 +9,7 @@ Casquette mixed three styles: TypeScript for the React islands and page payloads
 We decided:
 
 - **Every module is TypeScript** (`.ts`, `.tsx`, `.astro`): `src/`, `scripts/`, tests, e2e helpers and configs. Only `website/` stays plain HTML/CSS/JS – it is a standalone page without a build (AGENTS.md) – and `website/ui/` is generated.
-- **Scripts run directly on Node** (`node scripts/sync/strava-sync.ts`) through its built-in type stripping, which is on by default since Node 22.18. No build step, no `tsx`/`ts-node`. `engines` requires Node ≥ 22.18. `erasableSyntaxOnly` keeps the code to syntax Node can strip (no `enum`, `namespace`, parameter properties), relative imports name the real file (`./sync.ts`), and type-only imports use `import type` (`verbatimModuleSyntax`).
+- **Scripts run directly on Node** (`node scripts/sync/strava-sync.ts`) through its built-in type stripping, which is on by default since Node 22.18. No build step, no `tsx`/`ts-node`. `engines` requires Node ≥ 22.23.4 (raised from 22.18 because Astro 7.4.2+ requires it). `erasableSyntaxOnly` keeps the code to syntax Node can strip (no `enum`, `namespace`, parameter properties), relative imports name the real file (`./sync.ts`), and type-only imports use `import type` (`verbatimModuleSyntax`).
 - **Strict from the start**: `astro/tsconfigs/strict`. `npm run typecheck` (`astro check`) checks `.ts`, `.tsx` and `.astro` in one pass; the deploy workflow runs it before the build.
 - **TypeScript 6**, not 7: `@astrojs/check` supports TypeScript up to 6. Revisit when it supports 7.
 
