@@ -1,0 +1,48 @@
+# Runs the checks on every pull request and on every push to main: type check, unit tests (Vitest),
+# the production build, the app's browser tests (Playwright against a demo build) and the promo
+# website's browser test. Everything runs on the synthetic demo dataset, so no secrets are needed.
+# Left out: `npm run site:build` needs the SITE_LEGAL_* secrets and runs in the Pages deploy (pages.yml).
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: Browser tests (app)
+        run: npm run test:e2e
+
+      - name: Browser test (website)
+        run: npm run test:website
