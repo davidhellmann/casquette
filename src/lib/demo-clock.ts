@@ -8,12 +8,17 @@ import { dayOrdinal, ordinalDay } from '../training/index.ts';
 
 const DAY = 86400000;
 
-/** Days (multiple of 7, ≥ 0) to add so that `newestDay` ('YYYY-MM-DD') lands in (today − 7, today]. */
-export function demoDayShift(newestDay: string | null | undefined, today: Date | string): number {
+/**
+ * Days (multiple of 7, ≥ 0) to add so that `newestDay` ('YYYY-MM-DD') lands in (today − 7, today].
+ * `newestStart` (ISO instant of the newest ride): when the shift would move that ride past `today`'s
+ * clock – it lands on today, before its start time – the data stays a week further back instead.
+ */
+export function demoDayShift(newestDay: string | null | undefined, today: Date | string, newestStart?: string | null): number {
   const newest = dayOrdinal(newestDay);
   if (!Number.isFinite(newest)) return 0;
   const behind = dayOrdinal(today) - newest;
-  return behind > 0 ? Math.floor(behind / 7) * 7 : 0;
+  const shift = behind > 0 ? Math.floor(behind / 7) * 7 : 0;
+  return shift && newestStart && Date.parse(newestStart) + shift * DAY > +new Date(today) ? shift - 7 : shift;
 }
 
 /** ISO date or date-time string (optionally with trailing Z) moved by `days` calendar days. */

@@ -82,9 +82,10 @@ export function readDemoDataset({ root = ROOT, today = new Date() }: { root?: st
     const parsed: unknown = JSON.parse(fs.readFileSync(path.join(dir, 'data', 'meta.json'), 'utf8'));
     meta = typeof parsed === 'object' && parsed !== null ? parsed : {};
   } catch { meta = {}; }
-  const shift = demoDayShift(meta.newest_day, today);
   const ridesDir = path.join(dir, 'rides');
-  const rides: DemoRide[] = files(ridesDir, '.md', true).map((f) => shiftRideDates(rideFields(fs.readFileSync(path.join(ridesDir, f), 'utf8')), shift));
+  const unshifted = files(ridesDir, '.md', true).map((f) => rideFields(fs.readFileSync(path.join(ridesDir, f), 'utf8')));
+  const shift = demoDayShift(meta.newest_day, today, unshifted.map((r) => r.start_date).filter((d) => !!d).sort().at(-1));
+  const rides: DemoRide[] = unshifted.map((r) => shiftRideDates(r, shift));
   const ids = (sub: string, ext: string) => files(path.join(dir, sub), ext).map((f) => f.slice(0, -ext.length));
   return { dir, meta, shift, rides, gear: ids('gear', '.md'), streams: ids('streams', '.json') };
 }

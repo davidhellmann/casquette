@@ -8,6 +8,10 @@ All notable changes to Casquette. Versioning: [README → Versioning](README.md#
 
 - Node.js 22.23.4 or newer (was 22.18). Astro 7.4.2 and later require it, and the Astro update fixes two security advisories (GHSA-mh32-jxcr-mh9f, GHSA-r3h5-4585-7x3w).
 
+### Fixes
+
+- Demo data: the newest demo ride is no longer moved to later today, ahead of the current time. On one day each week it used to be missing from the ride log and calendar while Newer/Older still linked to it.
+
 ## 1.0.0 – 2026-10-19
 
 First public release.
