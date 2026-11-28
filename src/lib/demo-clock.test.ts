@@ -11,6 +11,13 @@ describe('demoDayShift – keeps the shipped demo data current', () => {
     expect(demoDayShift('2025-10-18', today)).toBe(364);
   });
 
+  it('never moves the newest ride past now: landing on today before its start, it stays a week back', () => {
+    expect(demoDayShift('2026-10-10', today, new Date(2026, 9, 10, 9, 0).toISOString())).toBe(7);
+    expect(demoDayShift('2026-10-10', today, new Date(2026, 9, 10, 18, 0).toISOString())).toBe(0);
+    expect(demoDayShift('2026-09-05', today, new Date(2026, 8, 5, 18, 0).toISOString())).toBe(35);
+    expect(demoDayShift('2026-10-11', today, new Date(2026, 9, 11, 18, 0).toISOString())).toBe(0);
+  });
+
   it('does not shift data whose newest ride is already within the last week', () => {
     expect(demoDayShift('2026-10-11', today)).toBe(0);
     expect(demoDayShift('2026-10-17', today)).toBe(0);

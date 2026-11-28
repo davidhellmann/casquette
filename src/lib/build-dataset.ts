@@ -232,8 +232,10 @@ function gearWithTotals(entries: readonly SourceEntry<GearEntry>[], athleteGear:
  */
 export async function createBuildDataset<E extends SourceEntries>(source: DataSource<E>, { now }: { now: Date }): Promise<BuildDataset<E>> {
   const demo = !!source.demo;
+  const rideEntries = await source.rides();
   // Demo dates move forward in whole weeks so the newest demo ride is always recent; real data: 0.
-  const shift = demo ? demoDayShift(source.meta()?.newest_day, now) : 0;
+  const newestStart = rideEntries.map((e) => e.data.start_date).filter((d) => !!d).sort().at(-1);
+  const shift = demo ? demoDayShift(source.meta()?.newest_day, now, newestStart) : 0;
 
   const raw = source.athlete() || {};
   const { zones: _zones, ...rest } = raw;
@@ -251,7 +253,6 @@ export async function createBuildDataset<E extends SourceEntries>(source: DataSo
   });
   const athleteAt = (date: Date | string) => timeline.at(date);
 
-  const rideEntries = await source.rides();
   const rideById = new Map(rideEntries.map((e) => [String(e.data.id), e]));
   const rides = rideEntries
     .map((e) => {
